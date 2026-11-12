@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Nội dung đã lưu | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:saved' %}" aria-current="page">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw-page knw-saved-page">
+    <div class="knw-page-title-row">
+        <a class="knw-back-button" href="{% url 'knowledge:list' %}">← Quay lại</a>
+        <div><h1>Nội dung đã lưu</h1><p>Danh sách tri thức bạn đã lưu và hiện còn quyền truy cập.</p></div>
+    </div>
+
+    <nav class="knw-saved-tabs" aria-label="Lọc loại tri thức đã lưu">
+        <a class="{% if selected_kind == 'all' %}active{% endif %}" href="?kind=all">Tất cả</a>
+        <a class="{% if selected_kind == 'post' %}active{% endif %}" href="?kind=post">Bài đăng</a>
+        <a class="{% if selected_kind == 'notice' %}active{% endif %}" href="?kind=notice">Thông báo</a>
+        <a class="{% if selected_kind == 'knowledge' %}active{% endif %}" href="?kind=knowledge">Tri thức</a>
+    </nav>
+
+    <div class="knw-saved-list">
+        <div class="knw-saved-table-head">
+            <span>Nội dung</span><span>Loại</span><span>Ngữ cảnh</span><span>Đã lưu</span><span>Thao tác</span>
+        </div>
+        {% for item in saved_items %}
+            <div class="knw-saved-row">
+                <div class="knw-saved-title">{{ item.title }}</div>
+                <div>{{ item.kind_label }}</div>
+                <div>{{ item.context }}</div>
+                <div>{{ item.saved_at|date:"d/m/Y" }}</div>
+                <div class="knw-saved-actions">
+                    {% if item.available and item.kind == "lesson" %}
+                        <a href="{% url 'knowledge:lesson_detail' item.object_id %}">Xem</a>
+                    {% elif item.available and item.kind == "article" %}
+                        <a href="{% url 'knowledge:article_detail' item.object_id %}">Xem</a>
+                    {% elif item.available and item.open_url %}<a href="{{ item.open_url }}">Xem</a>
+                    {% else %}
+                        <span class="knw-muted">Không khả dụng</span>
+                    {% endif %}
+                    <form method="post" action="{% url 'knowledge:remove_saved_item' item.saved_id %}">
+                        {% csrf_token %}
+                        <button type="submit">Bỏ lưu</button>
+                    </form>
+                </div>
+            </div>
+        {% empty %}
+            <div class="knw-empty knw-empty--wide">
+                <h3>Chưa có nội dung đã lưu</h3>
+                <p>Khi đọc bài học kinh nghiệm hoặc bài viết tri thức, chọn “Lưu nội dung” để xem lại tại đây.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

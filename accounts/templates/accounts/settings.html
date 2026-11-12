@@ -1,0 +1,34 @@
+{% extends "accounts/_base.html" %}
+{% block title %}Cài đặt tài khoản | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <p class="oz-breadcrumb">Tài khoản / Cài đặt tài khoản</p>
+  <h1 class="oz-page-title">Cài đặt tài khoản</h1>
+
+  <section class="oz-card">
+    <h2 class="oz-card-title">Đổi mật khẩu</h2>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      {% for e in form.non_field_errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+      <div class="oz-form-grid">
+        {% for field in form %}
+        <div class="oz-field {% if forloop.first %}oz-field-full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+          {% for e in field.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      <div class="oz-actions" style="margin-top:16px">
+        <button type="submit" class="oz-btn oz-btn-primary">Lưu cài đặt</button>
+        <a class="oz-btn" href="{% url 'accounts:profile' %}">Hủy</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="oz-card">
+    <h2 class="oz-card-title">Phiên đăng nhập</h2>
+    <p class="oz-muted">Đăng xuất chỉ kết thúc phiên trên thiết bị này.</p>
+    <a class="oz-btn" href="{% url 'accounts:logout' %}">Đăng xuất</a>
+  </section>
+</div>
+{% endblock %}

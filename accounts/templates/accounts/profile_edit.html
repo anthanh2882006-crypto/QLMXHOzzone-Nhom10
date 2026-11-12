@@ -1,0 +1,65 @@
+{% extends "accounts/_base.html" %}
+{% block title %}Chỉnh sửa hồ sơ | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <p class="oz-breadcrumb">Tài khoản / <a href="{% url 'accounts:profile' %}">Hồ sơ của tôi</a> / Chỉnh sửa</p>
+  <h1 class="oz-page-title">Chỉnh sửa hồ sơ</h1>
+  <p class="oz-page-lead">Phòng ban, chức danh và mã nhân viên do tổ chức quản lý nên chỉ hiển thị để đối chiếu.</p>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.errors %}
+      <div class="oz-alert oz-alert-danger"><p class="oz-alert-title">Chưa lưu được hồ sơ</p><p>Vui lòng kiểm tra các trường được đánh dấu bên dưới.</p></div>
+    {% endif %}
+    <section class="oz-card">
+      <h2 class="oz-card-title">Tên hiển thị</h2>
+      <div class="oz-form-grid">
+        {% for field in form %}{% if field.name == 'last_name' or field.name == 'first_name' %}
+        <div class="oz-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+          {% for e in field.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+        </div>
+        {% endif %}{% endfor %}
+      </div>
+    </section>
+
+    <section class="oz-card">
+      <h2 class="oz-card-title">Giới thiệu và kỹ năng</h2>
+      <div class="oz-field">
+        <label for="{{ form.gioi_thieu.id_for_label }}">{{ form.gioi_thieu.label }}</label>{{ form.gioi_thieu }}
+        {% for e in form.gioi_thieu.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="oz-form-grid">
+        <div class="oz-field">
+          <label for="{{ form.so_dien_thoai.id_for_label }}">{{ form.so_dien_thoai.label }}</label>{{ form.so_dien_thoai }}
+          {% for e in form.so_dien_thoai.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+        </div>
+        <div class="oz-field">
+          <label for="{{ form.anh_dai_dien.id_for_label }}">{{ form.anh_dai_dien.label }}</label>{{ form.anh_dai_dien }}
+          <p class="oz-help">Ảnh JPG/PNG, tối đa 2 MB.</p>
+          {% for e in form.anh_dai_dien.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+        </div>
+      </div>
+      <div class="oz-field" style="margin-top:14px">
+        <span class="oz-label">{{ form.ky_nang.label }}</span>
+        <ul class="oz-checks">{% for cb in form.ky_nang %}<li>{{ cb.tag }} <label for="{{ cb.id_for_label }}" style="display:inline;margin:0;font-weight:400">{{ cb.choice_label }}</label></li>{% endfor %}</ul>
+        {% for e in form.ky_nang.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+      </div>
+    </section>
+
+    <section class="oz-card">
+      <h2 class="oz-card-title">Thông tin tổ chức (chỉ đọc)</h2>
+      <dl class="oz-dl">
+        <dt>Mã nhân viên</dt><dd>{{ profile.ma_nhan_vien }}</dd>
+        <dt>Phòng ban</dt><dd>{{ profile.phong_ban.ten_phong_ban }}</dd>
+        <dt>Chức danh</dt><dd>{{ profile.vi_tri.ten_vi_tri }}</dd>
+      </dl>
+    </section>
+
+    <div class="oz-actions">
+      <button type="submit" class="oz-btn oz-btn-primary">Lưu hồ sơ</button>
+      <a class="oz-btn" href="{% url 'accounts:profile' %}">Hủy</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

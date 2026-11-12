@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Không thể chỉnh sửa | OZZONE{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">{% endblock %}
+{% block content %}
+<div class="social-page"><section class="social-empty"><h1>Thao tác không được phép</h1><p>{{ reason }}</p><a class="social-button social-button-secondary" href="{% url 'social:my_posts' %}">Quay lại Bài viết của tôi</a></section></div>
+{% endblock %}

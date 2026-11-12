@@ -1,0 +1,138 @@
+{% extends "projects/base.html" %}
+{% load ozzone_names %}
+{% block project_content %}
+    <header class="pm-heading">
+        <div class="pm-heading-main">
+            <h1>{{ project.ten_du_an }}</h1>
+            <p class="pm-muted">
+                {{ project.ma_du_an_nghiep_vu }}
+                · Không gian cộng tác dự án
+            </p>
+            <span class="pm-badge {% if project.da_luu_tru %}pm-amber{% else %}pm-blue{% endif %}">
+                {{ project.get_trang_thai_display }}
+            </span>
+        </div>
+        {% if can_manage %}
+            <a class="pm-button" href="{% url 'projects:manage' project.pk %}">Quản lý dự án</a>
+        {% endif %}
+    </header>
+    <div class="pm-workspace">
+        <div class="pm-stack">
+            {% if not project.da_luu_tru %}
+                <section class="pm-panel">
+                    <h2>Cần bạn xử lý</h2>
+                    {% for trial in assigned_trials %}
+                        <article class="pm-comment">
+                            <strong>{{ trial.phuong_an.bai_viet.tieu_de|default:"Vấn đề kỹ thuật" }}</strong>
+                            <p class="pm-caption">
+                                PA-{{ trial.phuong_an_id }}
+                                · Lần thử {{ trial.so_lan }}
+                                · Bạn là người thực hiện
+                            </p>
+                            <a class="pm-button pm-fit"
+                               href="{% url 'projects:result_create' project.pk trial.pk %}">Ghi nhận kết quả</a>
+                        </article>
+                    {% empty %}
+                        <p class="pm-muted">Bạn không có lần thử đang chờ ghi nhận kết quả.</p>
+                    {% endfor %}
+                </section>
+            {% endif %}
+            <section class="pm-panel">
+                <h2>Vấn đề kỹ thuật</h2>
+                <p class="pm-caption">
+                    {{ issue_count }}
+                    vấn đề chưa giải quyết trong phạm vi bạn được xem.
+                </p>
+                {% for post in issues %}
+                    <article class="pm-comment">
+                        <a href="{% url 'projects:issue' project.pk post.pk %}">
+                            <strong>{{ post.tieu_de|default:"Vấn đề kỹ thuật" }}</strong>
+                        </a>
+                        <p class="pm-caption">{{ post.ma_the_thiet_bi.ma_thiet_bi|default:"Không gắn thiết bị" }}</p>
+                        {% include "projects/_issue_state.html" %}
+                    </article>
+                {% empty %}
+                    <p class="pm-muted">Chưa có vấn đề được phép hiển thị.</p>
+                {% endfor %}
+                <a href="{% url 'projects:issues' project.pk %}">Xem tất cả vấn đề</a>
+            </section>
+            <section class="pm-panel">
+                <h2>
+                    {% if project.da_luu_tru %}
+                        Hoạt động đã ghi nhận
+                    {% else %}
+                        Hoạt động gần đây
+                    {% endif %}
+                </h2>
+                {% for item in activities %}
+                    <article class="pm-comment">
+                        <a href="{% url 'projects:post_detail' project.pk item.pk %}">
+                            {{ item.tieu_de|default:"Bài đăng dự án" }}
+                        </a>
+                        <p class="pm-caption">
+                            {{ item.nguoi_dang|ho_ten }}
+                            · {{ item.ngay_tao|date:"d/m/Y H:i" }}
+                        </p>
+                    </article>
+                {% empty %}
+                    <p class="pm-muted">Chưa có hoạt động được phép hiển thị.</p>
+                {% endfor %}
+                <a href="{% url 'projects:feed' project.pk %}">Xem bảng tin dự án</a>
+            </section>
+        </div>
+        <aside class="pm-context" aria-label="Thông tin dự án">
+            <section class="pm-panel">
+                <h2>Thông tin dự án</h2>
+                <p>{{ project.mo_ta|default:"Chưa có mô tả." }}</p>
+                <dl class="pm-details">
+                    <dt>Vai trò của bạn</dt>
+                    <dd>
+                        {{ membership.get_vai_tro_display }}
+                    </dd>
+                    <dt>Cộng đồng liên kết</dt>
+                    <dd>
+                        {{ project.cong_dong.ten_cong_dong }}
+                    </dd>
+                    <dt>Bắt đầu</dt>
+                    <dd>
+                        {{ project.ngay_bat_dau|date:"d/m/Y" }}
+                    </dd>
+                    <dt>Người khởi tạo</dt>
+                    <dd>
+                        {{ project.nguoi_tao|ho_ten }}
+                    </dd>
+                </dl>
+            </section>
+            <section class="pm-panel">
+                <h2>
+                    {{ member_count }}
+                    thành viên
+                </h2>
+                <a href="{% url 'projects:members' project.pk %}">Xem thành viên và vai trò</a>
+            </section>
+            <section class="pm-panel">
+                <h2>
+                    {{ device_count }}
+                    thiết bị đang sử dụng
+                </h2>
+                <a href="{% url 'projects:equipment' project.pk %}">Xem thiết bị và tài sản</a>
+            </section>
+            <section class="pm-panel">
+                <h2>Phụ trách tri thức</h2>
+                {% for assignment in curators %}
+                    <p>{{ assignment.nguoi_phu_trach|ho_ten }}</p>
+                {% empty %}
+                    <p>Chưa có phân công đang hiệu lực.</p>
+                {% endfor %}
+                {% if can_manage %}
+                    <a href="{% url 'projects:knowledge' project.pk %}">Xem phân công và lịch sử</a>
+                {% endif %}
+            </section>
+            <section class="pm-panel">
+                <h2>Lịch sử dự án</h2>
+                <p>Đọc diễn biến và nguồn trong quyền hiện hành.</p>
+                <a href="{% url 'projects:history' project.pk %}">Xem lịch sử</a>
+            </section>
+        </aside>
+    </div>
+{% endblock %}

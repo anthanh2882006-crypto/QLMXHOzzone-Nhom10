@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Nội dung không khả dụng | OZZONE{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">{% endblock %}
+{% block content %}
+<div class="social-page"><section class="social-empty"><h1>Nội dung không khả dụng</h1><p>Nội dung có thể đã bị ẩn, xóa hoặc quyền truy cập của bạn đã thay đổi.</p><a class="social-button social-button-secondary" href="{% url 'social:feed' %}">Quay lại bảng tin</a></section></div>
+{% endblock %}

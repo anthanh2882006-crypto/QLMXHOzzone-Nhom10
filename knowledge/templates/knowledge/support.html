@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tìm người hỗ trợ | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:support' %}" aria-current="page">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw-page knw-support-page">
+    <div class="knw-page-title-row knw-support-title">
+        <a class="knw-back-button" href="{% url 'knowledge:search' %}?q={{ context_query|urlencode }}">← Quay lại</a>
+        <div>
+            <h1>Tìm người hỗ trợ</h1>
+            <p>Tìm đồng nghiệp phù hợp với ngữ cảnh bạn đang tra cứu.</p>
+        </div>
+    </div>
+
+    <div class="knw-support-context">
+        <strong>Ngữ cảnh:</strong>
+        <span>{{ context_query|default:"Chưa có từ khóa cụ thể. Bạn có thể lọc theo kỹ năng, phòng ban hoặc dự án đã tham gia." }}</span>
+    </div>
+
+    {% if limited_access %}
+        <div class="knw-empty knw-support-limited">
+            <h3>Dữ liệu bị giới hạn quyền</h3>
+            <p>Bạn chưa có dự án đang tham gia để xác định đồng nghiệp có thể hiển thị. Hệ thống không mở rộng sang hồ sơ ngoài phạm vi được phép.</p>
+        </div>
+    {% else %}
+        <div class="knw-support-layout">
+            <aside class="knw-support-filter-panel">
+                <h2>Lọc theo</h2>
+                <form method="get" action="{% url 'knowledge:support' %}" class="knw-support-filter-form">
+                    <input type="hidden" name="context" value="{{ context_query }}">
+                    <label for="support-skill">Kỹ năng</label>
+                    <select id="support-skill" name="skill">
+                        <option value="">Tất cả kỹ năng</option>
+                        {% for option in skill_options %}
+                            <option value="{{ option.ky_nang_id }}" {% if selected_skill == option.ky_nang_id|stringformat:'s' %}selected{% endif %}>{{ option.ky_nang__ten_ky_nang }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="support-department">Phòng ban</label>
+                    <select id="support-department" name="department">
+                        <option value="">Tất cả phòng ban</option>
+                        {% for option in department_options %}
+                            <option value="{{ option.phong_ban_id }}" {% if selected_department == option.phong_ban_id|stringformat:'s' %}selected{% endif %}>{{ option.phong_ban__ten_phong_ban }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <label for="support-project">Dự án đã tham gia</label>
+                    <select id="support-project" name="project">
+                        <option value="">Tất cả dự án của bạn</option>
+                        {% for option in project_options %}
+                            <option value="{{ option.du_an_id }}" {% if selected_project == option.du_an_id|stringformat:'s' %}selected{% endif %}>{{ option.du_an__ten_du_an }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <button class="knw-button" type="submit">Áp dụng bộ lọc</button>
+                    <a class="knw-filter-reset" href="{% url 'knowledge:support' %}?context={{ context_query|urlencode }}">Đặt lại</a>
+                </form>
+                {% if invalid_filter %}
+                    <p class="knw-filter-error">Bộ lọc không hợp lệ hoặc nằm ngoài phạm vi bạn được phép xem.</p>
+                {% endif %}
+            </aside>
+
+            <section class="knw-support-results">
+                <div class="knw-support-results-heading">
+                    <div>
+                        <h2>Đồng nghiệp trong phạm vi của bạn</h2>
+                        <p>{{ result_count }} hồ sơ phù hợp với bộ lọc hiện tại.</p>
+                    </div>
+                    <span class="knw-muted">Sắp xếp ổn định theo tên</span>
+                </div>
+
+                {% for candidate in candidate_items %}
+                    <article class="knw-support-card">
+                        <div class="knw-support-avatar">{{ candidate.initials }}</div>
+                        <div class="knw-support-identity">
+                            <h3>{{ candidate.name }}</h3>
+                            <p class="knw-support-role">{{ candidate.position }} · {{ candidate.department }}</p>
+                            <div class="knw-support-tags">
+                                {% for skill in candidate.skills|slice:":3" %}
+                                    <span class="knw-support-tag">{{ skill.name }}</span>
+                                {% endfor %}
+                                {% if candidate.projects %}
+                                    <span class="knw-support-tag knw-support-tag--project">Dự án tương tự</span>
+                                {% endif %}
+                                {% if candidate.contribution_count %}
+                                    <span class="knw-support-tag">Có đóng góp hiển thị</span>
+                                {% endif %}
+                            </div>
+                            <div class="knw-support-actions">
+                                <a href="{% url 'knowledge:support_profile' candidate.user_id %}">Xem hồ sơ</a>
+                                <a href="{% url 'knowledge:support' %}?context={{ context_query|urlencode }}&amp;reason={{ candidate.user_id }}{% if selected_skill %}&amp;skill={{ selected_skill }}{% endif %}{% if selected_department %}&amp;department={{ selected_department }}{% endif %}{% if selected_project %}&amp;project={{ selected_project }}{% endif %}">Xem lý do</a>
+                            </div>
+                        </div>
+
+                    </article>
+                {% empty %}
+                    <div class="knw-empty">
+                        <h3>Không có người phù hợp trong phạm vi hiện tại</h3>
+                        <p>Thử đổi kỹ năng, phòng ban hoặc dự án. Hệ thống không tự tạo trường hợp xử lý mới.</p>
+                    </div>
+                {% endfor %}
+
+                <div class="knw-support-followup">
+                    <span>Vẫn chưa đủ?</span>
+                    {% for membership in create_project_options %}
+                    <a class="knw-back-button" href="{% url 'projects:post_create' membership.du_an_id %}?issue=1&amp;context={{ context_query|urlencode }}">Tạo vấn đề trong {{ membership.du_an.ten_du_an }}</a>
+                    {% empty %}<span>Chưa có dự án cho phép tạo vấn đề.</span>{% endfor %}
+                </div>
+            </section>
+        </div>
+    {% endif %}
+</div>
+
+{% if reason_candidate %}
+<div class="knw-modal-backdrop" role="presentation">
+    <section class="knw-reason-modal" role="dialog" aria-modal="true" aria-labelledby="reason-title">
+        <a class="knw-modal-close" href="{% url 'knowledge:support' %}?context={{ context_query|urlencode }}{% if selected_skill %}&amp;skill={{ selected_skill }}{% endif %}{% if selected_department %}&amp;department={{ selected_department }}{% endif %}{% if selected_project %}&amp;project={{ selected_project }}{% endif %}" aria-label="Đóng">×</a>
+        <span class="knw-eyebrow">GD-086 · CĂN CỨ GỢI Ý</span>
+        <h2 id="reason-title">Lý do phù hợp của người hỗ trợ</h2>
+        <h3>{{ reason_candidate.name }}</h3>
+        <p>{{ reason_candidate.position }} · {{ reason_candidate.department }}</p>
+        <div class="knw-reason-section">
+            <strong>Kỹ năng và kinh nghiệm</strong>
+            {% for skill in reason_candidate.skills %}
+                <div class="knw-reason-row">
+                    <b>{{ skill.name }}</b>
+                    {% if skill.experience %}<span>{{ skill.experience }}</span>{% endif %}
+                </div>
+            {% empty %}
+                <span class="knw-muted">Chưa có dữ liệu kỹ năng được phép hiển thị.</span>
+            {% endfor %}
+        </div>
+        <div class="knw-reason-section">
+            <strong>Dự án cùng tham gia</strong>
+            {% for project_name in reason_candidate.projects %}
+                <span class="knw-reason-chip">{{ project_name }}</span>
+            {% empty %}
+                <span class="knw-muted">Không có dự án chung trong phạm vi hiện hành.</span>
+            {% endfor %}
+        </div>
+        {% if reason_candidate.contribution_count %}
+            <div class="knw-reason-section">
+                <strong>Đóng góp hiển thị trong dự án chung</strong>
+                <span>{{ reason_candidate.contribution_count }} bài đăng/cập nhật đang hiển thị.</span>
+            </div>
+        {% endif %}
+        <p class="knw-reason-note">Các thông tin trên là căn cứ hiển thị theo dữ liệu được phép; hệ thống chưa tính điểm hoặc xếp hạng trọng số.</p>
+        <a class="knw-button" href="{% url 'knowledge:support_profile' reason_candidate.user_id %}">Xem hồ sơ</a>
+    </section>
+</div>
+{% endif %}
+{% endblock %}

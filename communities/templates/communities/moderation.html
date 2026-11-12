@@ -1,0 +1,63 @@
+{% extends "communities/_base.html" %}
+{% load ozzone_names %}
+{% block title %}Kiểm duyệt {{ community.ten_cong_dong }} | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / Kiểm duyệt cộng đồng</p>
+  <h1 class="oz-page-title">Kiểm duyệt cộng đồng</h1>
+  <form method="get" class="oz-searchbar">
+    <span class="oz-field-search">
+      <svg class="oz-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z"/>
+        <path d="M12.5 12.5L17.5 17.5"/>
+      </svg>
+      <input class="oz-input" type="search" name="q" value="{{ q }}" placeholder="Tìm bài đăng" aria-label="Tìm bài đăng">
+    </span>
+    <select class="oz-input" name="status" style="flex:0 0 170px" aria-label="Trạng thái">
+      <option value="">Tất cả</option>
+      <option value="hien" {% if status == 'hien' %}selected{% endif %}>Đang hiển thị</option>
+      <option value="an" {% if status == 'an' %}selected{% endif %}>Đã ẩn</option>
+      <option value="ghim" {% if status == 'ghim' %}selected{% endif %}>Đã ghim</option>
+    </select>
+    <button class="oz-btn" type="submit">Lọc</button>
+  </form>
+  <section class="oz-card">
+    <h2 class="oz-card-title">{{ community.ten_cong_dong }}</h2>
+    {% if posts %}
+    <div class="cm-table-scroll" role="region" aria-label="Danh sách bài kiểm duyệt" tabindex="0">
+    <table class="oz-table">
+      <thead><tr><th>Bài đăng</th><th>Tác giả</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody>
+      {% for p in posts %}
+        <tr>
+          <td><a class="oz-link" href="{% url 'communities:post' community.pk p.pk %}">{{ p.tieu_de|default:p.noi_dung|truncatechars:60 }}</a><span class="oz-cell-sub">{{ p.ngay_tao|date:"d/m/Y" }}</span></td>
+          <td>{{ p.nguoi_dang|ho_ten }}</td>
+          <td>
+            {% if p.trang_thai == 'hien' %}<span class="oz-badge">Đang hiển thị</span>{% else %}<span class="oz-badge oz-badge-muted">Đã ẩn</span>{% endif %}
+            {% if p.da_ghim %}<span class="oz-badge oz-badge-blue">Đã ghim</span>{% endif %}
+          </td>
+          <td>
+            <form method="post" action="{% url 'communities:moderate' community.pk p.pk %}" class="oz-inline-form cm-mod-actions">
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+              {% if p.trang_thai == 'hien' %}
+                {% if p.da_ghim %}<button class="oz-link" name="action" value="unpin">Bỏ ghim</button>{% else %}<button class="oz-link" name="action" value="pin">Ghim</button>{% endif %}
+                <button class="oz-link oz-link-danger" name="action" value="hide" onclick="return confirm('Ẩn bài này khỏi bảng tin cộng đồng?')">Ẩn</button>
+              {% else %}
+                <button class="oz-link" name="action" value="show">Hiển thị lại</button>
+              {% endif %}
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+      <p class="oz-empty">Không có bài đăng phù hợp.</p>
+    {% endif %}
+  </section>
+  <p class="oz-muted oz-small">Bài đã ẩn không bị xóa và vẫn giữ liên kết nguồn. Duyệt yêu cầu tham gia nằm ở mục “Yêu cầu tham gia” của chủ sở hữu.</p>
+</div>
+{% endblock %}

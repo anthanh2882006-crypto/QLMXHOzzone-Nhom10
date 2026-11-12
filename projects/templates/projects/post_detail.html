@@ -1,0 +1,42 @@
+{% extends "projects/base.html" %}
+{% load ozzone_names %}
+{% block project_content %}
+    <h1>
+        {{ page_title }}
+    </h1>
+    <article class="pm-panel oz-feed-post" id="post-{{ post.pk }}">
+        {% include "includes/post_header.html" with post_scope=project.ten_du_an %}
+        {% if post.ma_the_thiet_bi %}
+            <p>
+                {{ post.ma_the_thiet_bi.ma_thiet_bi }} · {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa gắn tài sản tại thời điểm ghi" }}
+            </p>
+        {% endif %}
+        <div>
+            {{ post.noi_dung|linebreaks }}
+        </div>
+        {% include "projects/_attachments.html" %}
+        {% include "includes/post_actions.html" %}
+    </article>
+    <section class="pm-panel">
+        <h2>
+            Trao đổi đã có
+        </h2>
+        {% for comment in comments %}
+            <article class="pm-comment">
+                <strong>
+                    {{ comment.nguoi_dung|ho_ten }}
+                </strong>
+                <div>
+                    {{ comment.noi_dung|linebreaks }}
+                </div>
+            </article>
+        {% empty %}
+            <p>
+                Chưa có trao đổi.
+            </p>
+        {% endfor %}
+    </section>
+    <a href="{% url 'projects:feed' project.pk %}">
+        Về bảng tin dự án
+    </a>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "communities/_base.html" %}
+{% load ozzone_names %}
+{% block title %}Giới thiệu {{ community.ten_cong_dong }} | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  {% with crumb="Giới thiệu cộng đồng" %}{% include "communities/_community_head.html" %}{% endwith %}
+  <section class="oz-card">
+    <h2 class="oz-card-title">{{ community.ten_cong_dong }}</h2>
+    <dl class="oz-dl">
+      <dt>Mô tả</dt><dd>{{ community.mo_ta|default:"—"|linebreaksbr }}</dd>
+      <dt>Loại cộng đồng</dt><dd>{{ community.get_loai_cong_dong_display }}{% if project %} — {{ project.ma_du_an_nghiep_vu }} {{ project.ten_du_an }}{% endif %}</dd>
+      <dt>Thành viên</dt><dd>{{ member_count }} người</dd>
+      <dt>Chủ sở hữu</dt><dd>{% for o in owners %}{{ o.nguoi_dung|ho_ten }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
+      <dt>Quy tắc tham gia</dt><dd>{{ community.get_quy_tac_tham_gia_display }}</dd>
+      <dt>Phạm vi đọc</dt><dd>{{ community.get_pham_vi_truy_cap_display }}</dd>
+      <dt>Thành lập</dt><dd>{{ community.ngay_tao|date:"d/m/Y" }}</dd>
+    </dl>
+  </section>
+  <div class="oz-alert">
+    <p class="oz-alert-title">Quy tắc chung</p>
+    <p>Nội dung phù hợp chuyên môn; không chia sẻ dữ liệu ngoài phạm vi được phép. Vai trò và quyền được xét trong đúng cộng đồng này.</p>
+  </div>
+  <div class="oz-actions">
+    <a class="oz-btn oz-btn-primary" href="{% url 'communities:detail' community.pk %}">{% if membership or can_read %}Xem bảng tin{% else %}Tham gia / yêu cầu tham gia{% endif %}</a>
+    <a class="oz-btn" href="{% url 'communities:members' community.pk %}">Thành viên</a>
+  </div>
+</div>
+{% endblock %}

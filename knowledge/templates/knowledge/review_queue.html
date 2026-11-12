@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+{% block title %}Nguồn chờ đánh giá tri thức | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+    <link rel="stylesheet" href="{% static 'knowledge/knw04.css' %}">
+    <link rel="stylesheet" href="{% static 'knowledge/knw04_ui_override.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item" href="{% url 'knowledge:support' %}">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action active" href="{% url 'knowledge:review_queue' %}" aria-current="page">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw-page knw04-page knw04-queue-page">
+    <div class="knw04-title-row">
+        <a class="knw-back-button" href="{% url 'knowledge:list' %}">← Quay lại</a>
+        <h1>Chờ đánh giá tri thức</h1>
+    </div>
+
+    
+
+    <div class="knw04-toolbar knw04-toolbar--figma">
+        <form method="get" action="{% url 'knowledge:review_queue' %}" class="knw04-search-form">
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <input type="search" name="q" value="{{ query }}" placeholder="Tìm trong danh sách..." aria-label="Tìm trong danh sách">
+        </form>
+        <details class="knw04-status-menu">
+            <summary class="knw04-filter-button">Lọc</summary>
+            <nav class="knw04-status-popover" aria-label="Lọc trạng thái đánh giá">
+                {% for value,label in status_options %}
+                    <a href="?status={{ value }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}" {% if status_filter == value %}aria-current="true"{% endif %}>{{ label }}</a>
+                {% endfor %}
+            </nav>
+        </details>
+        <span class="knw04-scope-note">Danh sách theo phạm vi của bạn</span>
+    </div>
+
+    <div class="knw04-table-wrap">
+        <table class="knw04-table">
+            <thead>
+                <tr>
+                    <th>Nguồn đã giải quyết</th>
+                    <th>Dự án</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <strong>{{ item.bai_viet_nguon.tieu_de|default:item.bai_viet_nguon.noi_dung|truncatechars:90 }}</strong>
+                        {% if item.bai_viet_nguon.ma_the_thiet_bi_id %}
+                            <small>{{ item.bai_viet_nguon.ma_the_thiet_bi.ma_thiet_bi }} · {{ item.bai_viet_nguon.ma_the_thiet_bi.ten_thiet_bi }}</small>
+                        {% endif %}
+
+                        {% if item.is_archived_project %}<small class="knw04-archive-note">Dự án đã lưu trữ · chỉ xử lý theo phân công còn hiệu lực</small>{% endif %}
+                        {% if item.has_existing_lesson %}<small class="knw04-error-note">Nguồn đã có bài học logic (kể cả bài xóa mềm)</small>{% endif %}
+                    </td>
+                    <td>{{ item.bai_viet_nguon.du_an.ten_du_an }}</td>
+                    <td>
+                        {% if item.trang_thai == 'cho_danh_gia' %}
+                            <span class="knw04-status knw04-status--pending">Chờ đánh giá</span>
+                        {% elif item.trang_thai == 'cho_danh_gia_lai' %}
+                            <span class="knw04-status knw04-status--reopen">Chờ đánh giá lại</span>
+                        {% elif item.trang_thai == 'khong_tao_bai_hoc' %}
+                            <span class="knw04-status knw04-status--no">Không chuyển thành bài học</span>
+                        {% else %}
+                            <span class="knw04-status knw04-status--done">Đã chuẩn hóa bài học</span>
+                        {% endif %}
+                        {% if item.danh_gia_luc %}
+                            <small>{{ item.danh_gia_luc|date:"d/m/Y H:i" }} · {{ item.nguoi_danh_gia|ho_ten }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.trang_thai == 'cho_danh_gia' or item.trang_thai == 'cho_danh_gia_lai' %}
+                            {% if item.has_existing_lesson %}
+                                <span class="knw04-muted">Không thể tạo trùng</span>
+                            {% else %}
+                                <a class="knw04-action" href="{% url 'knowledge:normalize_lesson' item.pk %}">Mở nguồn</a>
+                            {% endif %}
+                        {% elif item.trang_thai == 'da_tao_bai_hoc' and item.bai_hoc_id %}
+                            <a class="knw04-action" href="{% url 'knowledge:lesson_detail' item.bai_hoc_id %}">Xem bài học</a>
+                        {% elif item.trang_thai == 'khong_tao_bai_hoc' %}
+                            <span class="knw04-muted">Có thể đánh giá lại</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr class="knw04-history-row">
+                    <td colspan="4">
+                        <details class="knw04-history">
+                            <summary>Lịch sử đánh giá ({{ item.history_entries|length }} lượt/sự kiện)</summary>
+                            {% if item.history_entries %}
+                                <div class="knw04-history-list">
+                                    {% for entry in item.history_entries %}
+                                        <article class="knw04-history-item">
+                                            <div class="knw04-history-head"><strong>{{ entry.status_label|default:entry.outcome }}</strong><span>{{ entry.time_display }}</span></div>
+                                            <p><b>Người thực hiện:</b> {{ entry.actor }}</p>
+                                            {% if entry.reason %}<p><b>Lý do:</b> {{ entry.reason }}</p>{% endif %}
+                                            {% if entry.outcome %}<p><b>Kết quả:</b> {{ entry.outcome }}</p>{% endif %}
+                                            {% if entry.legacy %}<small>Dữ liệu đánh giá có từ trước khi bổ sung nhật ký chi tiết.</small>{% endif %}
+                                        </article>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="knw04-muted">Chưa có lịch sử đánh giá.</p>
+                            {% endif %}
+                        </details>
+                        {% if item.trang_thai == 'khong_tao_bai_hoc' and not item.has_existing_lesson %}
+                            <form method="post" action="{% url 'knowledge:reopen_review' item.pk %}" class="knw04-reopen-form">
+                                {% csrf_token %}
+                                <label for="reopen-{{ item.pk }}">Lý do đánh giá lại</label>
+                                <input id="reopen-{{ item.pk }}" type="text" name="reopen_reason" required maxlength="1000" placeholder="Nêu căn cứ cần đánh giá lại...">
+                                <button type="submit">Đánh giá lại</button>
+                            </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="knw04-empty-cell">
+                        {% if active_assignment_count == 0 %}
+                            <strong>Chưa có phân công phụ trách tri thức</strong>
+                            <p>Tài khoản hiện tại chưa được phân công dự án để đánh giá nguồn.</p>
+                        {% else %}
+                            <strong>Không có nguồn theo phạm vi của bạn</strong>
+                            <p>Không có nguồn phù hợp với trạng thái hoặc từ khóa hiện tại.</p>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

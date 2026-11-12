@@ -1,0 +1,21 @@
+{% extends "projects/project_detail.html" %}
+
+{% block project_notice %}
+    <div class="notice">
+        <strong>Dự án đã lưu trữ</strong>
+
+        <p>
+            Bạn đang xem thông tin và hoạt động đã ghi nhận
+            theo quyền hiện hành.
+        </p>
+
+        <p>
+            Thời điểm lưu trữ
+            {{ project.luu_tru_luc|date:"d/m/Y H:i" }}
+        </p>
+    </div>
+{% endblock %}
+
+{% block activity_heading %}
+    Hoạt động đã ghi nhận
+{% endblock %}

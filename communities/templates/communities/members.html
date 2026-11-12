@@ -1,0 +1,66 @@
+{% extends "communities/_base.html" %}
+{% load ozzone_names %}
+{% block title %}Thành viên {{ community.ten_cong_dong }} | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  {% with crumb="Thành viên" %}{% include "communities/_community_head.html" %}{% endwith %}
+  {% if locked %}
+    <div class="oz-alert oz-alert-warn"><p class="oz-alert-title">Danh sách dành cho thành viên</p><p>Tham gia cộng đồng để xem danh sách thành viên.</p></div>
+  {% else %}
+    <form method="get" class="oz-searchbar">
+      <span class="oz-field-search">
+        <svg class="oz-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+             stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z"/>
+          <path d="M12.5 12.5L17.5 17.5"/>
+        </svg>
+        <input class="oz-input" type="search" name="q" value="{{ form.q.value|default:'' }}" placeholder="Tìm theo tên hoặc chuyên môn" aria-label="Tìm thành viên">
+      </span>
+      <select class="oz-input" name="vai_tro" style="flex:0 0 190px" aria-label="Vai trò">
+        {% for v, label in form.fields.vai_tro.choices %}<option value="{{ v }}" {% if form.vai_tro.value == v %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button class="oz-btn" type="submit">Lọc</button>
+    </form>
+
+    <section class="oz-card">
+      <h2 class="oz-card-title">{{ rows|length }} thành viên</h2>
+      {% if rows %}
+      <div class="cm-table-scroll" role="region" aria-label="Danh sách thành viên" tabindex="0">
+    <table class="oz-table">
+        <thead><tr><th>Họ tên</th><th>Chuyên môn</th><th>Vai trò</th><th>Tham gia từ</th><th>Thao tác</th></tr></thead>
+        <tbody>
+        {% for m in rows %}{% with hs=m.nguoi_dung.ho_so_nhan_vien %}
+          <tr>
+            <td><div style="display:flex;gap:10px;align-items:center"><span class="oz-avatar-sm">{% if m.nguoi_dung.first_name or m.nguoi_dung.last_name %}{{ m.nguoi_dung.last_name|first|upper }}{{ m.nguoi_dung.first_name|first|upper }}{% else %}{{ m.nguoi_dung.username|slice:":2"|upper }}{% endif %}</span><span>{{ m.nguoi_dung|ho_ten }}{% if m.nguoi_dung == request.user %} <span class="oz-muted oz-small">(bạn)</span>{% endif %}<span class="oz-cell-sub">{% if hs %}{{ hs.phong_ban.ten_phong_ban }}{% endif %}</span></span></div></td>
+            <td>{% if hs %}{{ hs.vi_tri.ten_vi_tri }}{% else %}—{% endif %}</td>
+            <td><span class="oz-badge {% if m.vai_tro == 'chu_so_huu' %}{% elif m.vai_tro == 'kiem_duyet_vien' %}oz-badge-blue{% else %}oz-badge-muted{% endif %}">{{ m.get_vai_tro_display }}</span></td>
+            <td>{{ m.ngay_tham_gia|date:"d/m/Y" }}</td>
+            <td>
+              {% if hs %}<a class="oz-link" href="{% url 'accounts:employee' m.nguoi_dung.username %}">Hồ sơ</a>{% endif %}
+              {% if is_owner and m.can_receive_owner and m.vai_tro != 'chu_so_huu' and m.nguoi_dung != request.user %}
+                <details class="cm-reject">
+                  <summary class="oz-link">Bàn giao chủ sở hữu</summary>
+                  <form method="post" action="{% url 'communities:transfer' community.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="member_id" value="{{ m.pk }}">
+                    <p class="oz-small" style="margin:0 0 6px">{{ m.nguoi_dung|ho_ten }} sẽ trở thành chủ sở hữu; bạn chuyển thành thành viên.</p>
+                    <label class="oz-small"><input type="checkbox" name="confirm" value="1" required> Tôi xác nhận bàn giao</label>
+                    <button class="oz-btn oz-btn-primary oz-btn-sm" type="submit">Bàn giao</button>
+                  </form>
+                </details>
+              {% endif %}
+            </td>
+          </tr>
+        {% endwith %}{% endfor %}
+        </tbody>
+      </table>
+    </div>
+      {% else %}
+        <p class="oz-empty">Không có thành viên phù hợp.</p>
+      {% endif %}
+    </section>
+    {% if is_project %}<p class="oz-muted oz-small">Tư cách và vai trò dự án được quản lý tại Dự án. Chủ sở hữu cộng đồng bàn giao trách nhiệm tại đây.</p>{% endif %}
+  {% endif %}
+</div>
+{% endblock %}

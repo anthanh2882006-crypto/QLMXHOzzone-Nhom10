@@ -1,0 +1,30 @@
+{% load ozzone_names %}
+<div class="social-comment">
+    <div class="social-comment-avatar">{{ comment.nguoi_dung.username|slice:':2'|upper }}</div>
+    <div class="social-comment-main">
+        <div class="social-comment-bubble">
+            <strong>{{ comment.nguoi_dung|ho_ten }}</strong>
+            <p>{{ comment.noi_dung|linebreaksbr }}</p>
+        </div>
+        <div class="social-comment-meta"><time>{{ comment.ngay_tao|date:'d/m/Y H:i' }}</time></div>
+        {% if can_interact %}
+        <details class="social-reply-details">
+            <summary>Trả lời</summary>
+            <form method="post" action="{% url 'social:comment_create' post.pk %}" class="social-reply-form">
+                {% csrf_token %}
+                <input type="hidden" name="request_token" value="{{ comment.reply_token }}">
+                <input type="hidden" name="binh_luan_cha" value="{{ comment.pk }}">
+                <textarea name="noi_dung" rows="2" maxlength="5000" required placeholder="Viết câu trả lời..."></textarea>
+                <button class="social-button social-button-small social-button-primary" type="submit">Gửi trả lời</button>
+            </form>
+        </details>
+        {% endif %}
+        {% if comment.replies %}
+            <div class="social-replies">
+                {% for reply in comment.replies %}
+                    {% include "social/_comment.html" with comment=reply post=post %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,121 @@
+{% extends "projects/manage_base.html" %}
+{% block workspace_content %}
+    {% if add_url %}
+        <div class="pm-actions">
+            <a class="pm-button" href="{{ add_url }}">
+                {{ add_label }}
+            </a>
+        </div>
+    {% endif %}
+    <div class="pm-info">
+        <strong>
+            Phạm vi: {{ project.ten_du_an }}
+        </strong>
+        <p>
+            Thao tác tại đây không thay đổi vai trò hoặc dữ liệu của dự án khác.
+        </p>
+    </div>
+    <section class="pm-panel">
+        <form method="get" class="pm-filter">
+            <div class="pm-field">
+                <label for="pm-q">
+                    Tìm kiếm
+                </label>
+                <input id="pm-q" name="q" value="{{ q }}" maxlength="100">
+            </div>
+            <div class="pm-field">
+                <label for="pm-status">
+                    Trạng thái
+                </label>
+                <select id="pm-status" name="status">
+                    <option value="">
+                        Tất cả
+                    </option>
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button class="pm-button" type="submit">
+                Tìm kiếm
+            </button>
+            <a href="{{ request.path }}">
+                Xóa bộ lọc
+            </a>
+        </form>
+        <p class="pm-caption">
+            {{ page_obj.paginator.count }} kết quả
+        </p>
+        <div class="pm-table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        {% for column in columns %}
+                            <th scope="col">
+                                {{ column }}
+                            </th>
+                        {% endfor %}
+                        <th scope="col">
+                            Thao tác
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr>
+                            {% for cell in row.cells %}
+                                <td>
+                                    {{ cell }}
+                                </td>
+                            {% endfor %}
+                            <td>
+                                <div class="pm-actions">
+                                    {% if row.view_url %}
+                                        <a href="{{ row.view_url }}">
+                                            Xem thiết bị
+                                        </a>
+                                    {% endif %}
+                                    {% if row.edit_url %}
+                                        <a href="{{ row.edit_url }}">
+                                            Điều chỉnh
+                                        </a>
+                                    {% endif %}
+                                    {% if row.end_url %}
+                                        <a href="{{ row.end_url }}">
+                                            Kết thúc tư cách
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">
+                                Chưa có dữ liệu phù hợp.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if page_obj.has_other_pages %}
+            <nav class="pm-actions" aria-label="Phân trang">
+                {% if page_obj.has_previous %}
+                    <a href="?q={{ q|urlencode }}&status={{ status|urlencode }}&page={{ page_obj.previous_page_number }}">
+                        Trước
+                    </a>
+                {% endif %}
+                <span>
+                    Trang {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}
+                </span>
+                {% if page_obj.has_next %}
+                    <a href="?q={{ q|urlencode }}&status={{ status|urlencode }}&page={{ page_obj.next_page_number }}">
+                        Sau
+                    </a>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </section>
+{% endblock %}

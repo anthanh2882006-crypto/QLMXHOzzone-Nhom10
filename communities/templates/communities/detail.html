@@ -1,0 +1,97 @@
+{% extends "communities/_base.html" %}
+{% block title %}{{ community.ten_cong_dong }} | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  {% include "communities/_community_head.html" %}
+
+  {% if project and project.trang_thai == 'luu_tru' %}
+    <div class="oz-alert oz-alert-warn"><p class="oz-alert-title">Dự án đã lưu trữ</p><p>Cộng đồng chỉ còn chế độ đọc.</p></div>
+  {% endif %}
+
+  {% if not membership %}
+    {% if community.loai_cong_dong == 'du_an' %}
+      <div class="oz-alert"><p class="oz-alert-title">Cộng đồng dự án</p><p>Tư cách thành viên được quản lý qua dự án liên kết.</p></div>
+    {% elif is_suspended %}
+      <div class="oz-alert oz-alert-warn">
+        <p class="oz-alert-title">Tư cách thành viên đang tạm dừng</p>
+        <p>Liên hệ Chủ sở hữu cộng đồng để được xem xét tư cách.</p>
+      </div>
+    {% elif pending %}
+      <div class="oz-alert oz-alert-warn" id="yeu-cau">
+        <p class="oz-alert-title">Yêu cầu tham gia đang chờ duyệt</p>
+        <p>Gửi lúc {{ pending.ngay_tao|date:"H:i d/m/Y" }}. Chủ sở hữu cộng đồng sẽ xem xét.</p>
+        <form method="post" action="{% url 'communities:cancel_request' pending.pk %}" class="oz-inline-form">{% csrf_token %}<button class="oz-btn oz-btn-sm" type="submit">Hủy yêu cầu</button></form>
+      </div>
+    {% else %}
+      <div class="oz-alert">
+        <p class="oz-alert-title">Bạn chưa là thành viên</p>
+        {% if community.quy_tac_tham_gia == 'truc_tiep' %}
+          <p>Cộng đồng mở: tham gia ngay để đăng bài và trao đổi.</p>
+        {% else %}
+          <p>Gửi yêu cầu và nêu lý do để người phụ trách xem xét.</p>
+        {% endif %}
+      </div>
+      <section class="oz-card" id="yeu-cau">
+        <h2 class="oz-card-title">{% if community.quy_tac_tham_gia == 'truc_tiep' %}Tham gia cộng đồng{% else %}Yêu cầu tham gia{% endif %}</h2>
+        <form method="post" action="{% url 'communities:join' community.pk %}">
+          {% csrf_token %}
+          {% if community.quy_tac_tham_gia != 'truc_tiep' %}
+          <div class="oz-field" style="max-width:480px">
+            <label for="{{ join_form.loi_nhan.id_for_label }}">{{ join_form.loi_nhan.label }}</label>
+            {{ join_form.loi_nhan }}
+            {% for error in join_form.loi_nhan.errors %}<p class="oz-error">{{ error }}</p>{% endfor %}
+          </div>
+          {% endif %}
+          <div class="oz-actions">
+            <button class="oz-btn oz-btn-primary" type="submit">{% if community.quy_tac_tham_gia == 'truc_tiep' %}Tham gia{% else %}Gửi yêu cầu{% endif %}</button>
+            <a class="oz-btn" href="{% url 'communities:list' %}">Về khám phá</a>
+          </div>
+        </form>
+      </section>
+    {% endif %}
+  {% endif %}
+
+  {% if can_read %}
+    {% if can_post %}
+      <a class="cm-composer" href="{% url 'communities:post_create' community.pk %}">
+        <span class="oz-avatar-sm">{% if request.user.first_name or request.user.last_name %}{{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}</span>
+        <span>Chia sẻ điều gì đó với {{ community.ten_cong_dong }}...</span>
+        <span class="oz-btn oz-btn-primary oz-btn-sm">+ Đăng trong cộng đồng</span>
+      </a>
+    {% elif not membership %}
+      <p class="oz-muted oz-small">Bạn đang xem ở chế độ chỉ đọc. Tham gia cộng đồng để đăng bài.</p>
+    {% endif %}
+
+    {% for post in posts %}
+      <article id="post-{{ post.pk }}" class="oz-card cm-post oz-feed-post {% if post.da_ghim %}is-pinned{% endif %}">
+        {% if post.da_ghim %}<p class="cm-pin">📌 Đã ghim</p>{% endif %}
+        {% include "includes/post_header.html" with post_scope=community.ten_cong_dong %}
+        {% if post.tieu_de %}<h2 class="cm-post-title">{{ post.tieu_de }}</h2>{% endif %}
+        <p class="cm-post-body">{{ post.noi_dung|truncatechars:320|linebreaksbr }}</p>
+        {% include "includes/post_actions.html" %}
+        <div class="cm-post-foot">
+          {% if can_moderate %}
+          <form method="post" action="{% url 'communities:moderate' community.pk post.pk %}" class="oz-inline-form cm-quick">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+            {% if post.da_ghim %}<button class="oz-link" name="action" value="unpin">Bỏ ghim</button>{% else %}<button class="oz-link" name="action" value="pin">Ghim</button>{% endif %}
+          </form>
+          {% endif %}
+        </div>
+      </article>
+    {% empty %}
+      <div class="oz-card"><p class="oz-empty">Cộng đồng chưa có bài đăng nào.</p></div>
+    {% endfor %}
+
+  {% elif not membership %}
+    <section class="oz-card">
+      <h2 class="oz-card-title">Giới thiệu</h2>
+      <dl class="oz-dl">
+        <dt>Mô tả</dt><dd>{{ community.mo_ta|default:"—" }}</dd>
+        <dt>Thành viên</dt><dd>{{ member_count }} người</dd>
+        <dt>Tham gia</dt><dd>{{ community.get_quy_tac_tham_gia_display }}</dd>
+      </dl>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

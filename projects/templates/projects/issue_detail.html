@@ -1,0 +1,235 @@
+{% extends "projects/base.html" %}
+{% load ozzone_names %}
+{% block project_content %}
+    <header class="pm-heading">
+        <div class="pm-heading-main">
+            <h1>{{ page_title }}</h1>
+            <p class="pm-muted">
+                {{ project.ten_du_an }}
+                {% if post.ma_the_thiet_bi %}
+                    / {{ post.ma_the_thiet_bi.ma_thiet_bi }}
+                {% endif %}
+                / PRB-{{ post.pk }}
+            </p>
+        </div>
+        {% include "projects/_issue_state.html" %}
+    </header>
+    <nav class="pm-tabs" aria-label="Các phần xử lý" data-project-tabs>
+        <a id="tab-issue" href="#issue">Vấn đề</a>
+        <a id="tab-analysis" href="#analysis">Phân tích</a>
+        <a id="tab-solutions" href="#solutions">Phương án</a>
+        <a id="tab-trials" href="#trials">Thử thực tế / Kết quả</a>
+        <a id="tab-resolution" href="#resolution">Kết luận</a>
+        <a id="tab-knowledge" href="#knowledge">Tri thức</a>
+    </nav>
+    <div class="pm-workspace">
+        <div class="pm-stack">
+            <section class="pm-panel pm-tab-panel" id="issue" data-project-panel>
+                <h2>Hiện trạng và nguồn</h2>
+                <p class="pm-caption">
+                    {{ post.nguoi_dang|ho_ten }}
+                    · {{ post.ngay_tao|date:"d/m/Y H:i" }}
+                </p>
+                <div>{{ post.noi_dung|linebreaks }}</div>
+                {% include "projects/_attachments.html" %}
+            </section>
+            <section class="pm-panel pm-tab-panel" id="analysis" data-project-panel>
+                <h2>Phân tích và trao đổi</h2>
+                {% for row in comments %}
+                    <article class="pm-comment">
+                        <p class="pm-caption">
+                            {{ row.comment.nguoi_dung|ho_ten }}
+                            · {{ row.comment.ngay_tao|date:"d/m/Y H:i" }}
+                        </p>
+                        <div>{{ row.comment.noi_dung|linebreaks }}</div>
+                        {% include "projects/_attachments.html" with attachments=row.attachments %}
+                    </article>
+                {% empty %}
+                    <p>Chưa có phân tích.</p>
+                {% endfor %}
+                {% if open_issue %}
+                    <a class="pm-button pm-fit"
+                       href="{% url 'projects:analysis_create' project.pk post.pk %}">Gửi trao đổi</a>
+                {% endif %}
+            </section>
+            <section class="pm-panel pm-tab-panel" id="solutions" data-project-panel>
+                <h2>Phương án xử lý</h2>
+                {% for row in solutions %}
+                    <article class="pm-comment">
+                        <h3>PA-{{ row.solution.pk }}</h3>
+                        <p class="pm-caption">
+                            {{ row.solution.nguoi_de_xuat|ho_ten }}
+                        </p>
+                        <div>{{ row.solution.noi_dung_phuong_an|linebreaks }}</div>
+                        <p>
+                            <strong>Cơ sở đề xuất</strong>
+                            {{ row.solution.co_so_de_xuat }}
+                        </p>
+                        {% include "projects/_attachments.html" with attachments=row.attachments %}
+                        {% if can_choose %}
+                            <a class="pm-button pm-secondary"
+                               href="{% url 'projects:trial_create' project.pk row.solution.pk %}">Chọn thử</a>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <p>Chưa có phương án.</p>
+                {% endfor %}
+                {% if open_issue %}
+                    <a class="pm-button pm-fit"
+                       href="{% url 'projects:solution_create' project.pk post.pk %}">+ Đề xuất phương án</a>
+                {% endif %}
+            </section>
+            <section class="pm-panel pm-tab-panel" id="trials" data-project-panel>
+                <h2>Lần thử và kết quả</h2>
+                {% for row in trials %}
+                    <article class="pm-comment" id="trial-{{ row.trial.pk }}">
+                        <h3>
+                            PA-{{ row.trial.phuong_an_id }}
+                            · Lần thử {{ row.trial.so_lan }}
+                        </h3>
+                        <p>
+                            {{ row.trial.get_trang_thai_display }}
+                            ·
+                            {% if row.trial.nguoi_thuc_hien %}
+                                {{ row.trial.nguoi_thuc_hien|ho_ten }}
+                            {% else %}
+                                Chưa xác định người thực hiện
+                            {% endif %}
+                        </p>
+                        {% if row.result %}
+                            <p>
+                                <span class="pm-badge {% if row.result.thanh_cong %}pm-green{% else %}pm-amber{% endif %}">
+                                    {% if row.result.thanh_cong %}
+                                        Thành công
+                                    {% else %}
+                                        Chưa thành công
+                                    {% endif %}
+                                </span>
+                            </p>
+                            <div>{{ row.result.mo_ta_ket_qua|linebreaks }}</div>
+                            <p class="pm-caption">
+                                Hoàn tất {{ row.result.hoan_tat_luc|date:"d/m/Y H:i" }}
+                                · Ghi nhận {{ row.result.ngay_ghi_nhan|date:"d/m/Y H:i" }}
+                                · {{ row.result.nguoi_ghi_nhan|ho_ten }}
+                            </p>
+                            {% include "projects/_attachments.html" with attachments=row.attachments %}
+                        {% endif %}
+                        <div class="pm-actions">
+                            {% if row.can_record %}
+                                <a class="pm-button"
+                                   href="{% url 'projects:result_create' project.pk row.trial.pk %}">
+                                    Ghi nhận kết quả
+                                </a>
+                            {% endif %}
+                            {% if row.can_assign %}
+                                <a class="pm-button pm-secondary"
+                                   href="{% url 'projects:trial_assign' project.pk row.trial.pk %}">
+                                    Xác định người thực hiện
+                                </a>
+                            {% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <p>Chưa có lần thử. Phương án chỉ được thử khi có lựa chọn hợp lệ.</p>
+                {% endfor %}
+            </section>
+            <section class="pm-panel pm-tab-panel" id="resolution" data-project-panel>
+                <h2>Kết luận xử lý</h2>
+                {% if conclusion %}
+                    <div>{{ conclusion.noi_dung_ket_luan|linebreaks }}</div>
+                    <p>
+                        Căn cứ PA-{{ conclusion.ket_qua.lan_thu.phuong_an_id }}
+                        · Lần {{ conclusion.ket_qua.lan_thu.so_lan }}
+                    </p>
+                    <p class="pm-caption">
+                        {{ conclusion.nguoi_de_nghi|ho_ten }}
+                        · {{ conclusion.ngay_xac_nhan|date:"d/m/Y H:i" }}
+                    </p>
+                    {% if queue %}
+                        <div class="pm-info">
+                            {{ queue.get_trang_thai_display }}
+                            {% if queue.ly_do_cho %}
+                                · {{ queue.ly_do_cho }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <p>Chưa có kết luận xử lý.</p>
+                    {% if can_resolve %}
+                        <a class="pm-button pm-fit"
+                           href="{% url 'projects:resolution_create' project.pk post.pk %}">Đề nghị kết luận xử lý</a>
+                    {% endif %}
+                {% endif %}
+            </section>
+            <section class="pm-panel pm-tab-panel" id="knowledge" data-project-panel>
+                <h2>Tình trạng xem xét tri thức</h2>
+                {% if conclusion %}
+                    <p>
+                        Kết luận kỹ thuật đã được ghi nhận. Việc đánh giá và chuẩn hóa tri thức được thực hiện theo phân công và quyền đọc nguồn riêng.
+                    </p>
+                    {% if queue %}
+                        <div class="pm-info">
+                            {{ queue.get_trang_thai_display }}
+                            {% if queue.ly_do_cho %}
+                                · {{ queue.ly_do_cho }}
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p>Chưa có thông tin hàng chờ được phép hiển thị.</p>
+                    {% endif %}
+                {% else %}
+                    <p>Nguồn chưa có kết luận xử lý làm căn cứ xem xét tri thức.</p>
+                {% endif %}
+                <a href="{% url 'projects:history' project.pk %}">Xem lịch sử dự án</a>
+            </section>
+        </div>
+        <aside class="pm-context" aria-label="Trạng thái và ngữ cảnh vấn đề">
+            <section class="pm-panel">
+                <h2>Trạng thái hiện tại</h2>
+                {% include "projects/_issue_state.html" %}
+                {% if post.trang_thai_xu_ly == "da_giai_quyet" %}
+                    <p>Đã có kết luận xử lý. Lịch sử phương án, kết quả và minh chứng được giữ.</p>
+                {% elif post.ui_pending %}
+                    <p>
+                        Phương án đã được chọn thử. Thực hiện và kiểm tra tại hiện trường, sau đó ghi nhận kết quả của đúng lần thử.
+                    </p>
+                {% elif post.ui_success %}
+                    <p>Đã có kết quả thành công. Người có trách nhiệm có thể đối chiếu căn cứ để đề nghị kết luận.</p>
+                {% elif post.ui_failed %}
+                    <p>Giữ kết quả chưa thành công; tiếp tục phân tích hoặc xác nhận một lần thử mới.</p>
+                {% else %}
+                    <p>Phân tích nguyên nhân và đề xuất phương án để thử thực tế.</p>
+                {% endif %}
+                {% if can_resolve %}
+                    <a href="{% url 'projects:resolution_create' project.pk post.pk %}">Đề nghị kết luận xử lý</a>
+                {% endif %}
+            </section>
+            <section class="pm-panel">
+                <h2>Ngữ cảnh</h2>
+                <dl class="pm-details">
+                    <dt>Dự án</dt>
+                    <dd>
+                        {{ project.ten_du_an }}
+                    </dd>
+                    <dt>Thiết bị</dt>
+                    <dd>
+                        {{ post.ma_the_thiet_bi.ma_thiet_bi|default:"Không gắn thiết bị" }}
+                    </dd>
+                    <dt>Tài sản tại thời điểm ghi</dt>
+                    <dd>
+                        {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa gắn tài sản" }}
+                    </dd>
+                    <dt>Người tạo</dt>
+                    <dd>
+                        {{ post.nguoi_dang|ho_ten }}
+                    </dd>
+                </dl>
+            </section>
+            <section class="pm-panel">
+                <h2>Lịch sử xử lý</h2>
+                <p>Đọc lại diễn biến và nguồn theo quyền hiện hành.</p>
+                <a href="{% url 'projects:history' project.pk %}">Xem lịch sử dự án</a>
+            </section>
+        </aside>
+    </div>
+{% endblock %}

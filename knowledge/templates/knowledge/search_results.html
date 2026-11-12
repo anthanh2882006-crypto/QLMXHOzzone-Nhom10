@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Kết quả tra cứu | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:search' %}" aria-current="page">Tra cứu</a>
+    <a class="knw-side-item {% if filters.kind == 'lesson' %}active{% endif %}" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item {% if filters.kind == 'article' %}active{% endif %}" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item" href="{% url 'knowledge:support' %}?context={{ filters.q|urlencode }}&amp;project={{ filters.project|urlencode }}">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="knw-page knw-results-page">
+    {% if requires_login %}
+        <section class="knw-login-notice">
+            <h2>Vui lòng đăng nhập</h2>
+            <p>Bạn cần đăng nhập để xem kết quả tra cứu trong phạm vi được cấp quyền.</p>
+            <a class="knw-button" href="{% url 'accounts:login' %}?next={% url 'knowledge:search' %}">Đăng nhập</a>
+        </section>
+    {% else %}
+        <div class="knw-page-title-row">
+            <a class="knw-back-button" href="{% url 'knowledge:list' %}">← Quay lại</a>
+            <div>
+                <h1>Kết quả tra cứu</h1>
+                <p>Từ khóa: {{ query|default:"Tất cả tri thức được phép xem" }}</p>
+            </div>
+        </div>
+
+        <form method="get" action="{% url 'knowledge:search' %}" class="knw-search knw-search--results">
+            <input type="search" name="q" value="{{ filters.q }}" placeholder="Nhập từ khóa tra cứu..." aria-label="Từ khóa tra cứu">
+            <input type="hidden" name="kind" value="{{ filters.kind }}">
+            <input type="hidden" name="project" value="{{ filters.project }}">
+            <input type="hidden" name="device" value="{{ filters.device }}">
+            <input type="hidden" name="topic" value="{{ filters.topic }}">
+            <input type="hidden" name="period" value="{{ filters.period }}">
+            <button type="submit">Tìm kiếm</button>
+        </form>
+
+        <div class="knw-results-layout">
+            <aside class="knw-filter-summary">
+                <h3>Bộ lọc</h3>
+                <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Loại nội dung</a>
+                <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Dự án</a>
+                <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Thiết bị</a>
+                <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Chủ đề</a>
+                <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Thời gian</a>
+                {% if filters.invalid_project or filters.invalid_topic %}
+                    <p class="knw-filter-error">Phạm vi lọc không hợp lệ hoặc nằm ngoài quyền truy cập.</p>
+                {% endif %}
+            </aside>
+
+            <section class="knw-result-list">
+                <div class="knw-result-list-heading">
+                    <h2>Kết quả phù hợp</h2>
+                    <span>{{ result_count }} kết quả</span>
+                </div>
+
+                {% for item in search_results %}
+                    <article class="knw-result-item">
+                        <span class="knw-result-badge {% if item.kind == 'conclusion' %}knw-result-badge--conclusion{% endif %}">{{ item.badge }}</span>
+                        <h3>
+                            {% if item.kind == "lesson" %}
+                                <a href="{% url 'knowledge:lesson_detail' item.object_id %}">{{ item.title }}</a>
+                            {% elif item.kind == "article" %}
+                                <a href="{% url 'knowledge:article_detail' item.object_id %}">{{ item.title }}</a>
+                            {% else %}
+                                <a href="{{ item.open_url }}">{{ item.title }}</a>
+                            {% endif %}
+                        </h3>
+                        <p>{{ item.summary|truncatechars:220 }}</p>
+                        <div class="knw-result-meta">{{ item.context }} · Cập nhật {{ item.date|date:"d/m/Y" }}</div>
+                        {% if item.kind == "lesson" %}
+                            <a class="knw-open-detail" href="{% url 'knowledge:lesson_detail' item.object_id %}">Đọc bài học kinh nghiệm →</a>
+                        {% elif item.kind == "article" %}
+                            <a class="knw-open-detail" href="{% url 'knowledge:article_detail' item.object_id %}">Đọc bài viết tri thức →</a>
+                        {% else %}
+                            <a class="knw-open-detail" href="{{ item.open_url }}">Xem kết luận xử lý →</a>
+                        {% endif %}
+                    </article>
+                {% empty %}
+                    <div class="knw-empty">
+                        <h3>Chưa có nội dung phù hợp</h3>
+                        <p>Hãy thử thay đổi từ khóa hoặc bộ lọc. Kết quả chỉ bao gồm nội dung bạn được phép xem.</p>
+                    </div>
+                {% endfor %}
+
+                {% if has_previous or has_next %}
+                    <nav class="knw-pagination" aria-label="Phân trang kết quả">
+                        {% if has_previous %}
+                            <a href="?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}&page={{ page_number|add:'-1' }}">← Trang trước</a>
+                        {% endif %}
+                        <span>Trang {{ page_number }}</span>
+                        {% if has_next %}
+                            <a href="?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}&page={{ page_number|add:'1' }}">Trang sau →</a>
+                        {% endif %}
+                    </nav>
+                {% endif %}
+
+                <a class="knw-support-cta" href="{% url 'knowledge:support' %}?context={{ filters.q|urlencode }}&amp;project={{ filters.project|urlencode }}">Chưa đủ thông tin? <strong>Tìm người hỗ trợ</strong></a>
+            </section>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

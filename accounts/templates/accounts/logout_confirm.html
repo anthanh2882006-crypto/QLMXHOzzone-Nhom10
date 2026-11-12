@@ -1,0 +1,19 @@
+{% extends "accounts/_base.html" %}
+{% block title %}Đăng xuất | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <p class="oz-breadcrumb">Tài khoản / Đăng xuất khỏi OZZONE?</p>
+  <h1 class="oz-page-title">Đăng xuất khỏi OZZONE?</h1>
+  <div class="oz-alert oz-alert-warn">
+    <p class="oz-alert-title">Kết thúc phiên làm việc hiện tại</p>
+    <p>Bạn cần đăng nhập lại để truy cập dữ liệu nội bộ. Hãy lưu các nội dung đang soạn trước khi tiếp tục.</p>
+    <div class="oz-actions" style="margin-top:10px">
+      <form method="post" class="oz-inline-form">
+        {% csrf_token %}
+        <button type="submit" class="oz-btn oz-btn-danger">Xác nhận đăng xuất</button>
+      </form>
+      <a class="oz-btn" href="{% url 'accounts:after_login' %}">Tiếp tục làm việc</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

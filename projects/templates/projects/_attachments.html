@@ -1,0 +1,14 @@
+{% if attachments %}
+    <ul class="pm-files">
+        {% for item in attachments %}
+            <li>
+                <a href="{% url 'projects:file' project.pk item.tep_tin_id %}">
+                    {{ item.tep_tin.ten_tep }}
+                </a>
+                <small>
+                    {{ item.tep_tin.kich_thuoc|filesizeformat }}
+                </small>
+            </li>
+        {% endfor %}
+    </ul>
+{% endif %}

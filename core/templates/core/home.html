@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+
+{% url 'social:feed' as social_feed_url %}
+{% url 'social:saved' as saved_posts_url %}
+{% url 'projects:list' as projects_url %}
+{% url 'communities:list' as communities_url %}
+{% url 'knowledge:list' as knowledge_url %}
+{% url 'notifications:list' as notices_url %}
+{% url 'accounts:directory' as directory_url %}
+
+{% block title %}Trang chủ | OZZONE{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'core/css/home.css' %}?v=20261111-social-ui1">
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+{% endblock %}
+
+{% block main_class %}oz-home-main{% endblock %}
+
+{% block content %}
+<div class="home-page">
+    <!-- GD-003 / Chào người dùng -->
+    <section class="home-welcome" aria-labelledby="welcome-title">
+        <div class="home-welcome-copy">
+            <h1 id="welcome-title">Chào, {{ first_name }}!</h1>
+            <p class="home-welcome-subtitle">Tiếp tục công việc, cập nhật thông tin và kết nối với đồng nghiệp.</p>
+        </div>
+        <div class="home-welcome-actions">
+            {% if can_post %}
+                <button class="home-button home-button-primary" type="button" data-post-modal-open>
+                    <span class="home-button-icon" aria-hidden="true">＋</span>
+                    Tạo bài viết
+                </button>
+            {% else %}
+                <span class="home-button home-button-primary is-disabled" aria-disabled="true" title="Tài khoản chưa có quyền đăng bài cá nhân">
+                    <span class="home-button-icon" aria-hidden="true">＋</span>
+                    Tạo bài viết
+                </span>
+            {% endif %}
+            {% if communities_url %}
+                <a class="home-button home-button-outline" href="{{ communities_url }}">Khám phá cộng đồng</a>
+            {% else %}
+                <span class="home-button home-button-outline is-disabled" aria-disabled="true">Khám phá cộng đồng</span>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- GD-003 / Lối tắt -->
+    <section class="home-panel home-shortcuts" aria-labelledby="shortcuts-title">
+        <div class="home-section-heading home-shortcuts-heading">
+            <div>
+                <h2 id="shortcuts-title">LỐI TẮT NHANH</h2>
+            </div>
+        </div>
+        <div class="shortcut-grid">
+            {% if can_post %}
+                <button class="shortcut-item" type="button" data-post-modal-open>
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Tài khoản chưa có quyền đăng bài cá nhân">
+            {% endif %}
+                <span class="shortcut-icon shortcut-green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+                <span>Bài viết mới</span>
+            {% if can_post %}</button>{% else %}</span>{% endif %}
+
+            {% if projects_url %}
+                <a class="shortcut-item" href="{{ projects_url }}">
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Đang tích hợp">
+            {% endif %}
+                <span class="shortcut-icon shortcut-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 7.5h6l2 2h9v9.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/><path d="M3.5 7.5V5.8a1.3 1.3 0 0 1 1.3-1.3h4.4l2 2h5.3"/></svg></span>
+                <span>Dự án của tôi</span>
+            {% if projects_url %}</a>{% else %}</span>{% endif %}
+
+            {% if notices_url %}
+                <a class="shortcut-item" href="{{ notices_url }}">
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Đang tích hợp">
+            {% endif %}
+                <span class="shortcut-icon shortcut-amber" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg></span>
+                <span>Thông báo</span>
+            {% if notices_url %}</a>{% else %}</span>{% endif %}
+
+            {% if knowledge_url %}
+                <a class="shortcut-item" href="{{ knowledge_url }}">
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Đang tích hợp">
+            {% endif %}
+                <span class="shortcut-icon shortcut-violet" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h8M8 10h7"/></svg></span>
+                <span>Kho tri thức</span>
+            {% if knowledge_url %}</a>{% else %}</span>{% endif %}
+
+            {% if communities_url %}
+                <a class="shortcut-item" href="{{ communities_url }}">
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Đang tích hợp">
+            {% endif %}
+                <span class="shortcut-icon shortcut-teal" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM17 4.5a3.2 3.2 0 0 1 0 6.2M17 15h.5a3.5 3.5 0 0 1 3.5 3.5V20"/></svg></span>
+                <span>Cộng đồng</span>
+            {% if communities_url %}</a>{% else %}</span>{% endif %}
+
+            {% if directory_url %}
+                <a class="shortcut-item" href="{{ directory_url }}">
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Chức năng danh bạ nhân viên chưa được tích hợp">
+            {% endif %}
+                <span class="shortcut-icon shortcut-sky" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-1.2A4.8 4.8 0 0 1 8.3 14h1.4a4.8 4.8 0 0 1 4.8 4.8V20M16 5.5a3 3 0 0 1 0 5.8M17 14h.5a3.5 3.5 0 0 1 3.5 3.5V20"/></svg></span>
+                <span>Nhân viên</span>
+            {% if directory_url %}</a>{% else %}</span>{% endif %}
+
+            {% if saved_posts_url %}
+                <a class="shortcut-item" href="{{ saved_posts_url }}">
+            {% else %}
+                <span class="shortcut-item is-disabled" aria-disabled="true" title="Chức năng nội dung đã lưu đang được tích hợp">
+            {% endif %}
+                <span class="shortcut-icon shortcut-rose" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4.5A1.5 1.5 0 0 1 7.5 3h9A1.5 1.5 0 0 1 18 4.5V21l-6-4-6 4z"/></svg></span>
+                <span>Đã lưu</span>
+            {% if saved_posts_url %}</a>{% else %}</span>{% endif %}
+        </div>
+    </section>
+
+    <!-- GD-003 / 3 cột nội dung -->
+    <div class="home-columns">
+        <div class="home-column home-column-work">
+            <section class="home-panel home-card" aria-labelledby="tasks-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">THEO DÕI TIẾN ĐỘ</p>
+                        <h2 id="tasks-title">Cần bạn xử lý</h2>
+                    </div>
+                    {% if tasks %}<span class="home-count">{{ tasks|length }}</span>{% endif %}
+                </div>
+                {% if tasks %}
+                    <div class="home-task-list">
+                        {% for task in tasks %}
+                            <article class="home-task-item">
+                                <span class="home-task-icon {% if task.type == 'ack' %}task-icon-amber{% elif task.type == 'knowledge' %}task-icon-violet{% else %}task-icon-blue{% endif %}" aria-hidden="true">
+                                    {% if task.type == 'ack' %}<svg viewBox="0 0 24 24"><path d="M18 9a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+                                    {% elif task.type == 'knowledge' %}<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/></svg>
+                                    {% else %}<svg viewBox="0 0 24 24"><path d="M4 12h16M12 4v16"/><circle cx="12" cy="12" r="9"/></svg>{% endif %}
+                                </span>
+                                <div class="home-task-copy">
+                                    <div class="home-task-topline"><h3>{{ task.title }}</h3><span class="home-task-status">{{ task.status }}</span></div>
+                                    <p class="home-task-subtitle">{{ task.subtitle }}</p>
+                                    <p class="home-task-detail">{{ task.detail|truncatechars:100 }}</p>
+                                    {% if task.type == 'ack' and notices_url %}
+                                        {% url 'notifications:detail' task.object_id as task_notice_detail_url %}
+                                        <a class="home-text-link" href="{% if task_notice_detail_url %}{{ task_notice_detail_url }}{% else %}{{ notices_url }}{% endif %}">Đọc và xác nhận <span aria-hidden="true">→</span></a>
+                                    {% elif task.url %}
+                                        <a class="home-text-link" href="{{ task.url }}">Mở công việc <span aria-hidden="true">→</span></a>
+                                    {% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                    {% if projects_url %}<a class="home-footer-link" href="{{ projects_url }}">Xem vấn đề đang xử lý <span aria-hidden="true">→</span></a>{% endif %}
+                {% else %}
+                    <div class="home-empty-state">
+                        <span class="home-empty-icon" aria-hidden="true">✓</span>
+                        <strong>Bạn không có việc cần xử lý</strong>
+                        <p>Các công việc được giao sẽ xuất hiện tại đây.</p>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="home-panel home-card" aria-labelledby="continue-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">QUAY LẠI ĐÚNG NGỮ CẢNH</p>
+                        <h2 id="continue-title">Tiếp tục công việc</h2>
+                    </div>
+                </div>
+                {% if continue_items %}
+                    <div class="home-continue-list">
+                        {% for item in continue_items %}
+                            <div class="home-continue-item">
+                                <span class="home-mini-icon {% if item.kind == 'Dự án' %}mini-icon-green{% elif item.kind == 'Tri thức' %}mini-icon-violet{% else %}mini-icon-blue{% endif %}" aria-hidden="true">
+                                    {% if item.kind == 'Dự án' %}<svg viewBox="0 0 24 24"><path d="M3.5 7.5h6l2 2h9v9.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/></svg>
+                                    {% elif item.kind == 'Tri thức' %}<svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/></svg>
+                                    {% else %}<svg viewBox="0 0 24 24"><path d="M12 3 3.5 7.5 12 12l8.5-4.5zM3.5 12 12 16.5l8.5-4.5"/></svg>{% endif %}
+                                </span>
+                                <div>
+                                    <strong>{{ item.title|truncatechars:48 }}</strong>
+                                    <small>{{ item.kind }}{% if item.updated_at %} · {{ item.updated_at|timesince }} trước{% endif %}</small>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if projects_url %}<a class="home-footer-link" href="{{ projects_url }}">Xem dự án và công việc <span aria-hidden="true">→</span></a>{% endif %}
+                {% else %}
+                    <div class="home-empty-compact"><p>Chưa có công việc hoặc nội dung gần đây trong phạm vi bạn tham gia.</p></div>
+                {% endif %}
+            </section>
+
+            <section class="home-panel home-card" aria-labelledby="my-projects-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">KHÔNG GIAN ĐANG THAM GIA</p>
+                        <h2 id="my-projects-title">Dự án của tôi</h2>
+                    </div>
+                </div>
+                {% if projects %}
+                    <div class="home-project-list">
+                        {% for membership in project_memberships|slice:":2" %}
+                            <div class="home-project-item">
+                                <span class="home-mini-icon mini-icon-green" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 7.5h6l2 2h9v9.8a1.7 1.7 0 0 1-1.7 1.7H5.2a1.7 1.7 0 0 1-1.7-1.7z"/></svg></span>
+                                <div><strong>{{ membership.du_an.ten_du_an }}</strong><small>{{ membership.get_vai_tro_display }} · {{ membership.du_an.get_trang_thai_display }}</small></div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if projects_url %}<a class="home-footer-link" href="{{ projects_url }}">Xem tất cả dự án <span aria-hidden="true">→</span></a>{% endif %}
+                {% else %}
+                    <div class="home-empty-compact"><p>Bạn chưa tham gia dự án nào đang hoạt động.</p></div>
+                {% endif %}
+            </section>
+        </div>
+
+        <div class="home-column home-column-updates">
+            <section class="home-panel home-card" aria-labelledby="official-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">THÔNG TIN TỪ CÔNG TY</p>
+                        <h2 id="official-title">Thông báo chính thức</h2>
+                    </div>
+                    {% if notices_url %}<a class="home-heading-link" href="{{ notices_url }}">Xem tất cả <span aria-hidden="true">→</span></a>{% endif %}
+                </div>
+                {% if announcements %}
+                    <div class="home-announcement-list">
+                        {% for notice in announcements|slice:":2" %}
+                            <article class="home-announcement-item {% if forloop.first %}is-priority{% endif %}">
+                                <div class="home-announcement-meta">
+                                    <span>{{ notice.home_publisher_department }} · {{ notice.ngay_xuat_ban|date:"d/m/Y · H:i" }}</span>
+                                </div>
+                                <h3>{{ notice.bai_viet.tieu_de|default:"Thông báo chính thức" }}</h3>
+                                {% if forloop.first %}
+                                    <p>{{ notice.bai_viet.noi_dung|truncatechars:170 }}</p>
+                                    <div class="home-announcement-footer">
+                                        {% url 'notifications:detail' notice.pk as notice_detail_url %}
+                                        {% if notices_url or notice_detail_url %}
+                                            <a class="home-button home-button-small home-button-primary" href="{% if notice_detail_url %}{{ notice_detail_url }}{% else %}{{ notices_url }}{% endif %}">
+                                                {% if notice.home_recipient and notice.home_recipient.bat_buoc_xac_nhan and notice.home_recipient.trang_thai_tiep_nhan == 'chua_xac_nhan' %}Đọc và xác nhận{% else %}Đọc thông báo{% endif %}
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="home-empty-compact"><p>Hiện chưa có thông báo chính thức nào trong phạm vi bạn được phép xem.</p></div>
+                {% endif %}
+            </section>
+
+            <section class="home-panel home-card" aria-labelledby="colleague-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">CHIA SẺ TRONG PHẠM VI BẠN ĐƯỢC XEM</p>
+                        <h2 id="colleague-title">Mới từ đồng nghiệp</h2>
+                    </div>
+                    {% if social_feed_url %}<a class="home-heading-link" href="{{ social_feed_url }}">Mở bảng tin <span aria-hidden="true">→</span></a>{% endif %}
+                </div>
+                {% if new_posts %}
+                    <div class="home-post-list">
+                        {% for post in new_posts %}
+                            <article class="home-post-item">
+                                <div class="home-post-author-row">
+                                    <span class="home-user-avatar">{% if post.nguoi_dang.first_name or post.nguoi_dang.last_name %}{{ post.nguoi_dang.last_name|first|upper }}{{ post.nguoi_dang.first_name|first|upper }}{% else %}{{ post.nguoi_dang.username|slice:":2"|upper }}{% endif %}</span>
+                                    <div class="home-post-author"><strong>{{ post.nguoi_dang|ho_ten }}</strong><small>{{ post.home_author_department }} · {{ post.ngay_tao|timesince }} trước</small></div>
+                                </div>
+                                {% if post.tieu_de %}<h3>{{ post.tieu_de }}</h3>{% endif %}
+                                <p class="home-post-body">{{ post.noi_dung|truncatechars:220 }}</p>
+                                <div class="home-post-footer">
+                                    <span>{{ post.get_loai_bai_viet_display }}</span>
+                                    {% url 'social:post_detail' post.pk as post_detail_url %}
+                                    {% if post_detail_url or social_feed_url %}<a class="home-text-link" href="{% if post_detail_url %}{{ post_detail_url }}{% else %}{{ social_feed_url }}{% endif %}">Đọc bài và trao đổi <span aria-hidden="true">→</span></a>{% endif %}
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="home-empty-compact"><p>Chưa có bài đăng mới trong phạm vi bạn được phép xem.</p></div>
+                {% endif %}
+            </section>
+        </div>
+
+        <div class="home-column home-column-connect">
+            <section class="home-panel home-card" aria-labelledby="communities-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">KHÔNG GIAN TRAO ĐỔI</p>
+                        <h2 id="communities-title">Cộng đồng của bạn</h2>
+                    </div>
+                </div>
+                {% if communities %}
+                    <div class="home-community-list">
+                        {% for membership in communities|slice:":2" %}
+                            <div class="home-community-item">
+                                <span class="home-mini-icon mini-icon-teal" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM17 4.5a3.2 3.2 0 0 1 0 6.2"/></svg></span>
+                                <div><strong>{{ membership.ten_cong_dong }}</strong><small>{{ membership.home_member_count }} thành viên · {% if membership.mo_ta %}{{ membership.mo_ta|truncatechars:44 }}{% else %}{{ membership.get_quy_tac_tham_gia_display }}{% endif %}</small></div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if communities_url %}<a class="home-footer-link" href="{{ communities_url }}">Khám phá cộng đồng <span aria-hidden="true">→</span></a>{% endif %}
+                {% else %}
+                    <div class="home-empty-compact"><p>Bạn chưa tham gia cộng đồng nào. Khám phá cộng đồng để kết nối với đồng nghiệp.</p></div>
+                    {% if communities_url %}<a class="home-footer-link" href="{{ communities_url }}">Khám phá cộng đồng <span aria-hidden="true">→</span></a>{% endif %}
+                {% endif %}
+            </section>
+
+            <section class="home-panel home-card" aria-labelledby="knowledge-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">HỌC HỎI VÀ TÁI SỬ DỤNG</p>
+                        <h2 id="knowledge-title">Tri thức nên tham khảo</h2>
+                    </div>
+                </div>
+                {% if lessons or knowledge_articles %}
+                    <div class="home-knowledge-list">
+                        {% for lesson in lessons|slice:":1" %}
+                            <div class="home-knowledge-item">
+                                <span class="home-mini-icon mini-icon-violet" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20"/></svg></span>
+                                <div><strong><a href="{% url 'knowledge:lesson_detail' lesson.pk %}">{{ lesson.tieu_de }}</a></strong><small>Bài học kinh nghiệm · {% if lesson.pham_vi_chia_se == "noi_bo" %}Nội bộ OZZONE{% else %}{{ lesson.phan_cong.du_an.ten_du_an }}{% endif %}</small></div>
+                            </div>
+                        {% endfor %}
+                        {% for article in knowledge_articles|slice:":1" %}
+                            <div class="home-knowledge-item">
+                                <span class="home-mini-icon mini-icon-blue" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v17H6.5A2.5 2.5 0 0 1 4 17.5z"/><path d="M4 17.5A2.5 2.5 0 0 1 6.5 15H20M8 7h8M8 10h7"/></svg></span>
+                                <div><strong><a href="{% url 'knowledge:article_detail' article.pk %}">{{ article.phien_ban_dang_cong_bo.tieu_de }}</a></strong><small>Bài viết tri thức · Phiên bản {{ article.phien_ban_dang_cong_bo.so_phien_ban }}</small></div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if knowledge_url %}<a class="home-footer-link" href="{{ knowledge_url }}">Khám phá kho tri thức <span aria-hidden="true">→</span></a>{% endif %}
+                {% else %}
+                    <div class="home-empty-compact"><p>Chưa có nội dung tri thức phù hợp với phạm vi hiện tại của bạn.</p></div>
+                {% endif %}
+            </section>
+
+            <section class="home-panel home-card home-help-card" aria-labelledby="help-title">
+                <div class="home-section-heading">
+                    <div>
+                        <p class="home-overline">KẾT NỐI NỘI BỘ</p>
+                        <h2 id="help-title">Tìm đồng nghiệp hỗ trợ</h2>
+                    </div>
+                </div>
+                <p>Tra cứu theo kỹ năng, chuyên môn và thông tin liên hệ công việc.</p>
+                {% if directory_url %}
+                    <a class="home-footer-link" href="{{ directory_url }}">Tìm người hỗ trợ <span aria-hidden="true">→</span></a>
+                {% else %}
+                    <span class="home-module-note">Danh bạ nhân viên đang được tích hợp.</span>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+
+</div>
+{% include "social/_post_create_modal.html" %}
+{% endblock %}

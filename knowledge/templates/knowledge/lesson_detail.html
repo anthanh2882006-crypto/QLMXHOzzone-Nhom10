@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+
+{% block title %}{{ lesson.tieu_de }} | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <span class="knw-side-item knw-side-item--muted">Tìm người hỗ trợ</span>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="knw-page knw-detail-page">
+    <div class="knw-detail-layout">
+        <article class="knw-detail-card">
+            <div class="knw-detail-topline">
+                <a class="knw-back-button" href="{% url 'knowledge:search' %}?kind=lesson">← Quay lại</a>
+                <span class="knw-detail-badge">Bài học kinh nghiệm</span>
+            </div>
+
+            <h1 class="knw-detail-title">{{ lesson.tieu_de }}</h1>
+
+            <div class="knw-author-row">
+                <span class="knw-avatar">{{ normalizer.name|slice:":1"|upper }}</span>
+                <div>
+                    <strong>{{ normalizer.name }}</strong>
+                    <span>{{ normalizer.department|default:"Người chuẩn hóa tri thức" }} · Cập nhật {{ lesson.ngay_luu_tri_thuc|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+
+            <div class="knw-detail-divider"></div>
+
+            <section class="knw-content-section">
+                <h2>Vấn đề</h2>
+                <div>{{ lesson.van_de|linebreaks }}</div>
+            </section>
+            <section class="knw-content-section">
+                <h2>Nguyên nhân</h2>
+                <div>{{ lesson.nguyen_nhan|linebreaks }}</div>
+            </section>
+            <section class="knw-content-section">
+                <h2>Giải pháp</h2>
+                <div>{{ lesson.giai_phap|linebreaks }}</div>
+            </section>
+            <section class="knw-content-section">
+                <h2>Kết quả và điều kiện áp dụng</h2>
+                <div>{{ lesson.ket_qua|linebreaks }}</div>
+                <p class="knw-application">{{ lesson.pham_vi_ap_dung|linebreaks }}</p>
+            </section>
+
+            <div class="knw-detail-actions">
+                <form method="post" action="{% url 'knowledge:toggle_lesson_saved' lesson.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="state" value="{% if is_saved %}off{% else %}on{% endif %}">
+                    <button class="knw-save-button" type="submit">
+                        {% if is_saved %}✓ Đã lưu · Bỏ lưu{% else %}♡ Lưu nội dung{% endif %}
+                    </button>
+                </form>
+            </div>
+        </article>
+
+        <aside class="knw-detail-sidecard">
+            <h2>Thông tin nội dung</h2>
+            {% if source_can_open %}
+                <p><strong>Nguồn:</strong> {{ source_project.ten_du_an|default:"Nguồn nội bộ" }}</p>
+                {% if source_device %}<p><strong>Thiết bị:</strong> {{ source_device.ten_thiet_bi }}</p>{% endif %}
+                {% if plan %}<p><strong>Phương án:</strong> #{{ plan.pk }} · {{ plan.noi_dung_phuong_an|truncatechars:90 }}</p>{% endif %}
+                {% if trial %}<p><strong>Lần thử:</strong> #{{ trial.so_lan }}</p>{% endif %}
+                {% if result %}<p><strong>Kết quả:</strong> {% if result.thanh_cong %}Thành công{% else %}Chưa thành công{% endif %}</p>{% endif %}
+                <a class="knw-save-button" href="{{ source_url }}">Xem nguồn</a>
+            {% else %}
+                <p class="knw-restricted-note">Bạn có quyền đọc bài học kinh nghiệm này nhưng không có quyền đọc nguồn dự án.</p>
+            {% endif %}
+            <div class="knw-detail-side-divider"></div>
+            <p><strong>Người chuẩn hóa:</strong> {{ normalizer.name }}</p>
+            {% if normalizer.department %}<p>{{ normalizer.department }}</p>{% endif %}
+            {% if lesson.phan_cong %}<p><strong>Phụ trách tri thức:</strong> {{ lesson.phan_cong.nguoi_phu_trach|ho_ten }}</p>{% endif %}
+            <p><strong>Phạm vi chia sẻ:</strong> {% if lesson.pham_vi_chia_se == "noi_bo" %}Nội bộ công ty{% else %}Trong dự án{% endif %}</p>
+            <p><strong>Phiên bản nội dung:</strong> {{ lesson.phien_ban_noi_dung }}</p>
+        </aside>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "communities/_base.html" %}
+{% load ozzone_names %}
+{% block title %}Yêu cầu tham gia | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / Yêu cầu tham gia</p>
+  <h1 class="oz-page-title">Yêu cầu tham gia cộng đồng</h1>
+
+  {% if is_owner_anywhere %}
+  <section class="oz-card">
+    <h2 class="oz-card-title">Yêu cầu gửi đến cộng đồng bạn sở hữu</h2>
+    <form method="get" class="oz-searchbar">
+      <input class="oz-input" type="search" name="q" value="{{ q }}" placeholder="Tìm theo người yêu cầu hoặc cộng đồng" aria-label="Tìm yêu cầu">
+      <select class="oz-input" name="status" style="flex:0 0 170px" aria-label="Trạng thái">
+        {% for v, label in status_choices %}<option value="{{ v }}" {% if v == status %}selected{% endif %}>{{ label }}</option>{% endfor %}
+      </select>
+      <button class="oz-btn" type="submit">Lọc</button>
+    </form>
+    {% if incoming %}
+    <div class="cm-table-scroll" role="region" aria-label="Yêu cầu tham gia" tabindex="0">
+    <table class="oz-table">
+      <thead><tr><th>Người yêu cầu</th><th>Cộng đồng</th><th>Lý do</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
+      <tbody>
+      {% for r in incoming %}
+        <tr>
+          <td>{{ r.nguoi_dung|ho_ten }}{% with hs=r.nguoi_dung.ho_so_nhan_vien %}<span class="oz-cell-sub">{% if hs %}{{ hs.phong_ban.ten_phong_ban }}{% else %}—{% endif %} · {{ r.ngay_tao|date:"d/m/Y" }}</span>{% endwith %}</td>
+          <td>{{ r.cong_dong.ten_cong_dong }}</td>
+          <td>{{ r.loi_nhan|default:"—"|truncatechars:80 }}</td>
+          <td>
+            <span class="oz-badge {% if r.trang_thai == 'cho_duyet' %}oz-badge-warn{% elif r.trang_thai == 'da_tu_choi' %}oz-badge-danger{% elif r.trang_thai == 'da_huy' %}oz-badge-muted{% endif %}">{{ r.get_trang_thai_display }}</span>
+            {% if r.ly_do_xu_ly %}<span class="oz-cell-sub">{{ r.ly_do_xu_ly|truncatechars:60 }}</span>{% endif %}
+          </td>
+          <td>
+            {% if r.trang_thai == 'cho_duyet' %}
+              <form method="post" action="{% url 'communities:decide' r.pk %}" class="oz-inline-form">
+                {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <button class="oz-btn oz-btn-primary oz-btn-sm" name="decision" value="approve">Duyệt</button>
+              </form>
+              <details class="cm-reject">
+                <summary class="oz-link oz-link-danger">Từ chối</summary>
+                <form method="post" action="{% url 'communities:decide' r.pk %}">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <input class="oz-input" name="ly_do" required maxlength="500" placeholder="Lý do từ chối">
+                  <button class="oz-btn oz-btn-danger oz-btn-sm" name="decision" value="reject">Xác nhận từ chối</button>
+                </form>
+              </details>
+            {% else %}
+              <span class="oz-muted oz-small">{{ r.nguoi_xu_ly|ho_ten }} · {{ r.ngay_xu_ly|date:"d/m/Y" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+      <p class="oz-empty">Không có yêu cầu nào ở trạng thái này.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  <section class="oz-card">
+    <h2 class="oz-card-title">Yêu cầu của tôi</h2>
+    {% if mine %}
+    <div class="cm-table-scroll" role="region" aria-label="Yêu cầu tham gia" tabindex="0">
+    <table class="oz-table">
+      <thead><tr><th>Cộng đồng</th><th>Gửi lúc</th><th>Trạng thái</th><th></th></tr></thead>
+      <tbody>
+      {% for r in mine %}
+        <tr>
+          <td><a class="oz-link" href="{% url 'communities:detail' r.cong_dong_id %}">{{ r.cong_dong.ten_cong_dong }}</a></td>
+          <td>{{ r.ngay_tao|date:"H:i d/m/Y" }}</td>
+          <td><span class="oz-badge {% if r.trang_thai == 'cho_duyet' %}oz-badge-warn{% elif r.trang_thai == 'da_tu_choi' %}oz-badge-danger{% elif r.trang_thai == 'da_huy' %}oz-badge-muted{% endif %}">{{ r.get_trang_thai_display }}</span>{% if r.ly_do_xu_ly and r.trang_thai == 'da_tu_choi' %}<span class="oz-cell-sub">Lý do: {{ r.ly_do_xu_ly }}</span>{% endif %}</td>
+          <td>{% if r.trang_thai == 'cho_duyet' %}<form method="post" action="{% url 'communities:cancel_request' r.pk %}" class="oz-inline-form">{% csrf_token %}<button class="oz-link oz-link-danger" type="submit">Hủy yêu cầu</button></form>{% elif r.trang_thai == 'da_tu_choi' %}<a class="oz-link" href="{% url 'communities:detail' r.cong_dong_id %}#yeu-cau">Gửi lại</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+      <p class="oz-empty">Bạn chưa gửi yêu cầu tham gia nào.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

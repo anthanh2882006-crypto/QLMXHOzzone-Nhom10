@@ -1,0 +1,16 @@
+{% load ozzone_names %}
+<div class="pm-user">
+    <span class="pm-avatar" aria-hidden="true">
+        {% if author.first_name %}
+            {{ author.first_name|first|upper }}
+        {% else %}
+            {{ author.username|slice:':2'|upper }}
+        {% endif %}
+    </span>
+    <div>
+        <strong>{{ author|ho_ten }}</strong>
+        {% if moment %}
+            <p class="pm-caption">{{ moment|date:"d/m/Y H:i" }}</p>
+        {% endif %}
+    </div>
+</div>

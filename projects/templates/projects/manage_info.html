@@ -1,0 +1,48 @@
+{% extends "projects/manage_base.html" %}
+{% block workspace_content %}
+    <div class="pm-workspace">
+        <div class="pm-stack">
+            <section class="pm-panel">
+                <h2>Thông tin dự án</h2>
+                <p class="pm-caption">
+                    {{ project.ma_du_an_nghiep_vu }}
+                    · {{ project.get_trang_thai_display }}
+                </p>
+                <form method="post">
+                    {% include "projects/_manage_fields.html" %}
+                    <div class="pm-actions">
+                        <button class="pm-button" type="submit">Lưu thông tin</button>
+                        <a class="pm-button pm-secondary" href="{{ cancel_url }}">Hủy</a>
+                        {% if form.errors %}
+                            <a href="{{ request.path }}">Tải lại để đối chiếu</a>
+                        {% endif %}
+                    </div>
+                </form>
+            </section>
+            <section class="pm-panel">
+                <h2>Thành viên và vai trò</h2>
+                <p class="pm-muted">Thêm, kết thúc tư cách và điều chỉnh vai trò trong đúng dự án.</p>
+                <a class="pm-button pm-secondary pm-fit"
+                   href="{% url 'projects:members' project.pk %}">Quản lý thành viên</a>
+            </section>
+            <section class="pm-panel">
+                <h2>Thiết bị và tài sản</h2>
+                <p class="pm-muted">Quản lý ngữ cảnh hiện hành, bảo toàn các tài sản và cập nhật trước đó.</p>
+                <a class="pm-button pm-secondary pm-fit"
+                   href="{% url 'projects:equipment' project.pk %}">Quản lý thiết bị</a>
+            </section>
+        </div>
+        <aside class="pm-context">
+            <section class="pm-panel">
+                <h2>Phân công tri thức</h2>
+                <p>Phân công trách nhiệm trong dự án; quyền đọc nguồn được kiểm tra riêng.</p>
+                <a href="{% url 'projects:knowledge' project.pk %}">Phân công và lịch sử</a>
+            </section>
+            <section class="pm-panel">
+                <h2>Vòng đời dự án</h2>
+                <p>Lưu trữ cần đối chiếu công việc dang dở và điều kiện được áp dụng. Dữ liệu lịch sử được giữ.</p>
+                <a href="{% url 'projects:archive' project.pk %}">Xem điều kiện lưu trữ</a>
+            </section>
+        </aside>
+    </div>
+{% endblock %}

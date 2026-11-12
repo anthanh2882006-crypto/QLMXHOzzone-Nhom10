@@ -1,0 +1,63 @@
+{% extends "projects/base.html" %}
+{% block project_content %}
+    {% include "projects/_page_header.html" %}
+    <section class="pm-panel">
+        <h2>{{ device.ma_thiet_bi }}</h2>
+        <div>{{ device.mo_ta|linebreaks }}</div>
+        <p>Tài sản hiện hành {{ current_asset.ma_tai_san_noi_bo|default:"Chưa có tài sản" }}</p>
+        {% if asset_error %}
+            <div class="pm-error">{{ asset_error }}</div>
+        {% endif %}
+        {% if not project.da_luu_tru and device.dang_su_dung and not asset_error %}
+            <a class="pm-button pm-fit"
+               href="{% url 'projects:field_create' project.pk device.pk %}">Tạo cập nhật hiện trường</a>
+        {% endif %}
+    </section>
+    <section class="pm-panel">
+        <h2>Lịch sử tài sản</h2>
+        <div class="pm-table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tài sản</th>
+                        <th>Serial</th>
+                        <th>Bắt đầu</th>
+                        <th>Kết thúc</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asset in assets %}
+                        <tr>
+                            <td>{{ asset.ma_tai_san_noi_bo }}</td>
+                            <td>{{ asset.so_serial|default:"—" }}</td>
+                            <td>{{ asset.ngay_bat_dau_su_dung|date:"d/m/Y" }}</td>
+                            <td>{{ asset.ngay_ket_thuc_su_dung|date:"d/m/Y"|default:"—" }}</td>
+                            <td>{{ asset.get_trang_thai_display }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">Chưa có tài sản.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <section class="pm-panel">
+        <h2>Cập nhật hiện trường và ngữ cảnh đã ghi</h2>
+        {% for post in updates %}
+            <article class="pm-comment">
+                <a href="{% url 'projects:post_detail' project.pk post.pk %}">
+                    {{ post.tieu_de|default:"Cập nhật hiện trường" }}
+                </a>
+                <p class="pm-caption">
+                    {{ post.ngay_tao|date:"d/m/Y H:i" }}
+                    · Tài sản tại thời điểm ghi: {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa có tài sản" }}
+                </p>
+            </article>
+        {% empty %}
+            <p>Chưa có cập nhật được phép hiển thị.</p>
+        {% endfor %}
+    </section>
+{% endblock %}

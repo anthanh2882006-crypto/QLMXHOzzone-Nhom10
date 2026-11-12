@@ -1,0 +1,190 @@
+/* Khung Cộng đồng co giãn theo cùng kích thước nội dung của Dự án. */
+.cm-main {
+    min-width: 0;
+    font: 400 14px/1.6 "Be Vietnam Pro", Arial, sans-serif;
+}
+.cm-main .oz-page {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 32px;
+}
+.cm-main .oz-page-title {
+    font-size: 28px;
+    line-height: 1.45;
+}
+.cm-main .oz-page-head {
+    flex-wrap: wrap;
+}
+.cm-main .oz-page-head > div:first-child {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+.cm-main .oz-card,
+.cm-main .oz-field,
+.cm-main .oz-field-search,
+.cm-main .cm-card,
+.cm-main .cm-card-head > div,
+.cm-main .cm-author > div,
+.cm-main .cm-comment > div {
+    min-width: 0;
+}
+.cm-main h1, .cm-main h2, .cm-main p,
+.cm-main dd, .cm-main td, .cm-main a,
+.cm-main .oz-breadcrumb, .cm-main .oz-cell-sub {
+    overflow-wrap: anywhere;
+}
+.cm-main .cm-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+}
+.cm-main .cm-card-actions {
+    flex-wrap: wrap;
+    align-items: center;
+    padding-left: 0;
+    margin-top: auto;
+}
+.cm-main .cm-icon, .cm-main .oz-avatar-sm {
+    flex-shrink: 0;
+}
+.cm-main .oz-searchbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+.cm-main .oz-searchbar > .oz-input,
+.cm-main .oz-field-search {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+.cm-main .oz-input,
+.cm-main .oz-field input,
+.cm-main .oz-field textarea,
+.cm-main .oz-field select {
+    min-width: 0;
+    max-width: 100%;
+}
+.cm-main input[type="file"] {
+    width: 100%;
+}
+.cm-main .oz-btn {
+    min-height: 44px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    text-align: center;
+    white-space: normal;
+}
+.cm-main .oz-badge {
+    max-width: 100%;
+    white-space: normal;
+}
+.cm-main .oz-tabs {
+    flex-wrap: wrap;
+}
+.cm-main .oz-tab {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+}
+.cm-main .cm-composer {
+    flex-wrap: wrap;
+}
+.cm-main .cm-composer > span:nth-child(2) {
+    min-width: 0;
+    flex-basis: 180px;
+    overflow-wrap: anywhere;
+}
+.cm-main .cm-table-scroll {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+.cm-main .cm-table-scroll .oz-table {
+    min-width: 640px;
+}
+.cm-main .oz-table td:last-child {
+    white-space: normal;
+}
+.cm-main .cm-mod-actions {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+}
+.cm-main .cm-reject[open] > form {
+    max-width: 100%;
+    white-space: normal;
+}
+.cm-main .cm-files a, .cm-main .cm-post-body {
+    overflow-wrap: anywhere;
+}
+.cm-sidebar {
+    flex: 0 0 232px;
+    width: 232px;
+    min-width: 0;
+    padding: 24px 16px;
+}
+.cm-sidebar .oz-side-link {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.cm-main :focus-visible, .cm-sidebar :focus-visible {
+    outline: 2px solid var(--oz-brand);
+    outline-offset: 3px;
+}
+@media (max-width: 1200px) {
+    .cm-sidebar {
+        flex-basis: 216px;
+        width: 216px;
+    }
+    .cm-main .cm-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 20px;
+    }
+}
+@media (max-width: 900px) {
+    .cm-sidebar {
+        flex-basis: auto;
+        width: 100%;
+        padding: 16px;
+    }
+    .cm-sidebar nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cm-main .oz-dl {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+    .cm-main .oz-dl dd + dt {
+        margin-top: 8px;
+    }
+}
+@media (max-width: 760px) {
+    .cm-main .oz-page {
+        padding: 20px 16px 40px;
+    }
+    .cm-main .oz-page-title {
+        font-size: 24px;
+    }
+    .cm-main .oz-card {
+        padding: 20px;
+    }
+    .cm-main .cm-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .cm-main .oz-searchbar > .oz-input,
+    .cm-main .oz-searchbar > .oz-field-search {
+        flex-basis: 100% !important;
+        width: 100%;
+    }
+    .cm-main .cm-reject {
+        margin-left: 0;
+        margin-top: 8px;
+    }
+    .cm-main .cm-comment.is-reply {
+        margin-left: 16px;
+    }
+    .cm-main .cm-quick {
+        margin-left: 0;
+    }
+}

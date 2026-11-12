@@ -1,0 +1,33 @@
+{% extends "projects/base.html" %}
+{% load ozzone_names %}
+{% block project_content %}
+    <h1>{{ page_title }}</h1>
+    <section class="pm-panel">
+        <p class="pm-caption">
+            {% if log.nguoi_dung %}
+                {{ log.nguoi_dung|ho_ten }}
+            {% else %}
+                Hệ thống
+            {% endif %}
+            · {{ log.thoi_diem|date:"d/m/Y H:i" }}
+        </p>
+        <h2>Thông tin trước và sau thao tác</h2>
+        <div class="pm-table-scroll">
+            <table>
+                <thead><tr><th>Nhóm dữ liệu</th><th>Định danh</th><th>Thông tin</th><th>Trước</th><th>Sau</th></tr></thead>
+                <tbody>
+                    {% for change in changes %}
+                        <tr>
+                            <td>{{ change.group }}</td><td>{{ change.record_id }}</td>
+                            <td>{{ change.field }}</td><td>{{ change.before|linebreaksbr }}</td>
+                            <td>{{ change.after|linebreaksbr }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Bản ghi này chưa có chi tiết thay đổi được phép hiển thị.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <a href="{% url 'projects:history' project.pk %}">Về lịch sử dự án</a>
+{% endblock %}

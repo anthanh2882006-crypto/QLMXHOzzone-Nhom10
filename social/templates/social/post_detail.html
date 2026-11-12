@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+
+{% block title %}Chi tiết bài viết | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+{% endblock %}
+
+{% block content %}
+<div class="social-page social-detail-page">
+    <a href="{% url 'social:feed' %}" class="social-back-link">← Quay lại bảng tin</a>
+    <article class="social-card social-detail-card">
+        <div class="social-card-header">
+            <div class="social-author-avatar">{{ post.nguoi_dang.username|slice:':2'|upper }}</div>
+            <div class="social-author-meta">
+                <strong>{{ post.nguoi_dang|ho_ten }}</strong>
+                <span>{{ post.ngay_tao|date:'d/m/Y H:i' }} · {% if post.cong_dong %}{{ post.cong_dong.ten_cong_dong }}{% elif post.du_an %}{{ post.du_an.ten_du_an }}{% else %}Bảng tin công ty{% endif %}</span>
+            </div>
+        </div>
+        {% if post.tieu_de %}<h1 class="social-detail-title">{{ post.tieu_de }}</h1>{% endif %}
+        <div class="social-detail-content">{{ post.noi_dung|linebreaks }}</div>
+
+        {% if attachments %}
+        <section class="social-attachments">
+            <h3>Tệp đính kèm</h3>
+            {% for attachment in attachments %}
+                <a class="social-attachment" href="{% url 'social:attachment_download' attachment.pk %}">
+                    <span class="social-file-icon">📎</span>
+                    <span><strong>{{ attachment.tep_tin.ten_tep }}</strong><small>{{ attachment.tep_tin.kich_thuoc|filesizeformat }}</small></span>
+                    <span class="social-file-download">Tải xuống</span>
+                </a>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <div class="social-detail-actions">
+            {% if can_interact %}
+            <form method="post" action="{% url 'social:reaction_set' post.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="state" value="{% if liked_reaction %}off{% else %}on{% endif %}">
+                <input type="hidden" name="loai_cam_xuc" value="{% if liked_reaction %}{{ liked_reaction.loai_cam_xuc }}{% else %}thich{% endif %}">
+                <button class="social-action-button {% if liked_reaction %}is-selected{% endif %}" type="submit">♥ {% if liked_reaction %}{{ liked_reaction.get_loai_cam_xuc_display }}{% else %}Thích{% endif %}</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{% url 'social:save_set' post.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="state" value="{% if is_saved %}off{% else %}on{% endif %}">
+                <button class="social-action-button {% if is_saved %}is-selected{% endif %}" type="submit">{% if is_saved %}✓ Đã lưu{% else %}☆ Lưu nội dung{% endif %}</button>
+            </form>
+        </div>
+    </article>
+
+    <section class="social-card social-comments" id="comments">
+        <div class="social-section-heading">
+            <h2>Bình luận và trao đổi</h2>
+            <span>{{ comments|length }} bình luận gốc</span>
+        </div>
+        {% if can_interact %}
+        <form method="post" action="{% url 'social:comment_create' post.pk %}" class="social-comment-form">
+            {% csrf_token %}
+            <input type="hidden" name="request_token" value="{{ comment_form.request_token.value }}">
+            <textarea name="noi_dung" rows="3" maxlength="5000" required placeholder="Viết bình luận của bạn..."></textarea>
+            <div class="social-form-actions"><button class="social-button social-button-primary" type="submit">Gửi bình luận</button></div>
+        </form>
+        {% else %}
+            <p class="social-muted">Dự án đã lưu trữ. Các trao đổi được giữ ở chế độ chỉ đọc.</p>
+        {% endif %}
+        {% for comment in comments %}
+            {% include "social/_comment.html" with comment=comment post=post %}
+        {% empty %}
+            <p class="social-muted social-no-comments">Chưa có bình luận. Hãy bắt đầu cuộc trao đổi.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

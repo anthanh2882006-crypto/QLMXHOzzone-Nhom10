@@ -1,0 +1,12 @@
+{% csrf_token %}
+{% for hidden in form.hidden_fields %}
+    {{ hidden }} {{ hidden.errors }}
+{% endfor %}
+{% if form.non_field_errors %}
+    <div class="pm-error" role="alert">{{ form.non_field_errors }}</div>
+{% endif %}
+<div class="pm-fields">
+    {% for field in form.visible_fields %}
+        {% include "projects/_field.html" %}
+    {% endfor %}
+</div>

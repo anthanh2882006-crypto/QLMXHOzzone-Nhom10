@@ -1,0 +1,29 @@
+{% extends "communities/_base.html" %}
+{% load ozzone_names %}
+{% block title %}Đăng bài trong {{ community.ten_cong_dong }} | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / <a href="{% url 'communities:detail' community.pk %}">{{ community.ten_cong_dong }}</a> / Soạn bài đăng</p>
+  <h1 class="oz-page-title">Soạn bài đăng</h1>
+  <form method="post" enctype="multipart/form-data" class="oz-card" novalidate>
+    {% csrf_token %}
+    <div class="cm-author" style="margin-bottom:16px">
+      <span class="oz-avatar-sm">{% if request.user.first_name or request.user.last_name %}{{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}</span>
+      <div><b>{{ request.user|ho_ten }}</b><span class="oz-cell-sub">Đăng trong: {{ community.ten_cong_dong }} — không hiển thị trên bảng tin công ty</span></div>
+    </div>
+    {% for e in form.non_field_errors %}<div class="oz-alert oz-alert-danger"><p style="margin:0">{{ e }}</p></div>{% endfor %}
+    {% for field in form %}
+      <div class="oz-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}
+        {% if field.help_text %}<p class="oz-help">{{ field.help_text }}</p>{% endif %}
+        {% for e in field.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+      </div>
+    {% endfor %}
+    <div class="oz-actions">
+      <button type="submit" class="oz-btn oz-btn-primary">Đăng bài</button>
+      <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">Hủy</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

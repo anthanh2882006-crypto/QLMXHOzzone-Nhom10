@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+{% block title %}Theo dõi tiếp nhận | OZZONE{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261111-soc08-09-ui2">{% endblock %}
+{% block content %}
+<div class="oz-notice-workspace">
+    {% include "notifications/_context_nav.html" with notice_nav_active="notices" %}
+    <main class="oz-notice-workspace-main">
+        <section class="oz-notice-page oz-tracking-page">
+            <p class="oz-notice-breadcrumb">Mạng xã hội / Theo dõi tiếp nhận thông báo</p>
+            <h1>Theo dõi tiếp nhận thông báo</h1>
+            {% if tracking_error %}
+                <div class="oz-alert oz-alert-error" role="alert">{{ tracking_error }}</div>
+                <a class="oz-btn oz-btn-secondary" href="">Tải lại dữ liệu</a>
+            {% else %}
+                <div class="oz-tracking-indicators">
+                    <article><strong>{{ tracking.total|default:0 }}</strong><span>Tổng người nhận</span></article>
+                    <article><strong>{{ tracking.acknowledged|default:0 }}</strong><span>Đã xác nhận</span></article>
+                    <article><strong>{{ tracking.pending_current|default:0 }}</strong><span>Chưa xác nhận, còn quyền</span></article>
+                    <article><strong>{{ tracking.pending_lost|default:0 }}</strong><span>Chưa xác nhận, mất quyền</span></article>
+                </div>
+                <section class="oz-tracking-table-card">
+                    <div class="oz-tracking-notice-summary">
+                        <strong>{{ notice.bai_viet.tieu_de }}</strong>
+                        <span>Phát hành {{ notice.ngay_xuat_ban|date:"d/m/Y H:i" }} · {{ notice.nguoi_xuat_ban|ho_ten }}</span>
+                        <a href="{% url 'notifications:detail' notice.pk %}">Mở thông báo →</a>
+                    </div>
+                    <form class="oz-tracking-filters" method="get">
+                        <label class="oz-tracking-search"><span class="sr-only">Tìm người nhận</span><input type="search" name="q" value="{{ search_term }}" placeholder="Tìm tên, tài khoản, mã nhân viên, phòng ban..."></label>
+                        <label><span class="sr-only">Lọc trạng thái</span><select name="status">
+                            {% for value,label in filter_choices %}<option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                        </select></label>
+                        <button class="oz-btn oz-btn-primary" type="submit">Lọc</button>
+                        {% if search_term or status_filter != "all" %}<a class="oz-btn oz-btn-secondary" href="{% url 'notifications:tracking' notice.pk %}">Bỏ lọc</a>{% endif %}
+                    </form>
+                    <div class="oz-tracking-table-scroll">
+                        <table class="oz-tracking-table">
+                            <thead><tr><th>Người nhận</th><th>Quyền đọc hiện tại</th><th>Xác nhận</th><th>Thời điểm</th></tr></thead>
+                            <tbody>
+                                {% for row in recipient_rows %}
+                                <tr>
+                                    <td><strong>{{ row.display_name }}</strong><small>{{ row.department_name }} · {{ row.nguoi_dung.username }}{% if row.nguoi_dung.ho_so_nhan_vien %} · {{ row.nguoi_dung.ho_so_nhan_vien.ma_nhan_vien }}{% endif %}</small></td>
+                                    <td>{% if row.currently_readable %}<span class="oz-access-state is-current">Còn quyền</span>{% else %}<span class="oz-access-state is-lost">Không còn quyền</span>{% endif %}</td>
+                                    <td>{% if row.trang_thai_tiep_nhan == "da_xac_nhan" %}<span class="oz-status oz-status-published">Đã xác nhận</span>{% else %}<span class="oz-status oz-status-pending">Chưa xác nhận</span>{% endif %}</td>
+                                    <td>{% if row.ngay_xac_nhan %}{{ row.ngay_xac_nhan|date:"d/m/Y · H:i" }}{% else %}—{% endif %}</td>
+                                </tr>
+                                {% empty %}<tr><td colspan="4" class="oz-tracking-empty">Không có người nhận phù hợp với bộ lọc.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if page_obj and page_obj.paginator.num_pages > 1 %}
+                    <nav class="oz-pagination" aria-label="Phân trang người nhận">
+                        {% if page_obj.has_previous %}<a href="?q={{ search_term|urlencode }}&status={{ status_filter }}&page={{ page_obj.previous_page_number }}">← Trước</a>{% endif %}
+                        <span>Trang {{ page_obj.number }}/{{ page_obj.paginator.num_pages }}</span>
+                        {% if page_obj.has_next %}<a href="?q={{ search_term|urlencode }}&status={{ status_filter }}&page={{ page_obj.next_page_number }}">Sau →</a>{% endif %}
+                    </nav>
+                    {% endif %}
+                </section>
+                <div class="oz-info-note"><strong>Giữ nguyên tập người nhận khi công bố</strong><p>Mất quyền đọc sẽ chặn việc mở và xác nhận mới; lịch sử tiếp nhận vẫn được giữ. Người được cấp quyền xem sau đó không tự động trở thành người nhận cần xác nhận.</p></div>
+            {% endif %}
+        </section>
+    </main>
+</div>
+{% endblock %}

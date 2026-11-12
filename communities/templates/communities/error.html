@@ -1,0 +1,13 @@
+{% extends "communities/_base.html" %}
+{% block title %}Chưa hoàn tất thao tác | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <h1 class="oz-page-title">Chưa hoàn tất thao tác</h1>
+  <div class="oz-alert oz-alert-danger" role="alert">{{ error_message }}</div>
+  <div class="oz-actions">
+    {% if retry_url %}<a class="oz-btn oz-btn-primary" href="{{ retry_url }}">Tải lại</a>{% endif %}
+    <a class="oz-btn" href="{% url 'communities:list' %}">Về khám phá cộng đồng</a>
+  </div>
+</div>
+{% endblock %}

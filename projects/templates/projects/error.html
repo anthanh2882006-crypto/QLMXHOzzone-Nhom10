@@ -1,0 +1,21 @@
+{% extends "projects/base.html" %}
+{% block project_content %}
+    <section class="pm-panel">
+        <h1>
+            Không thể hoàn tất thao tác
+        </h1>
+        <p role="alert">
+            {{ error_message }}
+        </p>
+        <div class="pm-actions">
+            {% if retry_url %}
+                <a class="pm-button" href="{{ retry_url }}">
+                    Thử lại
+                </a>
+            {% endif %}
+            <a href="{% url 'projects:list' %}">
+                Về danh sách dự án
+            </a>
+        </div>
+    </section>
+{% endblock %}

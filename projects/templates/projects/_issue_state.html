@@ -1,0 +1,11 @@
+{% if post.trang_thai_xu_ly == "da_giai_quyet" %}
+    <span class="pm-badge pm-green">Đã giải quyết</span>
+{% elif post.ui_pending %}
+    <span class="pm-badge pm-amber">Chờ kết quả thực tế</span>
+{% elif post.ui_success %}
+    <span class="pm-badge pm-green">Có kết quả thành công</span>
+{% elif post.ui_failed %}
+    <span class="pm-badge pm-amber">Chưa thành công</span>
+{% else %}
+    <span class="pm-badge pm-blue">Đang phân tích</span>
+{% endif %}

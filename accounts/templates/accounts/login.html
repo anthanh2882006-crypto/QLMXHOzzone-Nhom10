@@ -1,0 +1,63 @@
+{% load static %}<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Đăng nhập | OZZONE{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'accounts/login.css' %}">
+  <link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261112-1">
+</head>
+<body class="oz-auth">
+  <header class="lg-top">
+    <span class="lg-brand"><span class="lg-logo"><img src="{% static 'ozzone/logo.jpg' %}" alt=""></span>OZZONE</span>
+  </header>
+  <main class="lg-wrap">
+    <section class="lg-hero" aria-label="Giới thiệu">
+      <p class="lg-kicker">Kết nối nội bộ</p>
+      <h1>Cùng làm việc.<br>Cùng chia sẻ.<br>Cùng phát triển.</h1>
+      <p class="lg-lead">Không gian cộng tác dành cho nhân viên OZZONE.</p>
+      <ol class="lg-points">
+        <li><b>01</b> Mạng xã hội nội bộ</li>
+        <li><b>02</b> Cộng đồng chuyên môn</li>
+        <li><b>03</b> Cộng tác trong dự án</li>
+        <li><b>04</b> Chia sẻ tri thức</li>
+      </ol>
+    </section>
+    <section class="lg-panel">
+      {% block panel %}
+      <h2>Chào mừng trở lại</h2>
+      <p class="lg-muted">Sử dụng tài khoản do tổ chức cung cấp.</p>
+      <form method="post" class="lg-card" novalidate>
+        {% csrf_token %}
+        <p class="lg-card-title">Đăng nhập OZZONE</p>
+        {% if form.non_field_errors %}
+          <div class="lg-error" role="alert">{% for e in form.non_field_errors %}{{ e }}{% endfor %}</div>
+        {% endif %}
+        <div class="lg-row">
+          <div class="lg-field">
+            <label for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+            {{ form.username }}
+            {% for e in form.username.errors %}<p class="lg-field-error">{{ e }}</p>{% endfor %}
+          </div>
+          <div class="lg-field">
+            <label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+            {{ form.password }}
+            {% for e in form.password.errors %}<p class="lg-field-error">{{ e }}</p>{% endfor %}
+          </div>
+        </div>
+        <p class="lg-note">Tài khoản được cấp bởi tổ chức. Liên hệ quản trị nếu cần khôi phục truy cập.</p>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="lg-btn">Đăng nhập</button>
+      </form>
+      <div class="lg-help">
+        <p class="lg-help-title">Cần hỗ trợ?</p>
+        <p>Liên hệ bộ phận IT theo kênh hỗ trợ nội bộ.</p>
+      </div>
+      {% endblock %}
+    </section>
+  </main>
+</body>
+</html>

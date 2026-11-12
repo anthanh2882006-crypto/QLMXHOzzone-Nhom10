@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ version.tieu_de }} | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <span class="knw-side-item knw-side-item--muted">Tìm người hỗ trợ</span>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="knw-page knw-detail-page">
+    <div class="knw-detail-layout">
+        <article class="knw-detail-card">
+            <div class="knw-detail-topline">
+                <a class="knw-back-button" href="{% url 'knowledge:search' %}?kind=article">← Quay lại</a>
+                <span class="knw-detail-badge">Bài viết tri thức · Phiên bản {{ version.so_phien_ban }}</span>
+            </div>
+
+            <h1 class="knw-detail-title">{{ version.tieu_de }}</h1>
+
+            <div class="knw-author-row">
+                <span class="knw-avatar">{{ editor.name|slice:":1"|upper }}</span>
+                <div>
+                    <strong>{{ editor.name }}</strong>
+                    <span>{{ editor.department|default:"Biên tập viên tri thức" }} · Công bố {{ version.xuat_ban_luc|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+
+            <div class="knw-detail-divider"></div>
+
+            <section class="knw-content-section">
+                <h2>Tóm tắt</h2>
+                <div>{{ version.tom_tat|linebreaks }}</div>
+            </section>
+            <section class="knw-content-section">
+                <h2>Nội dung</h2>
+                <div>{{ version.noi_dung|linebreaks }}</div>
+            </section>
+            <section class="knw-content-section">
+                <h2>Phạm vi áp dụng</h2>
+                <div>{{ version.pham_vi_ap_dung|linebreaks }}</div>
+            </section>
+            <section class="knw-content-section">
+                <h2>Nguồn tham khảo</h2>
+                {% for attachment in attachments %}<p><a href="{% url 'knowledge:attachment_download' attachment.pk %}">{{ attachment.tep_tin.ten_tep }}</a></p>{% endfor %}
+                {% for reference in references %}
+                    <div class="knw-reference-item">
+                        <strong>{{ reference.title }}</strong>
+                        {% if reference.author %}<span>{{ reference.author }}</span>{% endif %}
+                        {% if reference.citation %}<p>{{ reference.citation|linebreaks }}</p>{% endif %}
+                        {% if reference.note %}<p>{{ reference.note|linebreaks }}</p>{% endif %}
+                        {% if reference.url %}
+                            <a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">Mở nguồn bên ngoài ↗</a>
+                        {% elif reference.status == "restricted" %}
+                            <span class="knw-reference-status knw-reference-status--restricted">{{ reference.status_label }}</span>
+                        {% else %}
+                            <span class="knw-reference-status">{{ reference.status_label }}</span>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <p class="knw-muted">Bài viết chưa khai báo nguồn tham khảo.</p>
+                {% endfor %}
+            </section>
+
+            <div class="knw-detail-actions">
+                <form method="post" action="{% url 'knowledge:toggle_article_saved' article.pk %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="state" value="{% if is_saved %}off{% else %}on{% endif %}">
+                    <button class="knw-save-button" type="submit">
+                        {% if is_saved %}✓ Đã lưu · Bỏ lưu{% else %}♡ Lưu nội dung{% endif %}
+                    </button>
+                </form>
+            </div>
+        </article>
+
+        <aside class="knw-detail-sidecard">
+            <h2>Thông tin nội dung</h2>
+            {% if can_edit %}<form method="post" action="{% url 'knowledge:create' %}">
+              {% csrf_token %}<input type="hidden" name="article_id" value="{{ article.pk }}">
+              <input type="hidden" name="request_token" value="{{ clone_token }}">
+              <input type="hidden" name="revision_token" value="{{ revision_token }}">
+              <button class="knw-save-button" name="action" value="clone">Biên tập phiên bản mới</button>
+            </form>{% endif %}
+            <p><strong>Trạng thái:</strong> Đã công bố · v{{ version.so_phien_ban }}</p>
+            <p><strong>Biên tập:</strong> {{ editor.name }}</p>
+            <p><strong>Công bố:</strong> {{ publisher.name }}</p>
+            <p><strong>Chủ đề:</strong> {{ topics|join:", "|default:"Chưa phân loại" }}</p>
+            <p><strong>Phạm vi:</strong> {{ sharing_context }}</p>
+            <p><strong>Áp dụng:</strong> {{ version.pham_vi_chia_se }}</p>
+            <div class="knw-detail-side-divider"></div>
+            <p class="knw-muted">Người đọc chỉ xem phiên bản công bố hiện hành. Phiên bản cũ và bản nháp không được đưa vào tra cứu thông thường.</p>
+        </aside>
+    </div>
+</div>
+{% endblock %}

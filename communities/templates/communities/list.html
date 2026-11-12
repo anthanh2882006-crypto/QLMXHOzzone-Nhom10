@@ -1,0 +1,64 @@
+{% extends "communities/_base.html" %}
+{% block title %}Khám phá cộng đồng | OZZONE{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <h1 class="oz-page-title">Khám phá cộng đồng</h1>
+  <p class="oz-page-lead">Kết nối những người cùng chuyên môn và mối quan tâm.</p>
+
+  <form method="get" class="oz-searchbar" role="search">
+    <span class="oz-field-search">
+      <svg class="oz-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor"
+           stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+        <path d="M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z"/>
+        <path d="M12.5 12.5L17.5 17.5"/>
+      </svg>
+      <input class="oz-input" type="search" name="q" value="{{ q }}" placeholder="Tìm cộng đồng..." aria-label="Tìm cộng đồng">
+    </span>
+    {% if mine %}<input type="hidden" name="mine" value="1">{% endif %}
+    <button class="oz-btn oz-btn-primary" type="submit">Tìm kiếm</button>
+    {% if mine %}
+      <a class="oz-btn oz-btn-primary" href="{% url 'communities:list' %}{% if q %}?q={{ q|urlencode }}{% endif %}">Cộng đồng của tôi ✓</a>
+    {% else %}
+      <a class="oz-btn" href="?mine=1{% if q %}&q={{ q|urlencode }}{% endif %}">Cộng đồng của tôi</a>
+    {% endif %}
+  </form>
+
+  {% if cards %}
+  <div class="cm-grid">
+    {% for item in cards %}{% with c=item.c %}
+    <article class="cm-card oz-space-card">
+      {% include "includes/space_cover.html" with cover_label="Cộng đồng" cover_kind="community" %}
+      <div class="cm-card-body">
+        <h2 class="cm-card-title"><a href="{% url 'communities:detail' c.pk %}">{{ c.ten_cong_dong }}</a></h2>
+        <p class="cm-kicker">{% if c.loai_cong_dong == 'du_an' %}Cộng đồng dự án{% elif c.quy_tac_tham_gia == 'truc_tiep' %}Tham gia trực tiếp{% else %}Cần duyệt{% endif %}</p>
+        <p class="cm-desc">{{ c.mo_ta|default:"Chưa có mô tả."|truncatechars:120 }}</p>
+        <p class="cm-meta">{{ c.so_thanh_vien }} thành viên ·
+          {% if item.state == 'member' %}Đã tham gia{% elif item.state == 'pending' %}Yêu cầu đang chờ{% elif item.state == 'suspended' %}Đang tạm dừng{% elif c.loai_cong_dong == 'du_an' %}Theo tư cách dự án{% elif c.quy_tac_tham_gia == 'truc_tiep' %}Mở{% else %}Cần duyệt{% endif %}
+        </p>
+        <div class="cm-card-actions">
+          {% if item.state == 'none' and c.loai_cong_dong == 'chung' %}
+            {% if c.quy_tac_tham_gia == 'truc_tiep' %}
+              <form method="post" action="{% url 'communities:join' c.pk %}" class="oz-inline-form">{% csrf_token %}<button class="oz-btn oz-btn-primary" type="submit">Tham gia</button></form>
+            {% else %}
+              <a class="oz-btn oz-btn-primary" href="{% url 'communities:detail' c.pk %}#yeu-cau">Yêu cầu tham gia</a>
+            {% endif %}
+            <a class="oz-link oz-muted" href="{% url 'communities:about' c.pk %}">Giới thiệu</a>
+          {% else %}
+            <a class="oz-btn oz-btn-primary" href="{% url 'communities:detail' c.pk %}">Xem cộng đồng</a>
+          {% endif %}
+        </div>
+      </div>
+    </article>
+    {% endwith %}{% endfor %}
+  </div>
+  {% else %}
+    <div class="oz-card"><p class="oz-empty">Không có cộng đồng phù hợp{% if q %} với “{{ q }}”{% endif %}. Hãy thử từ khóa khác.</p></div>
+  {% endif %}
+
+  <section class="oz-card" style="margin-top:16px">
+    <h2 class="oz-card-title">Tham gia đúng không gian chuyên môn</h2>
+    <p class="oz-muted" style="margin:0">Cộng đồng thông thường có thể yêu cầu xét duyệt. Cộng đồng dự án gắn với tư cách thành viên của dự án liên kết.</p>
+  </section>
+</div>
+{% endblock %}

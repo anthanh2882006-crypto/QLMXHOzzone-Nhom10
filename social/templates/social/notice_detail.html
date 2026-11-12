@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Thông báo chính thức | OZZONE{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">{% endblock %}
+{% block content %}
+<div class="social-page social-detail-page">
+    <a href="{% url 'social:feed' %}?tab=official" class="social-back-link">← Quay lại thông báo chính thức</a>
+    <article class="social-card social-detail-card">
+        <span class="social-pill social-pill-notice">Thông báo chính thức</span>
+        <h1 class="social-detail-title">{{ notice.bai_viet.tieu_de|default:"Thông báo OZZONE" }}</h1>
+        <p class="social-muted">Phát hành {{ notice.ngay_xuat_ban|date:'d/m/Y H:i' }}</p>
+        <div class="social-detail-content">{{ notice.bai_viet.noi_dung|linebreaks }}</div>
+        <div class="social-ack-status">
+            {% if not notice.yeu_cau_xac_nhan %}
+                Thông báo này không yêu cầu xác nhận tiếp nhận.
+            {% elif recipient and recipient.trang_thai_tiep_nhan == 'da_xac_nhan' %}
+                Bạn đã xác nhận tiếp nhận lúc {{ recipient.ngay_xac_nhan|date:'d/m/Y H:i' }}.
+            {% elif recipient and recipient.bat_buoc_xac_nhan %}
+                Bạn thuộc tập người nhận và đang chờ xác nhận. Chức năng ACK sẽ được tích hợp trong phân hệ Thông báo.
+            {% else %}
+                Việc đọc thông báo không tự tạo xác nhận tiếp nhận. Bạn không thuộc tập người nhận phải ACK của thông báo này.
+            {% endif %}
+        </div>
+        {% if attachments %}
+            <section class="social-attachments"><h3>Tệp đính kèm</h3>{% for attachment in attachments %}<a class="social-attachment" href="{% url 'social:attachment_download' attachment.pk %}"><span>📎</span><span><strong>{{ attachment.tep_tin.ten_tep }}</strong><small>{{ attachment.tep_tin.kich_thuoc|filesizeformat }}</small></span><span class="social-file-download">Tải xuống</span></a>{% endfor %}</section>
+        {% endif %}
+    </article>
+</div>
+{% endblock %}

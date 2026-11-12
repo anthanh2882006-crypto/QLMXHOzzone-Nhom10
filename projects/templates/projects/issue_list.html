@@ -1,0 +1,56 @@
+{% extends "projects/base.html" %}
+{% block project_content %}
+    {% include "projects/_page_header.html" %}
+    {% if not project.da_luu_tru %}
+        <a class="pm-button pm-fit"
+           href="{% url 'projects:post_create' project.pk %}?issue=1">+ Tạo vấn đề</a>
+    {% endif %}
+    <section class="pm-panel">
+        <form method="get" class="pm-filter">
+            <div class="pm-field">
+                <label for="issue-q">Tìm kiếm</label>
+                <input id="issue-q" name="q" value="{{ q }}" maxlength="100">
+            </div>
+            <div class="pm-field">
+                <label for="issue-status">Trạng thái</label>
+                <select id="issue-status" name="status">
+                    <option value="">Tất cả</option>
+                    <option value="chua_giai_quyet"
+                            {% if status == 'chua_giai_quyet' %}selected{% endif %}>Chưa giải quyết</option>
+                    <option value="da_giai_quyet"
+                            {% if status == 'da_giai_quyet' %}selected{% endif %}>Đã giải quyết</option>
+                </select>
+            </div>
+            <button class="pm-button" type="submit">Tìm kiếm</button>
+        </form>
+        <div class="pm-table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Vấn đề</th>
+                        <th>Thiết bị</th>
+                        <th>Trạng thái</th>
+                        <th>Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in page_obj %}
+                        <tr>
+                            <td>{{ post.tieu_de|default:"Vấn đề kỹ thuật" }}</td>
+                            <td>{{ post.ma_the_thiet_bi.ma_thiet_bi|default:"—" }}</td>
+                            <td>{% include "projects/_issue_state.html" %}</td>
+                            <td>
+                                <a href="{% url 'projects:issue' project.pk post.pk %}">Mở</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4">Chưa có vấn đề phù hợp.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% include "projects/_pagination.html" %}
+{% endblock %}

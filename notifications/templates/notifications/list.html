@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+{% block title %}Thông báo chính thức | OZZONE{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261111-soc08-09-ui2">{% endblock %}
+{% block content %}
+<div class="oz-notice-workspace">
+    {% include "notifications/_context_nav.html" with notice_nav_active="notices" %}
+    <main class="oz-notice-workspace-main">
+
+<section class="oz-notice-page oz-notice-list-page">
+    <header class="oz-notice-page-head">
+        <div>
+            <p class="oz-eyebrow">OZZONE · THÔNG TIN NỘI BỘ</p>
+            <h1>Thông báo chính thức</h1>
+            <p class="oz-muted">Các thông báo đã phát hành trong phạm vi bạn được phép truy cập.</p>
+        </div>
+        {% if can_publish %}<a class="oz-btn oz-btn-primary" href="{% url 'notifications:create' %}">＋ Soạn thông báo</a>{% endif %}
+    </header>
+
+    {% if can_publish and draft_notices %}
+    <section class="oz-notice-section">
+        <div class="oz-section-title"><h2>Bản nháp của bạn</h2><span>{{ draft_notices|length }} bản nháp</span></div>
+        <div class="oz-notice-list">
+            {% for item in draft_notices %}
+            <article class="oz-notice-card oz-notice-draft">
+                <div class="oz-notice-card-main">
+                    <span class="oz-status oz-status-draft">Bản nháp</span>
+                    <h3><a href="{% url 'notifications:edit_draft' item.pk %}">{{ item.bai_viet.tieu_de|default:"Chưa có tiêu đề" }}</a></h3>
+                    <p>{{ item.bai_viet.noi_dung|truncatechars:180 }}</p>
+                    <small>Cập nhật {{ item.ngay_cap_nhat|date:"d/m/Y H:i" }}</small>
+                </div>
+                <a class="oz-btn oz-btn-secondary" href="{% url 'notifications:edit_draft' item.pk %}">Tiếp tục biên tập</a>
+            </article>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <section class="oz-notice-section">
+        <div class="oz-section-title"><h2>Đã phát hành</h2><span>{{ published_notices|length }} thông báo</span></div>
+        {% if published_notices %}
+        <div class="oz-notice-list">
+            {% for item in published_notices %}
+            <article class="oz-notice-card">
+                <div class="oz-notice-card-main">
+                    <div class="oz-notice-meta">
+                        <span class="oz-status oz-status-published">Đã công bố</span>
+                        {% if item.yeu_cau_xac_nhan %}<span class="oz-status oz-status-ack">Yêu cầu xác nhận</span>{% else %}<span class="oz-muted-small">Không yêu cầu xác nhận</span>{% endif %}
+                    </div>
+                    <h3>{% if item.can_read_for_request_user %}<a href="{% url 'notifications:detail' item.pk %}">{{ item.bai_viet.tieu_de }}</a>{% else %}<a href="{% url 'notifications:tracking' item.pk %}">{{ item.bai_viet.tieu_de }}</a>{% endif %}</h3>
+                    {% if item.can_read_for_request_user %}<p>{{ item.bai_viet.noi_dung|truncatechars:220 }}</p>{% else %}<p>Bạn được cấp quyền theo dõi trạng thái tiếp nhận của tập người nhận thông báo này.</p>{% endif %}
+                    <small>Phát hành {{ item.ngay_xuat_ban|date:"d/m/Y H:i" }} · {{ item.nguoi_xuat_ban|ho_ten }}</small>
+                </div>
+                <div class="oz-notice-card-actions">
+                    {% if item.can_read_for_request_user %}<a class="oz-btn oz-btn-secondary" href="{% url 'notifications:detail' item.pk %}">Đọc thông báo</a>{% endif %}
+                    {% if item.can_track_for_request_user %}<a class="oz-btn oz-btn-secondary" href="{% url 'notifications:tracking' item.pk %}">Theo dõi tiếp nhận</a>{% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="oz-empty-state"><strong>Chưa có thông báo phù hợp</strong><p>Thông báo sẽ xuất hiện tại đây khi được phát hành và bạn có quyền đọc.</p></div>
+        {% endif %}
+    </section>
+</section>
+    </main>
+</div>
+
+{% endblock %}

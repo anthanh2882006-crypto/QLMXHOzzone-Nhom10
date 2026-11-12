@@ -1,0 +1,82 @@
+{% extends "projects/base.html" %}
+{% block project_content %}
+    {% include "projects/_page_header.html" %}
+    <div class="pm-workspace">
+        <div class="pm-stack">
+            <nav class="pm-tabs" aria-label="Xem bảng tin">
+                <a class="is-active"
+                   aria-current="page"
+                   href="{% url 'projects:feed' project.pk %}?sort=latest">Mới nhất</a>
+                <a href="{% url 'projects:issues' project.pk %}">Vấn đề kỹ thuật</a>
+            </nav>
+            {% if not project.da_luu_tru %}
+                <section class="pm-panel">
+                    <div class="pm-user">
+                        <span class="pm-avatar" aria-hidden="true">{{ request.user.username|slice:':2'|upper }}</span>
+                        <a href="{% url 'projects:post_create' project.pk %}">Bạn muốn chia sẻ điều gì trong dự án?</a>
+                    </div>
+                    <div class="pm-actions">
+                        <a class="pm-button" href="{% url 'projects:post_create' project.pk %}">+ Bài đăng dự án</a>
+                        <a class="pm-button pm-secondary"
+                           href="{% url 'projects:equipment' project.pk %}">+ Cập nhật hiện trường</a>
+                    </div>
+                </section>
+            {% endif %}
+            <form method="get"
+                  action="{% url 'projects:feed' project.pk %}"
+                  class="pm-filter">
+                <label for="feed-q">Tìm nội dung</label>
+                <input type="search" id="feed-q" name="q" value="{{ q }}" maxlength="100">
+                <button class="pm-button" type="submit">Tìm kiếm</button>
+                {% if q %}
+                    <a href="{% url 'projects:feed' project.pk %}">Xóa bộ lọc</a>
+                {% endif %}
+            </form>
+            {% for row in feed_rows %}
+                {% with post=row.post %}
+                    <article class="pm-panel oz-feed-post" id="post-{{ post.pk }}">
+                        {% include "includes/post_header.html" with post_scope=project.ten_du_an %}
+                        <h2 class="pm-post-title">
+                            <a href="{% url 'projects:post_detail' project.pk post.pk %}">
+                                {{ post.tieu_de|default:"Bài đăng dự án" }}
+                            </a>
+                        </h2>
+                        <div class="pm-rich">{{ post.noi_dung|truncatechars:600|linebreaks }}</div>
+                        {% if post.ma_the_thiet_bi %}
+                            <p class="pm-caption">
+                                {{ post.ma_the_thiet_bi.ma_thiet_bi }}
+                                · {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa gắn tài sản tại thời điểm ghi" }}
+                            </p>
+                        {% endif %}
+                        {% include "projects/_attachments.html" with attachments=row.attachments %}
+                        {% if post.che_do_xu_ly %}
+                            {% include "projects/_issue_state.html" %}
+                        {% endif %}
+                        {% if post.che_do_xu_ly %}
+                            <a class="pm-button pm-fit" href="{% url 'projects:issue' project.pk post.pk %}">Mở vấn đề</a>
+                        {% endif %}
+                        {% include "includes/post_actions.html" %}
+                    </article>
+                {% endwith %}
+            {% empty %}
+                <section class="pm-panel">
+                    <p>Chưa có bài phù hợp trong phạm vi bạn được đọc.</p>
+                </section>
+            {% endfor %}
+            {% include "projects/_pagination.html" %}
+        </div>
+        <aside class="pm-context" aria-label="Ngữ cảnh bảng tin">
+            <section class="pm-panel">
+                <h2>{{ project.ten_du_an }}</h2>
+                <p>{{ project.mo_ta|default:"Nội dung cộng tác trong dự án." }}</p>
+                <p>Vai trò: {{ membership.get_vai_tro_display }}</p>
+                <a href="{% url 'projects:detail' project.pk %}">Tổng quan dự án</a>
+            </section>
+            <section class="pm-panel">
+                <h2>Theo dõi công việc</h2>
+                <a href="{% url 'projects:issues' project.pk %}">Vấn đề kỹ thuật</a>
+                <a href="{% url 'projects:history' project.pk %}">Lịch sử dự án</a>
+            </section>
+        </aside>
+    </div>
+{% endblock %}

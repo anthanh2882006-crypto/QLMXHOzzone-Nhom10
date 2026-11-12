@@ -1,0 +1,76 @@
+{% extends "admin/base_site.html" %}
+{% load i18n ozzone_names %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .moderation-table { max-width: 100%; overflow-x: auto; }
+    .moderation-table table { width: 100%; min-width: 640px; }
+    #moderation-form textarea { box-sizing: border-box; }
+</style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label='projectp' %}">Projectp</a>
+    &rsaquo; <a href="{{ changelist_url }}">Bài viết</a>
+    &rsaquo; Xác nhận kiểm duyệt
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ action_label }} đã chọn</h1>
+    {% if error %}<ul class="errorlist"><li>{{ error }}</li></ul>{% endif %}
+    <p>Kiểm tra nội dung, tác giả và ngữ cảnh trước khi xác nhận. Thao tác được ghi vào nhật ký nghiệp vụ.</p>
+
+    <div class="module moderation-table" role="region" aria-label="Nội dung chờ kiểm duyệt" tabindex="0">
+        <table style="width:100%">
+            <thead><tr><th>Nội dung</th><th>Tác giả</th><th>Ngữ cảnh</th><th>Trạng thái</th><th>Kiểm tra nguồn</th></tr></thead>
+            <tbody>
+            {% for post in posts %}
+                <tr>
+                    <td>
+                        <strong>{{ post.tieu_de|default:"Bài viết không có tiêu đề" }}</strong>
+                        <p>{{ post.noi_dung|truncatechars:180 }}</p>
+                        <small>#{{ post.pk }} · {{ post.get_loai_bai_viet_display }}</small>
+                        <input type="hidden" name="post_ids" value="{{ post.pk }}" form="moderation-form">
+                    </td>
+                    <td>{{ post.nguoi_dang|ho_ten }}</td>
+                    <td>{% if post.du_an_id %}Dự án · {{ post.du_an.ten_du_an }}{% elif post.cong_dong_id %}Cộng đồng · {{ post.cong_dong.ten_cong_dong }}{% else %}Cấp công ty{% endif %}</td>
+                    <td>{{ post.moderation_state }}</td>
+                    <td>{% if post.moderation_protected_reason %}<span style="color:#ba2121">Nguồn được bảo vệ: {{ post.moderation_protected_reason }}</span>{% else %}<span style="color:#1b6b32">Đủ điều kiện kiểm tra</span>{% endif %}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if can_confirm %}
+    <form id="moderation-form" method="post" style="margin-top:20px">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="{{ action }}">
+        {% if requires_reason %}
+            <div class="form-row">
+                <label for="id_reason"><strong>Lý do kiểm duyệt <span style="color:#ba2121">*</span></strong></label>
+                <textarea id="id_reason" name="reason" rows="4" required style="width:100%;max-width:760px">{{ reason }}</textarea>
+                <p class="help">Lý do được lưu cùng người thực hiện, hành động và thời điểm.</p>
+            </div>
+        {% else %}
+            <div class="form-row">
+                <label for="id_reason"><strong>Lý do khôi phục (không bắt buộc)</strong></label>
+                <textarea id="id_reason" name="reason" rows="3" style="width:100%;max-width:760px">{{ reason }}</textarea>
+            </div>
+        {% endif %}
+        <div class="submit-row">
+            <input type="submit" value="Xác nhận {{ action_label|lower }}" class="default">
+            <a href="{{ changelist_url }}" class="button cancel-link">Hủy, không thay đổi</a>
+        </div>
+    </form>
+    {% else %}
+        <p class="errornote">Có nội dung là nguồn nghiệp vụ được bảo vệ. Toàn bộ thao tác đã bị chặn; không có bản ghi nào bị thay đổi.</p>
+        <p><a href="{{ changelist_url }}" class="button">Quay lại danh sách</a></p>
+    {% endif %}
+</div>
+{% endblock %}

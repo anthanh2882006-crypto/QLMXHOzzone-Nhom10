@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ page_title }} | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+{% endblock %}
+
+{% block content %}
+<div class="social-page social-form-page">
+    <a href="{% if editing %}{% url 'social:my_posts' %}{% else %}{% url 'social:feed' %}{% endif %}" class="social-back-link">← Quay lại</a>
+    <section class="social-card social-form-card">
+        <p class="social-eyebrow">OZZONE · BÀI VIẾT CÁ NHÂN</p>
+        <h1>{{ page_title }}</h1>
+        <p class="social-muted">Bài đăng được tạo dưới tư cách cá nhân trên Bảng tin công ty. Không sử dụng biểu mẫu này để phát hành thông báo chính thức.</p>
+        <form method="post" enctype="multipart/form-data" class="social-form">
+            {% csrf_token %}
+            {{ form.request_token }}
+            {% if form.non_field_errors %}<div class="social-alert social-alert-error">{{ form.non_field_errors }}</div>{% endif %}
+            <label for="id_tieu_de">Tiêu đề (không bắt buộc)</label>
+            {{ form.tieu_de }}{{ form.tieu_de.errors }}
+            <label for="id_noi_dung">Nội dung <span class="social-required">*</span></label>
+            {{ form.noi_dung }}{{ form.noi_dung.errors }}
+            <label for="id_tep_dinh_kem">Tệp đính kèm</label>
+            {{ form.tep_dinh_kem }}{{ form.tep_dinh_kem.errors }}
+            {% if editing and current_attachments %}
+                <div class="social-existing-files">
+                    <strong>Tệp hiện tại</strong>
+                    {{ form.remove_attachment_ids }}
+                    <small>Chọn tệp cần gỡ khỏi bài. Tệp được giữ trong kho nếu còn được nội dung khác sử dụng.</small>
+                </div>
+            {% endif %}
+            <div class="social-form-actions">
+                <a class="social-button social-button-secondary" href="{% if editing %}{% url 'social:my_posts' %}{% else %}{% url 'social:feed' %}{% endif %}">Hủy</a>
+                <button class="social-button social-button-primary" type="submit">{% if editing %}Lưu chỉnh sửa{% else %}Đăng bài{% endif %}</button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

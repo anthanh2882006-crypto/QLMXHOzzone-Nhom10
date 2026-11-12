@@ -1,0 +1,14 @@
+{% extends "communities/_base.html" %}
+{% block title %}Nội dung không khả dụng | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / {{ community.ten_cong_dong }}</p>
+  <h1 class="oz-page-title">Nội dung không khả dụng</h1>
+  <div class="oz-alert oz-alert-warn">
+    <p class="oz-alert-title">Không thể mở nội dung này</p>
+    <p>Bài viết có thể đã bị ẩn hoặc xóa, không thuộc cộng đồng này, hoặc quyền xem của bạn đã thay đổi.</p>
+  </div>
+  <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">Quay lại cộng đồng</a>
+</div>
+{% endblock %}

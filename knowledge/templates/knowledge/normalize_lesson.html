@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Chuẩn hóa bài học kinh nghiệm | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+    <link rel="stylesheet" href="{% static 'knowledge/knw04.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item" href="{% url 'knowledge:support' %}">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action active" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw-page knw04-page">
+    <div class="knw04-title-row">
+        <a class="knw-back-button" href="{% url 'knowledge:review_queue' %}">← Quay lại</a>
+        <h1>Chuẩn hóa bài học kinh nghiệm</h1>
+    </div>
+
+    
+
+    {% if existing_lesson %}
+        <div class="knw04-alert knw04-alert--error">Nguồn này đã có bài học logic, kể cả khi bài học đã xóa mềm. Hệ thống không cho tạo thêm bài học thứ hai.</div>
+    {% endif %}
+
+    <form method="post" class="knw04-normalize-layout">
+        {% csrf_token %}
+        <aside class="knw04-source-card">
+            <span class="knw04-source-badge">Nguồn đã giải quyết</span>
+            <h2>{{ source_post.tieu_de|default:"Nguồn xử lý dự án" }}</h2>
+            <p class="knw04-project-name">{{ project.ten_du_an }}</p>
+            {% if device %}<p class="knw04-device-line">{{ device.ma_thiet_bi }} · {{ device.ten_thiet_bi }}</p>{% endif %}
+            {% if asset %}<p class="knw04-device-line">Tài sản: {{ asset.ma_tai_san_noi_bo }}{% if asset.so_serial %} · Serial {{ asset.so_serial }}{% endif %}</p>{% endif %}
+            <p><a class="knw-back-button" href="{% url 'projects:issue' project.pk source_post.pk %}">Xem nguồn xử lý</a></p>
+            <div class="knw04-source-result">
+                <strong>Kết luận đã xác nhận</strong>
+                <p>{{ conclusion.noi_dung_ket_luan }}</p>
+                <small>Phương án #{{ plan.pk }} · Lần thử #{{ trial.so_lan }} · Kết quả thành công</small>
+                <p>{{ result.mo_ta_ket_qua }}</p>
+            </div>
+            <div class="knw04-source-note">
+                <strong>Trạng thái nguồn</strong>
+                <span>Đã giải quyết · Kết quả thành công · Nguồn vẫn hiển thị và còn quyền đọc</span>
+                
+            </div>
+            {% if is_archived_project %}<div class="knw04-alert knw04-alert--info">Dự án đã lưu trữ. Nguồn chỉ được đánh giá vì phân công tri thức hiện tại vẫn có hiệu lực.</div>{% endif %}
+            <div class="knw04-evaluation-box">
+                <h3>Đánh giá giá trị tri thức</h3>
+                <label for="reason">Lý do đánh giá</label>
+                <textarea id="reason" name="ly_do_danh_gia" rows="3" required>{{ form_data.ly_do_danh_gia }}</textarea>
+                {% if errors.ly_do_danh_gia %}<small class="knw04-field-error">{{ errors.ly_do_danh_gia }}</small>{% endif %}
+                <label for="evaluation-outcome">Kết luận đánh giá</label>
+                <textarea id="evaluation-outcome" name="ket_luan_danh_gia" rows="3" required>{{ form_data.ket_luan_danh_gia }}</textarea>
+                {% if errors.ket_luan_danh_gia %}<small class="knw04-field-error">{{ errors.ket_luan_danh_gia }}</small>{% endif %}
+                {% if errors.action %}<small class="knw04-field-error">{{ errors.action }}</small>{% endif %}
+            </div>
+            <button class="knw04-no-lesson-button" type="submit" name="action" value="no_lesson" formnovalidate {% if existing_lesson %}disabled{% endif %}>Không chuyển thành bài học</button>
+            <small class="knw04-note">Thao tác này chỉ ghi nhận kết quả đánh giá; không thay đổi trạng thái kỹ thuật Đã giải quyết của bài viết nguồn.</small>
+        </aside>
+
+        <main class="knw04-form-card">
+            <h2>Bài học kinh nghiệm</h2>
+            <div class="knw04-field">
+                <label for="problem">Vấn đề</label>
+                <textarea id="problem" name="van_de" rows="3">{{ form_data.van_de }}</textarea>
+                {% if errors.van_de %}<small class="knw04-field-error">{{ errors.van_de }}</small>{% endif %}
+            </div>
+            <div class="knw04-field">
+                <label for="cause">Nguyên nhân</label>
+                <textarea id="cause" name="nguyen_nhan" rows="3">{{ form_data.nguyen_nhan }}</textarea>
+                {% if errors.nguyen_nhan %}<small class="knw04-field-error">{{ errors.nguyen_nhan }}</small>{% endif %}
+            </div>
+            <div class="knw04-field">
+                <label for="solution">Giải pháp</label>
+                <textarea id="solution" name="giai_phap" rows="3">{{ form_data.giai_phap }}</textarea>
+                {% if errors.giai_phap %}<small class="knw04-field-error">{{ errors.giai_phap }}</small>{% endif %}
+            </div>
+            <div class="knw04-field">
+                <label for="result">Kết quả</label>
+                <textarea id="result" name="ket_qua" rows="3">{{ form_data.ket_qua }}</textarea>
+                {% if errors.ket_qua %}<small class="knw04-field-error">{{ errors.ket_qua }}</small>{% endif %}
+            </div>
+            <div class="knw04-field">
+                <label for="application">Điều kiện áp dụng</label>
+                <textarea id="application" name="pham_vi_ap_dung" rows="3">{{ form_data.pham_vi_ap_dung }}</textarea>
+                {% if errors.pham_vi_ap_dung %}<small class="knw04-field-error">{{ errors.pham_vi_ap_dung }}</small>{% endif %}
+            </div>
+            <div class="knw04-field">
+                <label for="sharing">Phạm vi chia sẻ</label>
+                <select id="sharing" name="pham_vi_chia_se">
+                    <option value="du_an" {% if form_data.pham_vi_chia_se == 'du_an' %}selected{% endif %}>Trong dự án {{ project.ten_du_an }}</option>
+                    <option value="noi_bo" {% if form_data.pham_vi_chia_se == 'noi_bo' %}selected{% endif %}>Nội bộ công ty</option>
+                </select>
+                {% if errors.pham_vi_chia_se %}<small class="knw04-field-error">{{ errors.pham_vi_chia_se }}</small>{% endif %}
+            </div>
+            <label class="knw04-anon-confirm">
+                <input type="checkbox" name="an_danh_noi_bo" value="1" {% if form_data.an_danh_noi_bo %}checked{% endif %}>
+                Khi chọn chia sẻ nội bộ, tôi xác nhận đã loại bỏ thông tin nhận diện dự án, thiết bị, tài sản và cá nhân khỏi nội dung bài học.
+            </label>
+            {% if errors.an_danh_noi_bo %}<small class="knw04-field-error">{{ errors.an_danh_noi_bo }}</small>{% endif %}
+            <div class="knw04-form-footer">
+                <span class="knw04-note">Bốn thành phần Vấn đề, Nguyên nhân, Giải pháp, Kết quả và điều kiện áp dụng đều bắt buộc.</span>
+                <button class="knw04-save-button" type="submit" name="action" value="normalize" {% if existing_lesson %}disabled{% endif %}>Lưu bài học kinh nghiệm</button>
+            </div>
+        </main>
+    </form>
+</div>
+{% endblock %}

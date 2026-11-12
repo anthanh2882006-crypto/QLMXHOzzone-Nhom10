@@ -1,0 +1,9 @@
+{% load ozzone_names %}
+<header class="oz-post-heading">
+    <span class="oz-post-avatar" aria-hidden="true">{% if post.nguoi_dang.first_name or post.nguoi_dang.last_name %}{{ post.nguoi_dang.last_name|first|upper }}{{ post.nguoi_dang.first_name|first|upper }}{% else %}{{ post.nguoi_dang.username|slice:":2"|upper }}{% endif %}</span>
+    <div class="oz-post-identity">
+        <strong>{{ post.nguoi_dang|ho_ten }}</strong>
+        <p>{{ post.ngay_tao|date:"d/m/Y H:i" }} · {{ post_scope }}</p>
+    </div>
+    <span class="oz-post-kind">{{ post.get_loai_bai_viet_display }}</span>
+</header>

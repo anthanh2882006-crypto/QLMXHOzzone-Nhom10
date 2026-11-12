@@ -1,0 +1,21 @@
+{% extends "communities/_base.html" %}
+{% block title %}Kiểm duyệt cộng đồng | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / Kiểm duyệt cộng đồng</p>
+  <h1 class="oz-page-title">Kiểm duyệt cộng đồng</h1>
+  <section class="oz-card">
+    {% if managed %}
+      <div class="cm-table-scroll" role="region" aria-label="Cộng đồng phụ trách" tabindex="0">
+    <table class="oz-table">
+        <thead><tr><th>Cộng đồng phụ trách</th><th>Vai trò</th><th></th></tr></thead>
+        <tbody>{% for m in managed %}<tr><td>{{ m.cong_dong.ten_cong_dong }}</td><td>{{ m.get_vai_tro_display }}</td><td><a class="oz-link" href="{% url 'communities:moderation' m.cong_dong_id %}">Mở kiểm duyệt</a></td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+    {% else %}
+      <p class="oz-empty">Bạn chưa phụ trách quản trị nội dung cộng đồng nào.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "accounts/_base.html" %}
+{% load ozzone_names %}
+{% block title %}Danh bạ nhân viên | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <p class="oz-breadcrumb">Tài khoản / Danh bạ nhân viên</p>
+  <h1 class="oz-page-title">Danh bạ nhân viên</h1>
+  <p class="oz-page-lead">Thông tin liên hệ được hiển thị theo phạm vi cho phép.</p>
+
+  <form method="get" class="oz-card">
+    <h2 class="oz-card-title">Tìm đồng nghiệp</h2>
+    <div class="oz-form-grid">
+      {% for field in form %}
+      <div class="oz-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
+        {% for e in field.errors %}<p class="oz-error">{{ e }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="oz-actions" style="margin-top:14px">
+      <button type="submit" class="oz-btn oz-btn-primary">Tìm kiếm</button>
+      {% if request.GET %}<a class="oz-btn" href="{% url 'accounts:directory' %}">Bỏ lọc</a>{% endif %}
+    </div>
+  </form>
+
+  <section class="oz-card">
+    <h2 class="oz-card-title">Nhân viên <span class="oz-muted oz-small">({{ people|length }})</span></h2>
+    {% if people %}
+    <div class="oz-workspace-table" role="region" aria-label="Danh bạ nhân viên" tabindex="0">
+    <table class="oz-table">
+      <thead><tr><th>Họ tên</th><th>Bộ phận</th><th>Chuyên môn</th><th>Liên hệ</th></tr></thead>
+      <tbody>
+      {% for p in people %}
+        <tr>
+          <td>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span class="oz-avatar-sm">{% if p.anh_dai_dien %}<img src="{{ p.anh_dai_dien.url }}" alt="">{% else %}{{ p.nguoi_dung.last_name|first|upper }}{{ p.nguoi_dung.first_name|first|upper }}{% endif %}</span>
+              <span>{{ p.nguoi_dung|ho_ten }}<span class="oz-cell-sub">{{ p.vi_tri.ten_vi_tri }}</span></span>
+            </div>
+          </td>
+          <td>{{ p.phong_ban.ten_phong_ban }}</td>
+          <td>{% for s in p.kynangnhanvien_set.all %}{{ s.ky_nang.ten_ky_nang }}{% if not forloop.last %} · {% endif %}{% empty %}<span class="oz-muted">—</span>{% endfor %}</td>
+          <td><a class="oz-link" href="{% url 'accounts:employee' p.nguoi_dung.username %}">Xem hồ sơ</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+      <p class="oz-empty">Không tìm thấy nhân viên phù hợp. Hãy điều chỉnh từ khóa hoặc bộ lọc.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

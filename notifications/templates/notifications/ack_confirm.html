@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Xác nhận tiếp nhận | OZZONE{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261111-soc08-09-ui2">{% endblock %}
+{% block content %}
+<div class="oz-notice-workspace">
+    {% include "notifications/_context_nav.html" with notice_nav_active="notices" %}
+    <main class="oz-notice-workspace-main">
+        <section class="oz-notice-page oz-ack-confirm-page">
+            <p class="oz-notice-breadcrumb">Mạng xã hội / Xác nhận đã tiếp nhận?</p>
+            <h1>Xác nhận đã tiếp nhận?</h1>
+            {% if error %}<div class="oz-alert oz-alert-error" role="alert">{{ error }}</div>{% endif %}
+            <div class="oz-ack-irreversible">
+                <strong>Xác nhận không thể tự hủy</strong>
+                <p>Thao tác ghi nhận bạn đã tiếp nhận thông báo “{{ notice.bai_viet.tieu_de }}”. Hãy đọc kỹ trước khi xác nhận.</p>
+                <form method="post" class="oz-form-footer">
+                    {% csrf_token %}
+                    <button class="oz-btn oz-btn-primary" type="submit">Tôi xác nhận đã tiếp nhận</button>
+                    <a class="oz-btn oz-btn-secondary" href="{% url 'notifications:detail' notice.pk %}">Quay lại đọc</a>
+                </form>
+            </div>
+
+        </section>
+    </main>
+</div>
+{% endblock %}

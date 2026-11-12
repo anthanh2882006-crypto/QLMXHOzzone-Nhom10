@@ -1,0 +1,77 @@
+{% extends "accounts/_base.html" %}
+{% load ozzone_names %}
+{% block title %}{% if is_me %}Hồ sơ của tôi{% else %}{{ person|ho_ten }}{% endif %} | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <p class="oz-breadcrumb">
+    Tài khoản /
+    {% if is_me %}Hồ sơ của tôi{% else %}<a href="{% url 'accounts:directory' %}">Danh bạ nhân viên</a> / {{ person|ho_ten }}{% endif %}
+  </p>
+  <h1 class="oz-page-title">{% if is_me %}Hồ sơ của tôi{% else %}Hồ sơ nhân viên{% endif %}</h1>
+
+  {% if not profile %}
+    <div class="oz-alert">
+      <p class="oz-alert-title">Chưa có hồ sơ nhân viên</p>
+      <p>Tài khoản {{ person.username }} chưa được gắn hồ sơ nhân sự. Quản trị viên có thể tạo hồ sơ trong khu vực quản trị.</p>
+    </div>
+  {% else %}
+  <section class="oz-card">
+    <div style="display:flex;gap:16px;align-items:center;margin-bottom:16px">
+      <span class="oz-avatar-lg">{% if profile.anh_dai_dien %}<img src="{{ profile.anh_dai_dien.url }}" alt="">{% else %}{{ person.last_name|first|upper }}{{ person.first_name|first|upper }}{% endif %}</span>
+      <div>
+        <h2 class="oz-card-title" style="margin:0">{{ person|ho_ten }}</h2>
+        <span class="oz-muted">{{ profile.vi_tri.ten_vi_tri }} · {{ profile.phong_ban.ten_phong_ban }}</span>
+      </div>
+    </div>
+    <dl class="oz-dl">
+      <dt>Mã nhân viên</dt><dd>{{ profile.ma_nhan_vien }}</dd>
+      <dt>Chức danh</dt><dd>{{ profile.vi_tri.ten_vi_tri }}</dd>
+      <dt>Phòng ban</dt><dd>{{ profile.phong_ban.ten_phong_ban }}</dd>
+      <dt>Email công việc</dt><dd>{{ person.email|default:"—" }}</dd>
+      <dt>Điện thoại công việc</dt><dd>{{ profile.so_dien_thoai|default:"—" }}</dd>
+      <dt>Kỹ năng</dt>
+      <dd>{% for s in skills %}<span class="oz-badge">{{ s.ky_nang.ten_ky_nang }}</span> {% empty %}<span class="oz-muted">Chưa cập nhật</span>{% endfor %}</dd>
+      <dt>Giới thiệu</dt><dd>{{ profile.gioi_thieu|default:"—"|linebreaksbr }}</dd>
+    </dl>
+    <div class="oz-actions" style="margin-top:18px">
+      {% if is_me %}
+        <a class="oz-btn oz-btn-primary" href="{% url 'accounts:profile_edit' %}">Chỉnh sửa hồ sơ</a>
+        <a class="oz-btn" href="{% url 'accounts:settings' %}">Cài đặt tài khoản</a>
+
+      {% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="oz-alert">
+    <p class="oz-alert-title">Vai trò theo từng dự án</p>
+    {% if projects %}
+      <p>{% for m in projects %}{{ m.du_an.ten_du_an }}: {{ m.get_vai_tro_display }}{% if not forloop.last %} · {% endif %}{% endfor %}. Quyền thao tác được xét tại đúng dự án.</p>
+    {% else %}
+      <p>Chưa tham gia dự án nào.</p>
+    {% endif %}
+  </section>
+
+  <section class="oz-card">
+    <h2 class="oz-card-title">Cộng đồng đang tham gia</h2>
+    {% if communities %}
+      <div class="oz-workspace-table" role="region" aria-label="Cộng đồng đang tham gia" tabindex="0">
+      <table class="oz-table">
+        <thead><tr><th>Cộng đồng</th><th>Vai trò</th><th>Tham gia từ</th></tr></thead>
+        <tbody>
+        {% for m in communities %}
+          <tr>
+            <td><a class="oz-link" href="{% url 'communities:detail' m.cong_dong_id %}">{{ m.cong_dong.ten_cong_dong }}</a></td>
+            <td>{{ m.get_vai_tro_display }}</td>
+            <td>{{ m.ngay_tham_gia|date:"d/m/Y" }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    {% else %}
+      <p class="oz-muted" style="margin:0">Chưa tham gia cộng đồng nào.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+/* GD-001 Đăng nhập / GD-002 Đổi mật khẩu lần đầu — bố cục riêng theo Figma. */
+:root {
+  --oz-brand: #3B7132;
+  --oz-canvas: #F2F4F0;
+  --oz-text: #202D34;
+  --oz-muted: #697582;
+  --oz-border: #E2E7EA;
+  --oz-selected: #DAF9C9;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--oz-canvas);
+  color: var(--oz-text);
+  font-family: "Be Vietnam Pro", Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.lg-top {
+  display: flex;
+  align-items: center;
+  min-height: 72px;
+  padding: 8px 32px;
+  background: #fff;
+}
+.lg-brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+.lg-logo { position: relative; width: 56px; height: 56px; overflow: hidden; }
+.lg-logo img { position: absolute; top: -16px; left: -20px; width: 97px; height: 88.416px; object-fit: contain; }
+.lg-wrap {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 560px);
+  gap: 40px;
+  justify-content: center;
+  padding: 36px 28px 48px;
+}
+.lg-hero {
+  min-height: 560px;
+  padding: 32px 28px;
+  border-radius: 12px;
+  background: var(--oz-brand);
+  color: #fff;
+}
+.lg-kicker { margin: 0 0 18px; font-size: 11px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; opacity: .85; }
+.lg-hero h1 { margin: 0 0 18px; font-size: 30px; line-height: 1.25; }
+.lg-lead { margin: 0 0 26px; font-size: 13px; opacity: .9; }
+.lg-points { margin: 0; padding: 0; list-style: none; }
+.lg-points li { margin-bottom: 16px; font-size: 13px; font-weight: 600; }
+.lg-points b { margin-right: 6px; }
+.lg-panel { padding-top: 34px; }
+.lg-panel h2 { margin: 0 0 6px; font-size: 24px; }
+.lg-muted { margin: 0 0 22px; color: var(--oz-muted); font-size: 13px; }
+.lg-card {
+  padding: 20px 22px;
+  border: 1px solid var(--oz-border);
+  border-radius: 8px;
+  background: #fff;
+}
+.lg-card-title { margin: 0 0 12px; font-weight: 600; }
+.lg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.lg-field label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 500; }
+.lg-field input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--oz-border);
+  border-radius: 6px;
+  font: inherit;
+}
+.lg-field input:focus { border-color: var(--oz-brand); outline: 2px solid var(--oz-selected); }
+.lg-field-error { margin: 4px 0 0; color: #C0313F; font-size: 12px; }
+.lg-error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #FDECEE;
+  color: #C0313F;
+  font-size: 13px;
+}
+.lg-note { margin: 10px 0 14px; color: var(--oz-muted); font-size: 11px; }
+.lg-btn {
+  min-height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--oz-brand);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.lg-btn:hover { background: #2F5C28; }
+.lg-help {
+  margin-top: 24px;
+  padding: 16px 18px;
+  border-radius: 8px;
+  background: #EBF2FA;
+  font-size: 13px;
+}
+.lg-help p { margin: 0; }
+.lg-help-title { margin-bottom: 4px !important; color: #2F5F8F; font-weight: 600; }
+.lg-alt { margin-top: 14px; }
+.lg-linkbtn { padding: 0; border: 0; background: none; color: var(--oz-brand); font: inherit; cursor: pointer; }
+@media (max-width: 860px) {
+  .lg-wrap { grid-template-columns: 1fr; gap: 20px; }
+  .lg-hero { min-height: 0; }
+  .lg-row { grid-template-columns: 1fr; }
+}

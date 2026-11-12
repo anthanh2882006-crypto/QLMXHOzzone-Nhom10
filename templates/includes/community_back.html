@@ -1,0 +1,7 @@
+<div class="oz-page-navigation">
+    {% if community and request.resolver_match.url_name != 'detail' %}
+        <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">← Quay lại cộng đồng</a>
+    {% else %}
+        <a class="oz-btn" href="{% url 'communities:list' %}">← Khám phá cộng đồng</a>
+    {% endif %}
+</div>

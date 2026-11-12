@@ -1,0 +1,77 @@
+{% extends "projects/base.html" %}
+{% block project_content %}
+    <header class="pm-heading">
+        <div class="pm-heading-main">
+            <h1>Dự án</h1>
+            <p class="pm-muted">Các không gian cộng tác bạn được phép truy cập.</p>
+        </div>
+        {% if can_create %}
+            <a class="pm-button" href="{% url 'projects:create' %}">+ Tạo dự án</a>
+        {% endif %}
+    </header>
+    <section class="pm-panel pm-filter-panel" aria-label="Tìm và lọc dự án">
+        <form method="get" action="{% url 'projects:list' %}" class="pm-filter">
+            {% for field in form %}
+                <div class="pm-field">
+                    {{ field.label_tag }} {{ field }}
+                    {% if field.errors %}
+                        <div class="pm-error">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button class="pm-button" type="submit">Tìm kiếm</button>
+            <a href="{% url 'projects:list' %}">Xóa bộ lọc</a>
+        </form>
+    </section>
+    <div class="pm-cards">
+        {% for card in cards %}
+            <article class="pm-project-card oz-space-card" aria-labelledby="project-title-{{ card.project.pk }}">
+                {% include "includes/space_cover.html" with cover_label="Dự án" cover_kind="project" %}
+                <div class="pm-project-body">
+                    <h2 id="project-title-{{ card.project.pk }}">
+                        <a href="{% url 'projects:detail' card.project.pk %}">{{ card.project.ten_du_an }}</a>
+                    </h2>
+                    <span class="pm-badge {% if card.project.da_luu_tru %}pm-amber{% else %}pm-blue{% endif %}">
+                        {{ card.project.get_trang_thai_display }}
+                    </span>
+                    <dl class="pm-card-role">
+                        <dt>Vai trò của bạn</dt>
+                        <dd>{{ card.membership.get_vai_tro_display }}</dd>
+                    </dl>
+                    <p class="pm-card-description">{{ card.project.mo_ta|default:"Chưa có mô tả dự án." }}</p>
+                    <dl class="pm-card-stats">
+                        <div>
+                            <dt>Thành viên</dt>
+                            <dd>{{ card.members }}</dd>
+                        </div>
+                        <div>
+                            <dt>Thiết bị</dt>
+                            <dd>{{ card.devices }}</dd>
+                        </div>
+                        <div>
+                            <dt>Vấn đề chưa giải quyết</dt>
+                            <dd>{{ card.issues }}</dd>
+                        </div>
+                    </dl>
+                    <div class="pm-card-actions">
+                        <a class="pm-button"
+                           href="{% url 'projects:detail' card.project.pk %}">
+                            {% if card.project.da_luu_tru %}
+                                Xem dự án lưu trữ
+                            {% else %}
+                                Mở dự án
+                            {% endif %}
+                        </a>
+                    </div>
+                </div>
+            </article>
+        {% empty %}
+            {% if not form.errors %}
+                <div class="pm-panel">
+                    Không có dự án phù hợp trong phạm vi bạn được xem. Bạn có thể thay đổi từ khóa hoặc bộ lọc.
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    {% include "projects/_pagination.html" %}
+{% endblock %}

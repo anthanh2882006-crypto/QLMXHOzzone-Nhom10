@@ -1,0 +1,38 @@
+{# Nội dung chung cho biểu mẫu quản lý và hộp thoại đổi vai trò UC-PRJ-03. #}
+<h2>{{ subject|default:page_title }}</h2>
+<p class="pm-caption">Dự án {{ project.ten_du_an }}</p>
+{% if explanation %}
+    <p>{{ explanation }}</p>
+{% endif %}
+{% if work %}
+    <ul>
+        <li>Vấn đề chưa giải quyết {{ work.issues }}</li>
+        <li>Lần thử chưa hoàn tất {{ work.trials }}</li>
+        <li>Nguồn chờ đánh giá tri thức {{ work.reviews }}</li>
+    </ul>
+    <p>
+        Sau lưu trữ, dữ liệu lịch sử tiếp tục được giữ. Nguồn tri thức lịch sử được xem xét theo phân công và quyền đọc riêng.
+    </p>
+{% endif %}
+{% if archive_reasons %}
+    <ul class="pm-error">
+        {% for reason in archive_reasons %}
+            <li>{{ reason }}</li>
+        {% endfor %}
+    </ul>
+{% endif %}
+{% if policy_warning %}
+    <div class="pm-info pm-warning" role="status">{{ policy_warning }}</div>
+{% endif %}
+<form method="post">
+    {% include "projects/_manage_fields.html" %}
+    <div class="pm-actions">
+        <button class="pm-button"
+                type="submit"
+                {% if archive_reasons or policy_warning %}disabled{% endif %}>{{ submit_label }}</button>
+        <a class="pm-button pm-secondary" href="{{ cancel_url }}">Hủy</a>
+        {% if form.errors %}
+            <a href="{{ request.path }}">Tải lại để đối chiếu</a>
+        {% endif %}
+    </div>
+</form>

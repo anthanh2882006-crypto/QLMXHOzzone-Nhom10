@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+{% block extra_css %}
+  <link rel="stylesheet" href="{% static 'ozzone/components.css' %}">
+  <link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261112-1">
+{% endblock %}
+{% block main_class %}acc-main{% endblock %}
+{% block sidebar %}
+<aside class="oz-sidebar acc-sidebar" aria-label="Tài khoản">
+  <p class="oz-sidebar-title">Tài khoản</p>
+  <nav>
+    <a class="oz-side-link {% if active_side == 'profile' %}is-active{% endif %}" href="{% url 'accounts:profile' %}">Hồ sơ của tôi</a>
+    <a class="oz-side-link {% if active_side == 'directory' %}is-active{% endif %}" href="{% url 'accounts:directory' %}">Danh bạ nhân viên</a>
+    <a class="oz-side-link {% if active_side == 'settings' or active_side == 'logout' %}is-active{% endif %}" href="{% url 'accounts:settings' %}">Cài đặt tài khoản</a>
+  </nav>
+  <p class="oz-sidebar-foot">Đang dùng tài khoản<br>{{ request.user|ho_ten }}</p>
+</aside>
+{% endblock %}

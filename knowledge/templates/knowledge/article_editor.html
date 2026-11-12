@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Biên tập bài viết tri thức | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+    <link rel="stylesheet" href="{% static 'knowledge/article_editor.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item" href="{% url 'knowledge:support' %}">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action active" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw089-page">
+    <header class="knw089-title-row">
+        <a class="knw089-back" href="{% url 'knowledge:list' %}">← Quay lại</a>
+        <div>
+            <h1>Biên tập & công bố bài viết tri thức</h1>
+            <p>Từ nguồn tham khảo bên ngoài hoặc nội dung chung nội bộ.</p>
+        </div>
+    </header>
+
+    
+
+    {% if form.non_field_errors %}<div class="knw089-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+    <form method="post" enctype="multipart/form-data" action="{% url 'knowledge:create' %}" id="articleEditorForm">
+        {% csrf_token %}
+        {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+        {% if article and version %}
+            <input type="hidden" name="article_id" value="{{ article.pk }}">
+            <input type="hidden" name="version_id" value="{{ version.pk }}">
+        {% endif %}
+
+        <div class="knw089-workspace">
+            <main class="knw089-document">
+                
+
+                <section class="knw089-section">
+                    <h3>Loại nguồn và tham khảo</h3>
+                    <div class="knw089-field">{{ form.loai_nguon.label_tag }}{{ form.loai_nguon }}{{ form.loai_nguon.errors }}</div>
+                    <div class="knw089-field">{{ form.loai_tham_chieu.label_tag }}{{ form.loai_tham_chieu }}{{ form.loai_tham_chieu.errors }}</div>
+                    <div id="referenceDetails">
+                        <div class="knw089-field">{{ form.tieu_de_nguon.label_tag }}{{ form.tieu_de_nguon }}{{ form.tieu_de_nguon.errors }}</div>
+                        <div class="knw089-field">{{ form.tac_gia.label_tag }}{{ form.tac_gia }}{{ form.tac_gia.errors }}</div>
+                        <div class="knw089-field knw089-reference-url">{{ form.url_nguon.label_tag }}{{ form.url_nguon }}{{ form.url_nguon.errors }}</div>
+                        <div class="knw089-field knw089-reference-quote">{{ form.trich_dan.label_tag }}{{ form.trich_dan }}{{ form.trich_dan.errors }}</div>
+                    </div>
+                    <div class="knw089-field knw089-reference-post">{{ form.bai_viet_nguon.label_tag }}{{ form.bai_viet_nguon }}{{ form.bai_viet_nguon.errors }}</div>
+                    <div class="knw089-field knw089-reference-file">{{ form.tep_nguon.label_tag }}{{ form.tep_nguon }}{{ form.tep_nguon.errors }}</div>
+                    {% if form.remove_reference_ids.field.choices %}<div class="knw089-field">{{ form.remove_reference_ids.label_tag }}{{ form.remove_reference_ids }}{{ form.remove_reference_ids.errors }}</div>{% endif %}
+                </section>
+
+                <section class="knw089-section">
+                    <h3>Tiêu đề và tóm tắt</h3>
+                    <div class="knw089-field">{{ form.tieu_de.label_tag }}{{ form.tieu_de }}{{ form.tieu_de.errors }}</div>
+                    <div class="knw089-field">{{ form.tom_tat.label_tag }}{{ form.tom_tat }}{{ form.tom_tat.errors }}</div>
+                </section>
+
+                <section class="knw089-section">
+                    <h3>Nội dung bài viết</h3>
+                    <div class="knw089-field">{{ form.minh_chung.label_tag }}{{ form.minh_chung }}{{ form.minh_chung.errors }}</div>
+                    {% if form.remove_attachment_ids.field.choices %}<div class="knw089-field">{{ form.remove_attachment_ids.label_tag }}{{ form.remove_attachment_ids }}{{ form.remove_attachment_ids.errors }}</div>{% endif %}
+                    <div class="knw089-field">{{ form.noi_dung.label_tag }}{{ form.noi_dung }}{{ form.noi_dung.errors }}</div>
+                </section>
+
+                <section class="knw089-section">
+                    <h3>Chủ đề / Thẻ</h3>
+                    <div class="knw089-field">{{ form.chu_de.label_tag }}{{ form.chu_de }}{{ form.chu_de.errors }}</div>
+                </section>
+
+                <section class="knw089-section">
+                    <h3>Phạm vi áp dụng / Chia sẻ</h3>
+                    <div class="knw089-field">{{ form.pham_vi_ap_dung.label_tag }}{{ form.pham_vi_ap_dung }}{{ form.pham_vi_ap_dung.errors }}</div>
+                    <div class="knw089-field">{{ form.pham_vi_chia_se.label_tag }}{{ form.pham_vi_chia_se }}{{ form.pham_vi_chia_se.errors }}</div>
+                    <div class="knw089-field knw089-community">{{ form.cong_dong.label_tag }}{{ form.cong_dong }}{{ form.cong_dong.errors }}</div>
+                    <div class="knw089-field knw089-project">{{ form.du_an.label_tag }}{{ form.du_an }}{{ form.du_an.errors }}</div>
+                </section>
+
+                <section class="knw089-section knw089-version">
+                    <h3>Phiên bản và trạng thái</h3>
+                    <div class="knw089-version-info">
+                        <div><span>Phiên bản</span><strong>{% if version %}{{ version.so_phien_ban }}{% else %}Bản đầu tiên sau khi lưu{% endif %}</strong></div>
+                        <div><span>Trạng thái</span><strong class="knw089-draft-status">Bản nháp · Chưa công bố</strong></div>
+                    </div>
+                    <div class="knw089-actions">
+                        <button type="submit" name="action" value="save_draft" class="knw089-save-button">
+                            {% if is_editing_draft %}Cập nhật bản nháp{% else %}Lưu bản chưa công bố{% endif %}
+                        </button>
+                        {% if can_publish %}<button type="submit" name="action" value="publish" class="knw089-publish-button">Công bố bài viết</button>{% endif %}
+                        <button type="button" id="cancelArticle" class="knw089-cancel-button">Hủy</button>
+                    </div>
+                </section>
+            </main>
+
+            <aside class="knw089-context">
+                <h3>Thông tin liên quan</h3>
+                <section class="knw089-context-card">
+                    <h4>Phạm vi và người đọc</h4>
+                    <p>Chọn ngữ cảnh và phạm vi phù hợp để đồng nghiệp tìm được bài viết.</p>
+                </section>
+                <section class="knw089-context-card">
+                    <h4>Lưu và công bố</h4>
+                    <p>Lưu bản nháp để có thể mở lại và tiếp tục chỉnh sửa.</p>
+                    <p>Chỉ phiên bản công bố thành công mới xuất hiện trong tra cứu.</p>
+                </section>
+            </aside>
+        </div>
+    </form>
+
+    <dialog id="leaveArticleDialog" class="knw089-dialog">
+        <h3>Rời nội dung đang soạn?</h3>
+        <p>Bạn đang có dữ liệu chưa lưu. Nếu rời trang, những thay đổi chưa được lưu sẽ không được giữ lại.</p>
+        <div class="knw089-dialog-actions">
+            <button type="button" id="stayArticle">Tiếp tục soạn</button>
+            <button type="button" id="leaveArticle">Rời không lưu</button>
+        </div>
+    </dialog>
+</div>
+
+<script>
+(function () {
+    const form = document.getElementById("articleEditorForm");
+    const dialog = document.getElementById("leaveArticleDialog");
+    const initialData = JSON.stringify(Array.from(new FormData(form).entries()));
+    let submitting = false;
+    let pendingUrl = "{% url 'knowledge:list' %}";
+    const scope = document.getElementById("id_pham_vi_chia_se");
+    const refType = document.getElementById("id_loai_tham_chieu");
+
+    function dirty() {
+        return JSON.stringify(Array.from(new FormData(form).entries())) !== initialData;
+    }
+    function updateScope() {
+        const v = scope && scope.value;
+        const community = document.querySelector(".knw089-community");
+        const project = document.querySelector(".knw089-project");
+        if (community) community.hidden = v !== "cong_dong";
+        if (project) project.hidden = v !== "du_an";
+    }
+    function updateRef() {
+        const v = refType && refType.value;
+        const url = document.querySelector(".knw089-reference-url");
+        const quote = document.querySelector(".knw089-reference-quote");
+        if (url) url.hidden = v !== "url";
+        if (quote) quote.hidden = v !== "tai_lieu";
+        const post = document.querySelector(".knw089-reference-post");
+        const file = document.querySelector(".knw089-reference-file");
+        if (post) post.hidden = v !== "bai_viet";
+        if (file) file.hidden = v !== "tep";
+    }
+    function requestLeave(url) {
+        pendingUrl = url;
+        if (dirty() && !submitting) dialog.showModal();
+        else window.location.href = pendingUrl;
+    }
+    if (scope) { scope.addEventListener("change", updateScope); updateScope(); }
+    if (refType) { refType.addEventListener("change", updateRef); updateRef(); }
+    form.addEventListener("submit", () => { submitting = true; });
+    document.getElementById("cancelArticle").addEventListener("click", () => requestLeave("{% url 'knowledge:list' %}"));
+    document.getElementById("stayArticle").addEventListener("click", () => dialog.close());
+    document.getElementById("leaveArticle").addEventListener("click", () => { submitting = true; dialog.close(); window.location.href = pendingUrl; });
+    document.querySelectorAll("a[href]").forEach(link => link.addEventListener("click", event => {
+        if (dirty() && link.href && !link.href.startsWith("#")) { event.preventDefault(); requestLeave(link.href); }
+    }));
+    window.addEventListener("beforeunload", event => {
+        if (dirty() && !submitting) { event.preventDefault(); event.returnValue = ""; }
+    });
+})();
+</script>
+{% endblock %}

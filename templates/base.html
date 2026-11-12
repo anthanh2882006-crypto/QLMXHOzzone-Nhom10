@@ -1,0 +1,745 @@
+{% load ozzone_names %}
+{% load static %}
+
+{% url 'core:home' as home_url %}
+{% url 'social:feed' as feed_url %}
+{% url 'communities:list' as communities_url %}
+{% url 'projects:list' as projects_url %}
+{% url 'knowledge:list' as knowledge_url %}
+{% url 'core:search' as search_url %}
+{% url 'notifications:list' as notices_url %}
+
+{% url 'accounts:profile' as profile_url %}
+{% url 'accounts:login' as login_url %}
+{% url 'accounts:logout' as logout_url %}
+
+{% url 'admin:index' as admin_url %}
+{% url 'admin:login' as admin_login_url %}
+{% url 'admin:logout' as admin_logout_url %}
+
+{% url 'social:create' as create_post_url %}
+{% url 'admin:projectp_congdong_add' as create_community_url %}
+{% url 'projects:create' as create_project_url %}
+{% url 'knowledge:create' as create_knowledge_url %}
+
+{% firstof home_url projects_url as landing_url %}
+{% firstof active_nav request.resolver_match.app_name as current_app %}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>{% block title %}OZZONE{% endblock %}</title>
+
+    <link
+        rel="preconnect"
+        href="https://fonts.googleapis.com"
+    >
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+        :root {
+            --oz-brand: #3B7132;
+            --oz-canvas: #F2F4F0;
+            --oz-surface: #FFFFFF;
+            --oz-text: #202D34;
+            --oz-muted: #697582;
+            --oz-border: #E2E7EA;
+            --oz-selected: #DAF9C9;
+            --oz-search: #F3FFED;
+            --oz-brand-soft: #EAF1E7;
+
+            --oz-font: "Be Vietnam Pro", Arial, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--oz-canvas);
+            color: var(--oz-text);
+            font-family: var(--oz-font);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Thanh trên cùng */
+        .oz-header {
+            position: relative;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-height: 72px;
+            padding: 8px 32px;
+            color: var(--oz-text);
+            background: var(--oz-surface);
+            font-family: var(--oz-font);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .oz-header a,
+        .oz-header a:hover {
+            text-decoration: none;
+        }
+
+        .oz-header a:focus-visible,
+        .oz-header summary:focus-visible,
+        .oz-header button:focus-visible,
+        .oz-header input:focus-visible {
+            outline: 2px solid var(--oz-brand);
+            outline-offset: 3px;
+        }
+
+        /* Logo */
+        .oz-brand {
+            display: flex;
+            flex: 0 0 170px;
+            align-items: center;
+            gap: 10px;
+            color: var(--oz-text);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .oz-logo {
+            position: relative;
+            flex: 0 0 56px;
+            width: 56px;
+            height: 56px;
+            overflow: hidden;
+        }
+
+        .oz-logo img {
+            position: absolute;
+            top: -16px;
+            left: -20px;
+            width: 97px;
+            height: 88.416px;
+            object-fit: contain;
+        }
+
+        /* Điều hướng phân hệ */
+        .oz-nav {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .oz-nav-item {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 40px;
+            padding: 0 12px;
+            border-radius: 6px;
+            color: var(--oz-muted);
+            font-size: 14px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .oz-nav > .oz-nav-item:nth-child(1) {
+            width: 93px;
+        }
+
+        .oz-nav > .oz-nav-item:nth-child(2) {
+            width: 82px;
+        }
+
+        .oz-nav > .oz-nav-item:nth-child(3) {
+            width: 101px;
+        }
+
+        .oz-nav > .oz-nav-item:nth-child(4) {
+            width: 64px;
+        }
+
+        .oz-nav > .oz-nav-item:nth-child(5) {
+            width: 77px;
+        }
+
+        .oz-nav-item[aria-current="page"] {
+            color: var(--oz-brand);
+            background: var(--oz-selected);
+        }
+
+        .oz-nav-item[href]:hover {
+            color: var(--oz-brand);
+            background: var(--oz-brand-soft);
+        }
+
+        /* Tìm kiếm */
+        .oz-search {
+            display: flex;
+            flex: 0 1 300px;
+            align-items: center;
+            gap: 10px;
+            min-width: 160px;
+            height: 44px;
+            margin: 0;
+            padding: 0 12px;
+            border: 1px solid var(--oz-selected);
+            border-radius: 6px;
+            background: var(--oz-search);
+        }
+
+        .oz-search input {
+            width: 100%;
+            min-width: 0;
+            min-height: 0;
+            height: 40px;
+            padding: 0;
+            border: 0;
+            border-radius: 0;
+            color: var(--oz-text);
+            background: transparent;
+            font: inherit;
+        }
+
+        .oz-search input::placeholder {
+            color: var(--oz-muted);
+            opacity: 1;
+        }
+
+        .oz-search input:disabled {
+            opacity: 1;
+        }
+
+        /* Icon */
+        .oz-icon {
+            display: block;
+            flex-shrink: 0;
+            color: var(--oz-muted);
+        }
+
+        .oz-bell {
+            display: inline-flex;
+            flex: 0 0 28px;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+        }
+
+        /* Menu tài khoản và tạo nội dung */
+        .oz-menu {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .oz-menu > summary {
+            list-style: none;
+            cursor: pointer;
+        }
+
+        .oz-menu > summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .oz-avatar {
+            display: grid;
+            place-items: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: var(--oz-brand);
+            background: var(--oz-brand-soft);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .oz-create {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 0 16px;
+            border-radius: 8px;
+            color: var(--oz-brand);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .oz-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            z-index: 30;
+            width: 240px;
+            max-width: calc(100vw - 32px);
+            padding: 8px;
+            border: 1px solid var(--oz-border);
+            border-radius: 8px;
+            background: var(--oz-surface);
+            box-shadow: 0 8px 24px rgb(32 45 52 / 12%);
+        }
+
+        .oz-dropdown-name {
+            margin: 0 0 8px;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--oz-border);
+            color: var(--oz-text);
+            overflow-wrap: anywhere;
+        }
+
+        .oz-dropdown a,
+        .oz-dropdown button,
+        .oz-dropdown > span {
+            display: block;
+            width: 100%;
+            min-height: 40px;
+            padding: 10px;
+            border: 0;
+            border-radius: 6px;
+            color: var(--oz-text);
+            background: transparent;
+            font: inherit;
+            text-align: left;
+        }
+
+        .oz-dropdown a:hover,
+        .oz-dropdown button:hover {
+            background: var(--oz-brand-soft);
+            text-decoration: none;
+        }
+
+        .oz-dropdown [aria-disabled="true"] {
+            color: var(--oz-muted);
+        }
+
+        .oz-dropdown form {
+            margin: 0;
+        }
+
+        /* Nội dung từng phân hệ */
+        .oz-layout {
+            display: flex;
+            min-height: calc(100vh - 72px);
+        }
+
+        .oz-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Máy tính bảng */
+        @media (max-width: 1240px) {
+            .oz-header {
+                flex-wrap: wrap;
+                padding: 8px 20px;
+            }
+
+            .oz-nav {
+                order: 2;
+                width: 100%;
+                overflow-x: auto;
+                padding-bottom: 4px;
+            }
+
+            .oz-search {
+                flex: 1;
+            }
+        }
+
+        /* Điện thoại */
+        @media (max-width: 600px) {
+            .oz-header {
+                gap: 10px;
+                padding: 8px 16px;
+            }
+
+            .oz-brand {
+                flex-basis: auto;
+                margin-right: auto;
+            }
+
+            .oz-search {
+                order: 3;
+                flex-basis: 100%;
+            }
+
+            .oz-nav {
+                gap: 4px;
+            }
+
+            .oz-create {
+                padding: 0 8px;
+            }
+
+            .oz-dropdown {
+                position: fixed;
+                top: 72px;
+                right: 16px;
+            }
+        }
+
+        @media (max-width: 420px) {
+            .oz-brand-text {
+                display: none;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+    <header class="oz-header">
+        <a
+            class="oz-brand"
+            href="{{ landing_url }}"
+            aria-label="OZZONE"
+        >
+            <span class="oz-logo">
+                <img
+                    src="{% static 'ozzone/logo.jpg' %}"
+                    alt=""
+                >
+            </span>
+
+            <span class="oz-brand-text">OZZONE</span>
+        </a>
+
+        <nav class="oz-nav" aria-label="Điều hướng chính">
+            {% if home_url %}
+                <a
+                    class="oz-nav-item"
+                    href="{{ home_url }}"
+                    {% if current_app == 'core' %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Trang chủ
+                </a>
+            {% else %}
+                <span
+                    class="oz-nav-item"
+                    aria-disabled="true"
+                    title="Trang chủ đang được tích hợp"
+                >
+                    Trang chủ
+                </span>
+            {% endif %}
+
+            {% if feed_url %}
+                <a
+                    class="oz-nav-item"
+                    href="{{ feed_url }}"
+                    {% if current_app == 'social' %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Bảng tin
+                </a>
+            {% else %}
+                <span
+                    class="oz-nav-item"
+                    aria-disabled="true"
+                    title="Bảng tin đang được tích hợp"
+                >
+                    Bảng tin
+                </span>
+            {% endif %}
+
+            {% if communities_url %}
+                <a
+                    class="oz-nav-item"
+                    href="{{ communities_url }}"
+                    {% if current_app == 'communities' %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Cộng đồng
+                </a>
+            {% else %}
+                <span
+                    class="oz-nav-item"
+                    aria-disabled="true"
+                    title="Cộng đồng đang được tích hợp"
+                >
+                    Cộng đồng
+                </span>
+            {% endif %}
+
+            {% if projects_url %}
+                <a
+                    class="oz-nav-item"
+                    href="{{ projects_url }}"
+                    {% if current_app == 'projects' %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Dự án
+                </a>
+            {% else %}
+                <span class="oz-nav-item" aria-disabled="true">
+                    Dự án
+                </span>
+            {% endif %}
+
+            {% if knowledge_url %}
+                <a
+                    class="oz-nav-item"
+                    href="{{ knowledge_url }}"
+                    {% if current_app == 'knowledge' %}
+                        aria-current="page"
+                    {% endif %}
+                >
+                    Tri thức
+                </a>
+            {% else %}
+                <span
+                    class="oz-nav-item"
+                    aria-disabled="true"
+                    title="Tri thức đang được tích hợp"
+                >
+                    Tri thức
+                </span>
+            {% endif %}
+        </nav>
+
+        <form
+            class="oz-search"
+            method="get"
+            {% if search_url %}
+                action="{{ search_url }}"
+            {% endif %}
+        >
+            <svg
+                class="oz-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path
+                    d="M14.1667 8.33333
+                       C14.1667 11.555 11.555 14.1667 8.33333 14.1667
+                       C5.11167 14.1667 2.5 11.555 2.5 8.33333
+                       C2.5 5.11167 5.11167 2.5 8.33333 2.5
+                       C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z"
+                />
+                <path d="M12.5 12.5L17.5 17.5" />
+            </svg>
+
+            <input
+                type="search"
+                name="q"
+                placeholder="Tìm trong OZZONE..."
+                aria-label="Tìm trong OZZONE"
+                {% if not search_url %}
+                    disabled
+                    title="Tìm kiếm toàn hệ thống đang được tích hợp"
+                {% endif %}
+            >
+        </form>
+
+        <a
+            class="oz-bell"
+            aria-label="Thông báo"
+            {% if notices_url %}
+                href="{{ notices_url }}"
+            {% else %}
+                aria-disabled="true"
+                title="Thông báo đang được tích hợp"
+            {% endif %}
+        >
+            <svg
+                class="oz-icon"
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+                focusable="false"
+            >
+                <path
+                    d="M8.33333 17.5H11.6667
+                       M15 6.66667
+                       C15 5.34058 14.4732 4.06881 13.5355 3.13113
+                       C12.5979 2.19345 11.3261 1.66667 10 1.66667
+                       C8.67392 1.66667 7.40215 2.19345 6.46447 3.13113
+                       C5.52678 4.06881 5 5.34058 5 6.66667
+                       C5 12.5 2.5 13.3333 2.5 13.3333
+                       H17.5
+                       C17.5 13.3333 15 12.5 15 6.66667Z"
+                />
+            </svg>
+        </a>
+
+        {% if request.user.is_authenticated %}
+            <details class="oz-menu">
+                <summary
+                    class="oz-avatar"
+                    aria-label="Tài khoản {{ request.user.username }}"
+                >
+                    {% if request.user.first_name or request.user.last_name %}
+                        {{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}
+                    {% else %}
+                        {{ request.user.username|slice:':2'|upper }}
+                    {% endif %}
+                </summary>
+
+                <div class="oz-dropdown">
+                    <p class="oz-dropdown-name">
+                        {% if request.user.first_name or request.user.last_name %}
+                            {{ request.user|ho_ten }}
+                        {% else %}
+                            {{ request.user.username }}
+                        {% endif %}
+                    </p>
+
+                    {% if profile_url %}
+                        <a href="{{ profile_url }}">
+                            Hồ sơ của tôi
+                        </a>
+                    {% endif %}
+
+                    {% if request.user.is_staff and admin_url %}
+                        <a href="{{ admin_url }}">
+                            Quản trị hệ thống
+                        </a>
+                    {% endif %}
+
+                    {% if logout_url %}
+                        <form method="post" action="{{ logout_url }}">
+                            {% csrf_token %}
+                            <button type="submit">Đăng xuất</button>
+                        </form>
+                    {% elif request.user.is_staff and admin_logout_url %}
+                        <form method="post" action="{{ admin_logout_url }}">
+                            {% csrf_token %}
+                            <button type="submit">Đăng xuất</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </details>
+
+            <details class="oz-menu">
+                <summary class="oz-create">+ Tạo</summary>
+
+                <div class="oz-dropdown">
+                    {% if create_post_url %}
+                        <a href="{{ create_post_url }}">
+                            Tạo bài viết
+                        </a>
+                    {% else %}
+                        <span aria-disabled="true" title="Đang tích hợp">
+                            Tạo bài viết
+                        </span>
+                    {% endif %}
+
+                    {% if create_community_url and request.user.is_staff and perms.projectp.add_congdong %}
+                        <a href="{{ create_community_url }}">Tạo cộng đồng</a>
+                    {% endif %}
+
+                    {% if create_project_url and perms.projectp.add_duan %}
+                        <a href="{{ create_project_url }}">
+                            Tạo dự án
+                        </a>
+                    {% else %}
+                        <span
+                            aria-disabled="true"
+                            title="Cần quyền tạo dự án và chức năng đã được tích hợp"
+                        >
+                            Tạo dự án
+                        </span>
+                    {% endif %}
+
+                    {% if create_knowledge_url and perms.projectp.add_baiviettrithuc %}
+                        <a href="{{ create_knowledge_url }}">
+                            Tạo bài viết tri thức
+                        </a>
+                    {% else %}
+                        <span
+                            aria-disabled="true"
+                            title="Cần quyền biên tập và chức năng đã được tích hợp"
+                        >
+                            Tạo bài viết tri thức
+                        </span>
+                    {% endif %}
+                </div>
+            </details>
+        {% else %}
+            {% firstof login_url admin_login_url as login_target %}
+
+            {% if login_target %}
+                <a class="oz-nav-item" href="{{ login_target }}">
+                    Đăng nhập
+                </a>
+            {% endif %}
+        {% endif %}
+    </header>
+
+    <div class="oz-layout">
+        {% block sidebar %}{% endblock %}
+
+        <main
+            id="main-content"
+            class="oz-main {% block main_class %}{% endblock %}"
+        >
+            {% if messages %}
+                <div role="status" aria-live="polite">
+                    {% for message in messages %}
+                        <p>{{ message }}</p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener("click", function (event) {
+            document.querySelectorAll(".oz-menu[open]").forEach(function (menu) {
+                if (!menu.contains(event.target)) {
+                    menu.open = false;
+                }
+            });
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape") {
+                document.querySelectorAll(".oz-menu[open]").forEach(function (menu) {
+                    menu.open = false;
+                    menu.querySelector("summary").focus();
+                });
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

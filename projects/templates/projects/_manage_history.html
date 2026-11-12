@@ -1,0 +1,49 @@
+{% if history_columns %}
+    <section class="pm-panel">
+        <h2>
+            Hiện hành và lịch sử để đối chiếu
+        </h2>
+        <div class="pm-table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        {% for column in history_columns %}
+                            <th scope="col">
+                                {{ column }}
+                            </th>
+                        {% endfor %}
+                        <th scope="col">
+                            Thao tác
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in history_rows %}
+                        <tr>
+                            {% for cell in row.cells %}
+                                <td>
+                                    {{ cell }}
+                                </td>
+                            {% endfor %}
+                            <td>
+                                {% if row.end_url %}
+                                    <a href="{{ row.end_url }}">
+                                        Kết thúc
+                                    </a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6">
+                                Chưa có dữ liệu.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endif %}

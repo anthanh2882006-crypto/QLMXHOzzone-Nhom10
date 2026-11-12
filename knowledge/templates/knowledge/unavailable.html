@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Nội dung không khả dụng | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw-page knw-unavailable-page">
+    <section class="knw-unavailable-card">
+        <div class="knw-unavailable-icon">▤</div>
+        <div class="knw-unavailable-title-row">
+            <a class="knw-back-button" href="{% url 'knowledge:search' %}">← Quay lại</a>
+            <h1>Bạn hiện không thể mở nội dung này</h1>
+        </div>
+        <p>Nội dung có thể đã thay đổi trạng thái hoặc quyền truy cập. Quay lại để chọn nội dung khác.</p>
+    </section>
+</div>
+{% endblock %}

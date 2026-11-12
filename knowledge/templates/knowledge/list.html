@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Kho tri thức | OZZONE{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+
+    <a class="knw-side-item active" href="{% url 'knowledge:list' %}" aria-current="page">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=lesson">Bài học kinh nghiệm</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}?kind=article">Bài viết tri thức</a>
+    <a class="knw-side-item" href="{% url 'knowledge:support' %}">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="knw-page knw-home">
+    {% if requires_login %}
+        <section class="knw-login-notice">
+            <h2>Vui lòng đăng nhập OZZONE</h2>
+            <p>Bạn cần đăng nhập để tra cứu và khai thác tri thức trong phạm vi được cấp quyền.</p>
+            <a class="knw-button" href="{% url 'accounts:login' %}?next={% url 'knowledge:list' %}">Đăng nhập</a>
+        </section>
+    {% else %}
+        <section class="knw-hero">
+            <div class="knw-eyebrow">Kho tri thức OZZONE</div>
+            <h1>Tìm kinh nghiệm để làm tốt hơn</h1>
+            <p>Tra cứu theo vấn đề, thiết bị hoặc dự án – và tìm đúng người khi bạn cần thêm hỗ trợ.</p>
+            <form method="get" action="{% url 'knowledge:search' %}" class="knw-search knw-search--home">
+                <input type="search" name="q" placeholder="Tìm vấn đề, thiết bị, dự án, kinh nghiệm..." aria-label="Từ khóa tra cứu" required>
+                <button type="submit">Tra cứu</button>
+            </form>
+        </section>
+
+        {% if drafts %}<section class="knw-topic-strip" aria-label="Bản nháp đang biên tập">
+        {% for draft in drafts %}<a class="knw-topic-chip" href="{% url 'knowledge:create' %}?article={{ draft.bai_viet_tri_thuc_id }}&amp;version={{ draft.pk }}">{{ draft.tieu_de }} · Nháp v{{ draft.so_phien_ban }}</a>{% endfor %}
+        </section>{% endif %}
+        <section class="knw-topic-strip" aria-label="Chủ đề tri thức">
+            <a class="knw-topic-chip knw-topic-chip--active" href="{% url 'knowledge:search' %}">Tất cả</a>
+            {% for topic in topics %}
+                <a class="knw-topic-chip" href="{% url 'knowledge:search' %}?topic={{ topic.ma_chu_de }}">{{ topic.ten_chu_de }}</a>
+            {% empty %}
+                <span class="knw-muted">Chưa có chủ đề khả dụng.</span>
+            {% endfor %}
+        </section>
+
+        <section class="knw-featured">
+            <div class="knw-featured-heading">
+                <div>
+                    <h2>Tri thức nổi bật</h2>
+                    <p>{{ featured_items|length }} nội dung nổi bật · Xem toàn bộ để tìm và lọc thêm tri thức.</p>
+                </div>
+                <a class="knw-outline-button" href="{% url 'knowledge:search' %}">Xem toàn bộ tri thức</a>
+            </div>
+
+            <div class="knw-card-list knw-card-list--featured">
+                {% for item in featured_items %}
+                    <article class="knw-card">
+                        <div class="knw-card-cover {% if item.kind == 'article' %}knw-card-cover--article{% elif item.kind == 'conclusion' %}knw-card-cover--conclusion{% endif %}">
+                            <div class="knw-card-cover-copy">
+                                <span>{{ item.context|upper }}</span>
+                                <strong>OZZONE</strong>
+                            </div>
+                            <svg class="knw-cover-icon" viewBox="0 0 96 76" fill="none" aria-hidden="true">
+                                {% if item.kind == 'article' %}
+                                    <path d="M12 16c14-6 24-3 36 4v43C36 55 25 53 12 59V16Z" stroke="currentColor" stroke-width="3"/>
+                                    <path d="M84 16c-14-6-24-3-36 4v43c12-8 23-10 36-4V16Z" stroke="currentColor" stroke-width="3"/>
+                                    <path d="M22 27c7-2 13-1 19 2M22 37c7-2 13-1 19 2" stroke="currentColor" stroke-width="2"/>
+                                {% else %}
+                                    <path d="M12 57h24V35h17l8-13h22v35h-71Z" stroke="currentColor" stroke-width="3"/>
+                                    <path d="M36 35V17h18l7 5" stroke="currentColor" stroke-width="3"/>
+                                    <path d="M8 64h80" stroke="currentColor" stroke-width="2"/>
+                                {% endif %}
+                            </svg>
+                        </div>
+                        <div class="knw-card-body">
+                            <span class="knw-card-type {% if item.kind == 'article' %}knw-card-type--article{% elif item.kind == 'conclusion' %}knw-card-type--conclusion{% endif %}">{{ item.kind_label }}</span>
+                            <h3>
+                                {% if item.kind == "lesson" %}
+                                    <a href="{% url 'knowledge:lesson_detail' item.object_id %}">{{ item.title }}</a>
+                                {% elif item.kind == "article" %}
+                                    <a href="{% url 'knowledge:article_detail' item.object_id %}">{{ item.title }}</a>
+                                {% else %}
+                                    {{ item.title }}
+                                {% endif %}
+                            </h3>
+                            <p>{{ item.summary|truncatechars:135 }}</p>
+                            <div class="knw-card-footer">
+                                <span>{{ item.date|date:"d/m" }}</span>
+                                {% if item.kind == "lesson" %}
+                                <a href="{% url 'knowledge:lesson_detail' item.object_id %}">Đọc nội dung</a>
+                            {% elif item.kind == "article" %}
+                                <a href="{% url 'knowledge:article_detail' item.object_id %}">Đọc nội dung</a>
+                            {% else %}
+                                <a href="{{ item.open_url }}">Xem kết luận xử lý</a>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="knw-empty knw-empty--wide">
+                        <h3>Chưa có nội dung nổi bật</h3>
+                        <p>Nội dung sẽ xuất hiện khi có tri thức được công bố trong phạm vi bạn được phép xem.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="knw-support-home-cta">
+            <div>
+                <strong>Chưa tìm thấy thông tin phù hợp?</strong>
+                <p>Tìm đồng nghiệp có kỹ năng hoặc kinh nghiệm liên quan trong các dự án bạn tham gia.</p>
+            </div>
+            <a class="knw-button" href="{% url 'knowledge:support' %}">Tìm người hỗ trợ</a>
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Hồ sơ nhân viên | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item" href="{% url 'knowledge:search' %}">Tra cứu</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:support' %}">Tìm người hỗ trợ</a>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+</aside>
+{% endblock %}
+{% block content %}
+<div class="knw-page knw-support-profile-page">
+    <div class="knw-page-title-row">
+        <a class="knw-back-button" href="{% url 'knowledge:support' %}">← Quay lại</a>
+        <div><h1>HỒ SƠ NHÂN VIÊN</h1><p>Thông tin được phép hiển thị trong phạm vi đồng dự án.</p></div>
+    </div>
+    <section class="knw-support-profile-card">
+        <div class="knw-support-avatar knw-support-avatar--large">{{ candidate.initials }}</div>
+        <h2>{{ candidate.name }}</h2>
+        <p>{{ candidate.position }} · {{ candidate.department }}</p>
+        <h3>Kỹ năng và chuyên môn</h3>
+        {% for skill in candidate.skills %}
+            <div class="knw-profile-skill">
+                <strong>{{ skill.name }}</strong>
+                {% if skill.experience %}<p>{{ skill.experience }}</p>{% endif %}
+            </div>
+        {% empty %}
+            <p class="knw-muted">Chưa có kỹ năng được phép hiển thị.</p>
+        {% endfor %}
+        <h3>Dự án cùng tham gia</h3>
+        <div class="knw-support-tags">
+            {% for project in candidate.projects %}<span class="knw-support-tag knw-support-tag--project">{{ project }}</span>{% empty %}<span class="knw-muted">Không có dữ liệu dự án.</span>{% endfor %}
+        </div>
+        <p class="knw-reason-note">{{ integration_note }}</p>
+    </section>
+</div>
+{% endblock %}

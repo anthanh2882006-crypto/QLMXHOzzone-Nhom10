@@ -1,0 +1,48 @@
+{% extends "projects/manage_base.html" %}
+{% block workspace_content %}
+    {% if as_dialog %}
+        <dialog class="pm-dialog"
+                id="role-dialog"
+                data-return="{{ cancel_url }}"
+                open>
+            {% include "projects/_manage_action_body.html" %}
+        </dialog>
+        <script>
+            const roleDialog = document.getElementById("role-dialog");
+            if (typeof roleDialog.showModal === "function") {
+                roleDialog.close();
+                roleDialog.showModal();
+            }
+            roleDialog.addEventListener("cancel", function (event) {
+                event.preventDefault();
+                window.location.assign(roleDialog.dataset.return);
+            });
+        </script>
+    {% else %}
+        <div class="pm-workspace">
+            <div class="pm-stack">
+                <section class="pm-panel">
+                    {% include "projects/_manage_action_body.html" %}
+                </section>
+                {% include "projects/_manage_history.html" %}
+            </div>
+            <aside class="pm-context">
+                <section class="pm-panel">
+                    <h2>Thông tin liên quan</h2>
+                    <p>Dự án: {{ project.ten_du_an }}</p>
+                    {% if explanation %}
+                        <p>{{ explanation }}</p>
+                    {% endif %}
+                </section>
+                {% if history_columns %}
+                    <section class="pm-panel">
+                        <h2>Đối chiếu trước khi lưu</h2>
+                        <p>
+                            Kiểm tra thông tin hiện hành và lịch sử bên dưới biểu mẫu. Các thay đổi đã hoàn tất trước đó được giữ.
+                        </p>
+                    </section>
+                {% endif %}
+            </aside>
+        </div>
+    {% endif %}
+{% endblock %}

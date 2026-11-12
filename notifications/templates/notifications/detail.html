@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+{% block title %}{{ notice.bai_viet.tieu_de }} | OZZONE{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261111-soc08-09-ui2">{% endblock %}
+{% block content %}
+<div class="oz-notice-workspace">
+    {% include "notifications/_context_nav.html" with notice_nav_active="notices" %}
+    <main class="oz-notice-workspace-main">
+        <section class="oz-notice-page oz-notice-detail">
+            <p class="oz-notice-breadcrumb">Mạng xã hội / {{ notice.bai_viet.tieu_de|default:"Thông báo chính thức" }}</p>
+            <header class="oz-notice-page-head">
+                <div>
+                    <h1>{{ notice.bai_viet.tieu_de|default:"Thông báo chính thức" }}</h1>
+                    {% if is_draft %}<p class="oz-muted">Bản nháp · Phụ trách: {{ notice.nguoi_phu_trach|ho_ten }}</p>{% endif %}
+                </div>
+            </header>
+
+            {% if is_draft %}
+                <div class="oz-info-box"><strong>Đây là bản nháp chưa công bố.</strong><p>Chỉ người phụ trách hoặc người được cấp quyền thay đổi thông báo mới có thể xem và biên tập.</p><a class="oz-btn oz-btn-primary" href="{% url 'notifications:edit_draft' notice.pk %}">Tiếp tục biên tập</a></div>
+            {% endif %}
+            {% if notice.thong_bao_tham_chieu_id %}
+                <div class="oz-info-box"><strong>Thông báo đính chính</strong><p>Tham chiếu thông báo đã phát hành: {% if reference_readable %}<a href="{% url 'notifications:detail' notice.thong_bao_tham_chieu_id %}">{{ notice.thong_bao_tham_chieu.bai_viet.tieu_de }}</a>{% else %}{{ notice.thong_bao_tham_chieu.bai_viet.tieu_de }}{% endif %}</p></div>
+            {% endif %}
+
+            {% if ack_done and recipient %}
+                <div class="oz-ack-success" role="status">
+                    <strong>Đã ghi nhận xác nhận của bạn</strong>
+                    <p>{{ request.user|ho_ten }} · {{ recipient.ngay_xac_nhan|date:"d/m/Y · H:i" }}. Không tạo xác nhận trùng khi thao tác lại.</p>
+                </div>
+            {% endif %}
+
+            <div class="oz-notice-detail-actions">
+                <a class="oz-btn oz-btn-secondary" href="{% url 'notifications:list' %}">Danh sách thông báo</a>
+                {% if can_track_notice %}<a class="oz-btn oz-btn-secondary" href="{% url 'notifications:tracking' notice.pk %}">Theo dõi tiếp nhận</a>{% endif %}
+            </div>
+
+            {% if recipient and recipient.bat_buoc_xac_nhan and recipient.trang_thai_tiep_nhan == "chua_xac_nhan" %}
+                <div class="oz-ack-warning">
+                    <strong>Cần xác nhận tiếp nhận</strong>
+                    <p>Việc đọc không tự động ghi nhận xác nhận. Vui lòng đọc kỹ nội dung trước khi thực hiện thao tác.</p>
+                </div>
+            {% elif recipient and recipient.bat_buoc_xac_nhan and recipient.trang_thai_tiep_nhan == "da_xac_nhan" and not ack_done %}
+                <div class="oz-ack-success">
+                    <strong>Đã xác nhận tiếp nhận</strong>
+                    <p>Bạn đã xác nhận lúc {{ recipient.ngay_xac_nhan|date:"d/m/Y H:i" }}. Xác nhận đã ghi nhận không thể hủy hoặc đảo ngược.</p>
+                </div>
+            {% elif recipient and not recipient.bat_buoc_xac_nhan %}
+                <div class="oz-info-box"><strong>Không yêu cầu xác nhận</strong><p>Thông báo này chỉ yêu cầu đọc, không cần thao tác xác nhận tiếp nhận.</p></div>
+            {% endif %}
+
+            <article class="oz-notice-body-card">
+                {% if not is_draft %}
+                <div class="oz-notice-author">
+                    <span class="oz-notice-author-avatar">{% if notice.nguoi_xuat_ban.last_name or notice.nguoi_xuat_ban.first_name %}{{ notice.nguoi_xuat_ban.last_name|first|upper }}{{ notice.nguoi_xuat_ban.first_name|first|upper }}{% else %}{{ notice.nguoi_xuat_ban.username|slice:":2"|upper }}{% endif %}</span>
+                    <span><strong>{% if publisher_profile %}{{ publisher_profile.phong_ban.ten_phong_ban }}{% else %}{{ notice.nguoi_xuat_ban|ho_ten }}{% endif %} · Thông báo chính thức</strong><small>Công bố {{ notice.ngay_xuat_ban|date:"d/m/Y · H:i" }} · {{ notice.nguoi_xuat_ban|ho_ten }}</small></span>
+                </div>
+                {% endif %}
+                <div class="oz-notice-status-row">
+                    {% if is_draft %}<span class="oz-status oz-status-draft">Bản nháp</span>{% else %}<span class="oz-status oz-status-published">Đã công bố</span>{% endif %}
+                    {% if notice.yeu_cau_xac_nhan %}<span class="oz-status oz-status-ack">Yêu cầu xác nhận</span>{% else %}<span class="oz-muted-small">Không yêu cầu xác nhận</span>{% endif %}
+                </div>
+                <div class="oz-notice-body-text">{{ notice.bai_viet.noi_dung|linebreaks }}</div>
+                {% if attachments %}
+                <section class="oz-detail-files"><h2>Tệp đính kèm</h2>
+                    {% for attachment in attachments %}<a class="oz-file-row" href="{% url 'notifications:attachment_download' attachment.pk %}"><span>▤ {{ attachment.tep_tin.ten_tep }}</span><small>{{ attachment.tep_tin.kich_thuoc|filesizeformat }}</small></a>{% endfor %}
+                </section>
+                {% endif %}
+                {% if recipient and recipient.bat_buoc_xac_nhan and recipient.trang_thai_tiep_nhan == "chua_xac_nhan" %}
+                <div class="oz-notice-detail-card-actions"><a class="oz-btn oz-btn-primary" href="{% url 'notifications:ack_confirm' notice.pk %}">Xác nhận tiếp nhận</a></div>
+                {% endif %}
+            </article>
+
+            {% if tracking %}
+                <section class="oz-form-panel oz-tracking-summary">
+                    <div class="oz-section-title"><h2>Tóm tắt tiếp nhận</h2><a href="{% url 'notifications:tracking' notice.pk %}">Xem chi tiết →</a></div>
+                    <div class="oz-stat-grid"><div><strong>{{ tracking.total|default:0 }}</strong><span>Tổng người nhận</span></div><div><strong>{{ tracking.acknowledged|default:0 }}</strong><span>Đã xác nhận</span></div><div><strong>{{ tracking.pending|default:0 }}</strong><span>Chưa xác nhận</span></div></div>
+                </section>
+            {% endif %}
+
+            {% if can_correct and not is_draft %}<div class="oz-form-footer"><a class="oz-btn oz-btn-secondary" href="{% url 'notifications:correction' notice.pk %}">Tạo thông báo đính chính</a></div>{% endif %}
+        </section>
+    </main>
+</div>
+{% endblock %}

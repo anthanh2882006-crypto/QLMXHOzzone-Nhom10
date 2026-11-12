@@ -1,0 +1,202 @@
+{% extends "projects/base.html" %}
+{% load ozzone_names %}
+{% block project_content %}
+    {% include "projects/_page_header.html" %}
+    <div class="pm-workspace">
+        <div class="pm-stack">
+            <section class="pm-panel pm-form-panel">
+                {% if post %}
+                    <div class="pm-stack">
+                        <h2>
+                            PRB-{{ post.pk }}
+                            · {{ post.tieu_de|default:"Vấn đề kỹ thuật" }}
+                        </h2>
+                        <p class="pm-muted">{{ post.noi_dung|truncatechars:240 }}</p>
+                    </div>
+                {% elif project %}
+                    <h2>{{ project.ten_du_an }}</h2>
+                {% else %}
+                    <h2>Thông tin khởi tạo</h2>
+                {% endif %}
+                {% if device %}
+                    <div class="pm-fields">
+                        <div class="pm-field">
+                            <span>Mã thiết bị</span>
+                            <span class="pm-readonly">
+                                {{ device.ma_thiet_bi }}
+                                · {{ device.ten_thiet_bi }}
+                            </span>
+                        </div>
+                        <div class="pm-field">
+                            <span>Tài sản được xác định</span>
+                            <span class="pm-readonly">
+                                {% if current_asset %}
+                                    {{ current_asset.ma_tai_san_noi_bo }}
+                                {% else %}
+                                    Chưa có tài sản
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if solution %}
+                    <div class="pm-evidence">
+                        <h3>
+                            PA-{{ solution.pk }}
+                            · Phương án đang chọn
+                        </h3>
+                        <div class="pm-rich">{{ solution.noi_dung_phuong_an|linebreaks }}</div>
+                        <p>
+                            <strong>Cơ sở đề xuất:</strong>
+                            {{ solution.co_so_de_xuat }}
+                        </p>
+                    </div>
+                {% endif %}
+                {% if trial %}
+                    <div class="pm-info">
+                        <strong>
+                            PA-{{ trial.phuong_an_id }}
+                            · Lần thử {{ trial.so_lan }}
+                        </strong>
+                        <p>
+                            Người thực hiện:
+                            {% if trial.nguoi_thuc_hien %}
+                                {{ trial.nguoi_thuc_hien|ho_ten }}
+                            {% else %}
+                                Chưa xác định
+                            {% endif %}
+                        </p>
+                        <p>Bắt đầu {{ trial.ngay_thu|date:"d/m/Y H:i" }}</p>
+                    </div>
+                {% endif %}
+                {% if asset_error %}
+                    <div class="pm-error" role="alert">{{ asset_error }}</div>
+                    <a href="{% url 'projects:equipment' project.pk %}">Về thiết bị dự án để đối chiếu ngữ cảnh</a>
+                {% endif %}
+                {% if policy_warning %}
+                    <div class="pm-info pm-warning" role="status">{{ policy_warning }}</div>
+                {% endif %}
+                <form method="post"
+                      enctype="multipart/form-data"{% if confirm_leave %} data-confirm-leave data-dirty="{{ form.is_bound|yesno:'true,false' }}"{% endif %}>
+                    {% if evidence_required %}
+                        {% csrf_token %}
+                        {% for hidden in form.hidden_fields %}
+                            {{ hidden }} {{ hidden.errors }}
+                        {% endfor %}
+                        {% if form.non_field_errors %}
+                            <div class="pm-error" role="alert">{{ form.non_field_errors }}</div>
+                        {% endif %}
+                        <fieldset class="pm-candidate-list">
+                            <legend>Chọn đúng một căn cứ thành công</legend>
+                            {% for row in evidence %}
+                                <article class="pm-evidence" id="evidence-{{ row.result.pk }}">
+                                    <label class="pm-candidate-label">
+                                        <input type="radio"
+                                               name="ket_qua"
+                                               value="{{ row.result.pk }}"
+                                               required{% if form.ket_qua.value|stringformat:'s' == row.result.pk|stringformat:'s' %}
+                                               checked{% endif %}>
+                                        PA-{{ row.solution.pk }}
+                                        · Lần thử {{ row.result.lan_thu.so_lan }}
+                                        · Kết quả #{{ row.result.pk }}
+                                        thành công
+                                    </label>
+                                    <h3>Phương án</h3>
+                                    <div class="pm-rich">{{ row.solution.noi_dung_phuong_an|linebreaks }}</div>
+                                    <p>
+                                        <strong>Cơ sở:</strong>
+                                        {{ row.solution.co_so_de_xuat }}
+                                    </p>
+                                    {% include "projects/_attachments.html" with attachments=row.solution_files %}
+                                    <h3>Kết quả</h3>
+                                    <div class="pm-rich">{{ row.result.mo_ta_ket_qua|linebreaks }}</div>
+                                    <p class="pm-caption">
+                                        Người thực hiện:
+                                        {% if row.result.lan_thu.nguoi_thuc_hien %}
+                                            {{ row.result.lan_thu.nguoi_thuc_hien|ho_ten }}
+                                        {% else %}
+                                            Thông tin người thực hiện chưa đầy đủ trong dữ liệu nguồn
+                                        {% endif %}
+                                        · Ghi nhận {{ row.result.ngay_ghi_nhan|date:"d/m/Y H:i" }}
+                                    </p>
+                                    {% include "projects/_attachments.html" with attachments=row.result_files %}
+                                </article>
+                            {% empty %}
+                                <p class="pm-info" role="alert">
+                                    Chưa có kết quả thành công hợp lệ để làm căn cứ kết luận.
+                                </p>
+                            {% endfor %}
+                            {% if form.ket_qua.errors %}
+                                <div class="pm-error">{{ form.ket_qua.errors }}</div>
+                            {% endif %}
+                        </fieldset>
+                        <div class="pm-fields">
+                            {% for field in form.visible_fields %}
+                                {% if field.name != "ket_qua" %}
+                                    {% include "projects/_field.html" %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {% include "projects/_manage_fields.html" %}
+                    {% endif %}
+                    {% if notice %}
+                        <p class="pm-form-note">{{ notice }}</p>
+                    {% endif %}
+                    <div class="pm-actions">
+                        <button class="pm-button"
+                                type="submit"{% if asset_error or policy_warning or evidence_required and not evidence %} disabled{% endif %}>
+                            {{ submit_label }}
+                        </button>
+                        <a class="pm-button pm-secondary" href="{{ cancel_url }}">Hủy</a>
+                        {% if form.errors %}
+                            <a href="{{ request.path }}">Tải lại để đối chiếu</a>
+                        {% endif %}
+                    </div>
+                    {% if form.errors %}
+                        <p class="pm-form-note">Nếu biểu mẫu có tệp, vui lòng chọn lại tệp trước khi gửi lại.</p>
+                    {% endif %}
+                </form>
+            </section>
+        </div>
+        <aside class="pm-context" aria-label="Thông tin liên quan">
+            <section class="pm-panel">
+                <h2>Thông tin liên quan</h2>
+                {% if project %}
+                    <p>Dự án: {{ project.ten_du_an }}</p>
+                    <p>Vai trò: {{ membership.get_vai_tro_display }}</p>
+                {% else %}
+                    <h3>Trách nhiệm ban đầu</h3>
+                    <p>Người tạo là Quản lý dự án và Chủ sở hữu (OWNER) của cộng đồng liên kết ban đầu.</p>
+                    <h3>Phạm vi truy cập</h3>
+                    <p>Phạm vi hiển thị cộng đồng không tự cấp tư cách thành viên hoặc quyền quản lý dự án.</p>
+                {% endif %}
+                {% if trial %}
+                    <p>
+                        Kết quả chỉ ghi cho đúng lần thử và người thực hiện đã xác định. Thử thực tế diễn ra ngoài OZZONE.
+                    </p>
+                {% endif %}
+                {% if device %}
+                    <p>
+                        Tài sản tại thời điểm ghi được bảo toàn trong lịch sử. Chưa có tài sản vẫn có thể ghi với mã thiết bị hợp lệ.
+                    </p>
+                {% endif %}
+                {% if evidence_required %}
+                    <p>
+                        Đối chiếu phương án, lần thử, kết quả và minh chứng trước khi chọn. Kết luận hợp lệ được lưu cùng tình trạng đã giải quyết và nhu cầu xem xét tri thức.
+                    </p>
+                {% endif %}
+            </section>
+        </aside>
+    </div>
+    {% if confirm_leave %}
+        <dialog class="pm-dialog" id="leave-dialog">
+            <h2>Rời nội dung đang soạn?</h2>
+            <p>Chọn tiếp tục để giữ bản nhập hoặc rời trang để bỏ thay đổi chưa gửi.</p>
+            <div class="pm-actions">
+                <button class="pm-button" type="button" data-continue-edit>Tiếp tục soạn</button>
+                <button class="pm-button pm-secondary" type="button" data-leave-page>Rời không lưu</button>
+            </div>
+        </dialog>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'ozzone/components.css' %}">
+<link rel="stylesheet" href="{% static 'communities/communities.css' %}">
+<link rel="stylesheet" href="{% static 'communities/responsive.css' %}?v=20261112-cards2">
+<link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261112-cards2">
+{% endblock %}
+{% block main_class %}cm-main{% endblock %}
+{% block sidebar %}
+<aside class="oz-sidebar cm-sidebar" aria-label="Cộng đồng">
+  <p class="oz-sidebar-title">Cộng đồng</p>
+  <nav>
+    <a class="oz-side-link {% if active_side == 'explore' %}is-active{% endif %}" href="{% url 'communities:list' %}">Khám phá</a>
+    {# Mục 2: cộng đồng đang làm việc / mở gần nhất (Figma: "Kỹ thuật & Vận hành") — xem sidebar() trong views/_chung.py #}
+    {% if side_community %}
+      <a class="oz-side-link {% if active_side == 'community' %}is-active{% endif %}" href="{% url 'communities:detail' side_community.pk %}" title="{{ side_community.ten_cong_dong }}">{{ side_community.ten_cong_dong }}</a>
+      <a class="oz-side-link {% if active_side == 'members' %}is-active{% endif %}" href="{% url 'communities:members' side_community.pk %}">Thành viên</a>
+    {% endif %}
+    <a class="oz-side-link {% if active_side == 'requests' %}is-active{% endif %}" href="{% url 'communities:requests' %}">Yêu cầu tham gia{% if side_pending %}<span class="oz-count">{{ side_pending }}</span>{% endif %}</a>
+    {% if side_can_moderate %}
+      <a class="oz-side-link {% if active_side == 'moderation' %}is-active{% endif %}" href="{% if side_moderation_pk %}{% url 'communities:moderation' side_moderation_pk %}{% else %}{% url 'communities:moderation_home' %}{% endif %}">Kiểm duyệt cộng đồng</a>
+    {% endif %}
+  </nav>
+  <p class="oz-sidebar-foot">Đang dùng tài khoản<br>{% if request.user.last_name or request.user.first_name %}{{ request.user|ho_ten }}{% else %}{{ request.user.get_username }}{% endif %}</p>
+</aside>
+{% endblock %}

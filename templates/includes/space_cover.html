@@ -1,0 +1,11 @@
+<div class="oz-space-cover" aria-hidden="true">
+    <span>{{ cover_label }}</span>
+    <svg viewBox="0 0 96 72" fill="none" stroke="currentColor" stroke-width="2.5">
+        {% if cover_kind == 'community' %}
+            <circle cx="48" cy="23" r="11"/>
+            <path d="M26 60v-7a22 22 0 0 1 44 0v7M24 17a9 9 0 0 0 0 18M72 17a9 9 0 0 1 0 18M10 59v-6a16 16 0 0 1 10-15M86 59v-6a16 16 0 0 0-10-15"/>
+        {% else %}
+            <path d="M13 59V17h27l8 9h35v33H13ZM13 26h35M30 39h36M30 49h25"/>
+        {% endif %}
+    </svg>
+</div>

@@ -1,0 +1,212 @@
+/* UI alignment for GD-087. Loaded after knowledge.css and knw04.css. */
+.knw04-queue-page {
+    width: 100%;
+    max-width: none;
+    padding: 24px 32px 48px;
+}
+
+/* Shared sidebar styling is imported from knowledge.css by the template. */
+.knw04-queue-page .knw-sidebar,
+.knw-sidebar {
+    box-sizing: border-box;
+}
+
+.knw04-title-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 0 24px;
+}
+
+.knw04-title-row h1 {
+    margin: 0;
+    color: #202D34;
+    font-size: 27px;
+    line-height: 1.35;
+    font-weight: 700;
+}
+
+.knw04-toolbar--figma {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 0 0 22px;
+}
+
+.knw04-search-form {
+    flex: 1 1 520px;
+    min-width: 160px;
+    margin: 0;
+}
+
+.knw04-search-form input[type="search"] {
+    display: block;
+    width: 100%;
+    height: 44px;
+    padding: 0 15px;
+    border: 1px solid #E2E7EA;
+    border-radius: 8px;
+    outline: none;
+    background: #FFFFFF;
+    color: #202D34;
+    font: inherit;
+    font-size: 13px;
+}
+
+.knw04-search-form input[type="search"]:focus {
+    border-color: #3B7132;
+    box-shadow: 0 0 0 2px rgb(59 113 50 / 10%);
+}
+
+.knw04-status-menu {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.knw04-filter-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 82px;
+    height: 44px;
+    padding: 0 18px;
+    border: 1px solid #E2E7EA;
+    border-radius: 8px;
+    background: #FFFFFF;
+    color: #3B7132;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+
+.knw04-filter-button::-webkit-details-marker { display: none; }
+.knw04-status-menu[open] .knw04-filter-button,
+.knw04-filter-button:hover {
+    background: #EAF1E7;
+    border-color: #C9DCC3;
+}
+
+.knw04-status-popover {
+    position: absolute;
+    top: calc(100% + 7px);
+    right: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    padding: 7px;
+    border: 1px solid #E2E7EA;
+    border-radius: 8px;
+    background: #FFFFFF;
+    box-shadow: 0 8px 24px rgb(32 45 52 / 12%);
+}
+
+.knw04-status-popover a {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: #52616B;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.knw04-status-popover a:hover,
+.knw04-status-popover a[aria-current="true"] {
+    color: #3B7132;
+    background: #EAF1E7;
+}
+
+.knw04-scope-note {
+    flex: 0 0 auto;
+    margin-left: 4px;
+    color: #697582;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.knw04-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+    border: 1px solid #E2E7EA;
+    border-radius: 8px;
+    background: #FFFFFF;
+}
+
+.knw04-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+}
+
+.knw04-table thead th {
+    padding: 15px 18px;
+    background: #F7F8F7;
+    color: #52616B;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.knw04-table tbody tr:not(.knw04-history-row) td {
+    padding: 16px 18px;
+    border-top: 1px solid #E7ECEF;
+    color: #263238;
+    font-size: 13px;
+    vertical-align: middle;
+}
+
+.knw04-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0 13px;
+    border-radius: 7px;
+    background: #EAF1E7;
+    color: #3B7132;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.knw04-action:hover {
+    background: #DAF9C9;
+    color: #2F5E28;
+    text-decoration: none;
+}
+
+.knw04-empty-cell {
+    padding: 28px 20px !important;
+    text-align: center;
+    color: #697582 !important;
+}
+
+.knw04-empty-cell strong {
+    display: block;
+    margin: 0 0 7px;
+    color: #263238;
+    font-size: 14px;
+}
+
+.knw04-empty-cell p {
+    max-width: 620px;
+    margin: 0 auto;
+    color: #697582;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+    .knw04-queue-page { padding: 20px 20px 36px; }
+    .knw04-toolbar--figma { flex-wrap: wrap; }
+    .knw04-search-form { flex-basis: 100%; }
+    .knw04-scope-note { white-space: normal; }
+}
+
+@media (max-width: 650px) {
+    .knw04-queue-page { padding: 16px 14px 28px; }
+    .knw04-title-row { align-items: flex-start; flex-direction: column; }
+}

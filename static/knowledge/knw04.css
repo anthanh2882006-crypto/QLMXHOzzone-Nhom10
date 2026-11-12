@@ -1,0 +1,87 @@
+/* UC-KNW-04 — GD-087 / GD-088 */
+.knw04-page{width:100%;max-width:none;padding:24px 28px 48px}
+.knw04-title-row{display:flex;align-items:flex-start;gap:16px;margin:0 0 24px}
+.knw04-title-row h1{margin:0 0 5px;color:#202D34;font-size:28px;font-weight:700}
+.knw04-title-row p{margin:0;color:#697582;font-size:13px}
+.knw04-toolbar{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 24px}
+.knw04-toolbar input[type=search]{flex:1;min-width:180px;height:44px;padding:0 15px;border:1px solid #E2E7EA;border-radius:8px;background:#FFFFFF;font:inherit;font-size:13px}
+.knw04-toolbar select{height:44px;min-width:190px;padding:0 12px;border:1px solid #E2E7EA;border-radius:8px;background:#FFFFFF;color:#697582;font:inherit;font-size:12px}
+.knw04-filter-button{height:44px;padding:0 22px;border:0;border-radius:8px;background:#FFFFFF;color:#3B7132;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.knw04-scope-note{color:#697582;font-size:12px;white-space:nowrap}
+.knw04-table-wrap{width:100%;overflow-x:auto;background:#FFFFFF;border:1px solid #E2E7EA;border-radius:8px}
+.knw04-table{width:100%;border-collapse:collapse;min-width:800px}
+.knw04-table th{height:48px;padding:12px 16px;background:#F7F8F7;color:#697582;text-align:left;font-size:12px;font-weight:600}
+.knw04-table td{padding:13px 16px;border-top:1px solid #E2E7EA;color:#263238;font-size:13px;vertical-align:middle}
+.knw04-table td strong{display:block;font-weight:500}
+.knw04-table td small{display:block;margin-top:5px;color:#87919A;font-size:11px}
+.knw04-status{display:inline-flex;align-items:center;min-height:28px;padding:0 10px;border-radius:7px;font-size:11px;font-weight:600;white-space:nowrap}
+.knw04-status--pending{background:#FFF4E5;color:#A15C00}
+.knw04-status--reopen{background:#F0EAFE;color:#6941A5}
+.knw04-status--no{background:#F1F3F4;color:#697582}
+.knw04-status--done{background:#EAF3EC;color:#39754C}
+.knw04-action{color:#3B7132;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap}
+.knw04-action:hover{text-decoration:underline}
+.knw04-muted{color:#87919A;font-size:12px}
+.knw04-archive-note{color:#8A5A18!important}
+.knw04-error-note{color:#B42318!important}
+.knw04-history-row td{padding:0 16px 14px;border-top:0;background:#FCFDFC}
+.knw04-history summary{padding:7px 0;color:#3B7132;font-size:11px;font-weight:600;cursor:pointer}
+.knw04-history-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:8px 0 14px}
+.knw04-history-item{padding:12px 14px;border:1px solid #E2E7EA;border-radius:7px;background:#FFFFFF}
+.knw04-history-head{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px;color:#263238;font-size:11px}
+.knw04-history-head span{color:#87919A;font-weight:400;white-space:nowrap}
+.knw04-history-item p{margin:4px 0;color:#697582;font-size:11px;line-height:1.55}
+.knw04-history-item b{color:#263238}
+.knw04-history-item small{color:#87919A;font-size:10px}
+.knw04-reopen-form{display:flex;align-items:center;gap:10px;margin-top:8px}
+.knw04-reopen-form label{color:#697582;font-size:11px;white-space:nowrap}
+.knw04-reopen-form input{flex:1;min-width:160px;height:36px;padding:0 10px;border:1px solid #E2E7EA;border-radius:7px;font:inherit;font-size:11px}
+.knw04-reopen-form button{height:36px;padding:0 14px;border:0;border-radius:7px;background:#3B7132;color:#FFFFFF;font:inherit;font-size:11px;font-weight:600;cursor:pointer}
+.knw04-empty{padding:32px;border:1px dashed #D5DDD2;border-radius:9px;background:#FFFFFF}
+.knw04-empty h2{margin:0 0 8px;color:#263238;font-size:18px}
+.knw04-empty p{margin:0;color:#697582;font-size:13px;line-height:1.65}
+.knw04-normalize-layout{display:grid;grid-template-columns:minmax(320px,.82fr) minmax(0,1.18fr);align-items:start;gap:22px;width:100%}
+.knw04-source-card,.knw04-form-card{min-width:0;padding:22px;border-radius:9px;background:#FFFFFF;border:1px solid #E2E7EA}
+.knw04-source-badge{display:inline-flex;align-items:center;min-height:28px;padding:0 12px;border-radius:7px;background:#E8F4F1;color:#368A7E;font-size:11px;font-weight:600}
+.knw04-source-card h2{margin:16px 0 8px;color:#263238;font-size:20px;line-height:1.4}
+.knw04-project-name{margin:0 0 5px;color:#697582;font-size:12px}
+.knw04-device-line{margin:4px 0;color:#697582;font-size:11px}
+.knw04-source-visual{display:flex;flex-direction:column;justify-content:flex-end;gap:4px;height:120px;margin:18px 0;padding:20px;background:linear-gradient(110deg,#F9F0DE,#F7E9D0);color:#B37A28}
+.knw04-source-visual span{font-size:10px;font-weight:600;letter-spacing:.35px}
+.knw04-source-visual strong{color:#263238;font-size:13px}
+.knw04-source-result{padding:0 0 14px;border-bottom:1px solid #3B7132}
+.knw04-source-result strong{display:block;margin-bottom:8px;color:#3B7132;font-size:13px}
+.knw04-source-result p{margin:5px 0;color:#263238;font-size:12px;line-height:1.6}
+.knw04-source-result small{display:block;margin-top:8px;color:#697582;font-size:10px}
+.knw04-source-note{display:flex;flex-direction:column;gap:5px;margin-top:14px}
+.knw04-source-note strong{color:#263238;font-size:12px}
+.knw04-source-note span{color:#697582;font-size:11px;line-height:1.55}
+.knw04-evaluation-box{margin-top:20px;padding-top:16px;border-top:1px solid #E2E7EA}
+.knw04-evaluation-box h3{margin:0 0 12px;color:#3470B7;font-size:13px}
+.knw04-evaluation-box label{display:block;margin:10px 0 6px;color:#263238;font-size:11px;font-weight:600}
+.knw04-evaluation-box textarea{width:100%;padding:10px 12px;border:1px solid #E2E7EA;border-radius:7px;color:#263238;font:inherit;font-size:12px;line-height:1.5;resize:vertical}
+.knw04-no-lesson-button{width:100%;min-height:40px;margin-top:14px;border:0;border-radius:7px;background:#FFFFFF;color:#3B7132;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.knw04-no-lesson-button:hover{background:#EAF1E7}
+.knw04-note{display:block;margin-top:9px;color:#87919A;font-size:10px;line-height:1.55}
+.knw04-form-card h2{margin:3px 0 22px;color:#263238;font-size:24px}
+.knw04-field{display:flex;flex-direction:column;gap:7px;margin-bottom:15px}
+.knw04-field label{color:#263238;font-size:11px;font-weight:500}
+.knw04-field textarea,.knw04-field select{width:100%;min-height:42px;padding:10px 13px;border:1px solid #E2E7EA;border-radius:7px;background:#FFFFFF;color:#697582;font:inherit;font-size:12px;line-height:1.5;resize:vertical}
+.knw04-field select{height:44px}
+.knw04-anon-confirm{display:flex;align-items:flex-start;gap:9px;margin:12px 0;color:#697582;font-size:10px;line-height:1.55}
+.knw04-anon-confirm input{margin-top:2px;accent-color:#3B7132}
+.knw04-field-error{display:block;color:#B42318;font-size:10px;line-height:1.45}
+.knw04-form-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:22px;padding-top:16px;border-top:1px solid #E2E7EA}
+.knw04-form-footer .knw04-note{max-width:320px;margin:0}
+.knw04-save-button{min-height:42px;padding:0 22px;border:0;border-radius:7px;background:#3B7132;color:#FFFFFF;font:inherit;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.knw04-save-button:hover{background:#2F5E28}
+.knw04-save-button:disabled,.knw04-no-lesson-button:disabled{opacity:.45;cursor:not-allowed}
+.knw04-alert{margin:0 0 16px;padding:12px 16px;border-radius:7px;font-size:12px;line-height:1.55}
+.knw04-alert--error{background:#FEF3F2;color:#B42318}
+.knw04-alert--info{margin-top:14px;background:#F1F5FA;color:#46627E}
+@media(max-width:1050px){.knw04-normalize-layout{grid-template-columns:1fr}.knw04-source-card{order:0}.knw04-form-card{order:1}}
+@media(max-width:760px){.knw04-page{padding:18px 14px 30px}.knw04-title-row{flex-direction:column}.knw04-toolbar{flex-wrap:wrap}.knw04-toolbar input[type=search]{flex-basis:100%}.knw04-scope-note{white-space:normal}.knw04-history-list{grid-template-columns:1fr}.knw04-reopen-form{align-items:stretch;flex-direction:column}.knw04-reopen-form input,.knw04-reopen-form button{width:100%}.knw04-source-card,.knw04-form-card{padding:17px}.knw04-form-footer{align-items:stretch;flex-direction:column}.knw04-save-button{width:100%}}
+
+.knw04-page label { font-size: 14px; }
+.knw04-page input, .knw04-page select, .knw04-page textarea { font-size: 14px; }
+.knw04-page .knw04-note { font-size: 12px; }

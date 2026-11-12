@@ -1,0 +1,14 @@
+{% load ozzone_names %}
+<aside class="oz-notice-context-nav" aria-label="Điều hướng mạng xã hội">
+    <p class="oz-notice-context-label">MẠNG XÃ HỘI</p>
+    <nav>
+        <a class="{% if notice_nav_active == 'feed' %}is-active{% endif %}" href="{% url 'social:feed' %}">Bảng tin công ty</a>
+        <a class="{% if notice_nav_active == 'notices' %}is-active{% endif %}" href="{% url 'notifications:list' %}">Thông báo chính thức</a>
+        <a class="{% if notice_nav_active == 'my_posts' %}is-active{% endif %}" href="{% url 'social:my_posts' %}">Bài đăng của tôi</a>
+        <a href="{% url 'social:saved' %}">Nội dung đã lưu</a>
+    </nav>
+    <div class="oz-notice-context-user">
+        <span>Đang dùng tài khoản</span>
+        <strong>{{ request.user|ho_ten }}</strong>
+    </div>
+</aside>

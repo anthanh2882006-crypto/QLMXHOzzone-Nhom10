@@ -1,0 +1,77 @@
+{% extends "projects/base.html" %}
+{% load ozzone_names %}
+{% block project_content %}
+    {% include "projects/_page_header.html" %}
+    <section class="pm-panel pm-filter-panel">
+        <form method="get" action="{% url 'projects:history' project.pk %}">
+            <div class="pm-filter-grid">
+                {% for field in form %}
+                    {% include "projects/_field.html" %}
+                {% endfor %}
+            </div>
+            <div class="pm-actions">
+                <button class="pm-button" type="submit">Lọc lịch sử</button>
+                <a href="{% url 'projects:history' project.pk %}">Xóa bộ lọc</a>
+            </div>
+        </form>
+    </section>
+    <section class="pm-panel">
+        <h2>Diễn biến dự án</h2>
+        <p class="pm-caption">Lịch sử chỉ đọc. Quyền mở nguồn và tệp được kiểm tra riêng.</p>
+        <div class="pm-table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Hoạt động</th>
+                        <th scope="col">Người thực hiện</th>
+                        <th scope="col">Ngữ cảnh</th>
+                        <th scope="col">Thời điểm</th>
+                        <th scope="col">Chi tiết</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in page_obj %}
+                        <tr>
+                            <td>
+                                <strong>{{ row.label }}</strong>
+                            </td>
+                            <td>
+                                {% if row.actor %}
+                                    {{ row.actor|ho_ten }}
+                                {% else %}
+                                    Hệ thống
+                                {% endif %}
+                            </td>
+                            <td>{{ row.detail|default:"—" }}</td>
+                            <td>
+                                <time>
+                                    {{ row.time|date:"d/m/Y H:i" }}
+                                </time>
+                            </td>
+                            <td>
+                                {% if row.url %}
+                                    <a href="{{ row.url }}">Mở nguồn</a>
+                                {% elif row.detail_url %}
+                                    <a href="{{ row.detail_url }}">Xem thay đổi đã ghi</a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">
+                                {% if form.errors %}
+                                    Kiểm tra lại các trường lọc để xem lịch sử.
+                                {% else %}
+                                    Chưa có bản ghi phù hợp.
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% include "projects/_pagination.html" %}
+{% endblock %}

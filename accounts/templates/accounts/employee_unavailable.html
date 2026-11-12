@@ -1,0 +1,13 @@
+{% extends "accounts/_base.html" %}
+{% block title %}Nhân viên không khả dụng | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  <p class="oz-breadcrumb">Tài khoản / <a href="{% url 'accounts:directory' %}">Danh bạ nhân viên</a></p>
+  <h1 class="oz-page-title">Không thể mở hồ sơ</h1>
+  <div class="oz-alert oz-alert-warn">
+    <p class="oz-alert-title">Nhân viên không còn khả dụng</p>
+    <p>Tài khoản đã ngừng hoạt động hoặc chưa có hồ sơ nhân viên.</p>
+  </div>
+  <a class="oz-btn" href="{% url 'accounts:directory' %}">Quay lại danh bạ</a>
+</div>
+{% endblock %}

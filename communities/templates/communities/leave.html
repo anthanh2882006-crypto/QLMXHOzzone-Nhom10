@@ -1,0 +1,32 @@
+{% extends "communities/_base.html" %}
+{% block title %}Rời cộng đồng | OZZONE{% endblock %}
+{% block content %}
+<div class="oz-page">
+  {% include "includes/community_back.html" %}
+  <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / <a href="{% url 'communities:detail' community.pk %}">{{ community.ten_cong_dong }}</a> / Rời cộng đồng</p>
+  <h1 class="oz-page-title">Rời {{ community.ten_cong_dong }}?</h1>
+
+  {% if is_project %}
+    <div class="oz-alert"><p class="oz-alert-title">Cộng đồng dự án</p><p>Tư cách thành viên thay đổi qua quản lý thành viên dự án, không rời độc lập.</p></div>
+    <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">Quay lại</a>
+  {% elif sole_owner %}
+    <div class="oz-alert oz-alert-warn">
+      <p class="oz-alert-title">Cần bàn giao trách nhiệm</p>
+      <p>Bạn là chủ sở hữu duy nhất. Hãy bàn giao quyền chủ sở hữu cho một thành viên đang hoạt động trước khi rời.</p>
+      <div class="oz-actions" style="margin-top:10px">
+        <a class="oz-btn oz-btn-primary" href="{% url 'communities:members' community.pk %}">Bàn giao chủ sở hữu</a>
+        <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">Hủy</a>
+      </div>
+    </div>
+  {% else %}
+    <div class="oz-alert oz-alert-warn">
+      <p class="oz-alert-title">Lưu ý quyền truy cập sau khi rời</p>
+      <p>Bạn sẽ không còn đăng bài trong cộng đồng{% if community.pham_vi_truy_cap == 'thanh_vien' %} và không xem được bảng tin dành cho thành viên{% endif %}. Các bài bạn đã đăng vẫn được giữ nguyên.{% if community.quy_tac_tham_gia == 'cho_duyet' %} Muốn quay lại cần gửi yêu cầu mới.{% endif %}</p>
+      <div class="oz-actions" style="margin-top:10px">
+        <form method="post" class="oz-inline-form">{% csrf_token %}<button class="oz-btn oz-btn-danger" type="submit">Rời cộng đồng</button></form>
+        <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">Hủy</a>
+      </div>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

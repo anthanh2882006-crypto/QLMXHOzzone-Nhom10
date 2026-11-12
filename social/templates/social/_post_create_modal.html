@@ -1,0 +1,107 @@
+{% load ozzone_names %}
+{% load static %}
+{% if can_post %}
+<div class="social-modal" data-post-modal hidden aria-hidden="true" data-initial-step="{% if post_modal_open %}compose{% else %}choice{% endif %}">
+    <div class="social-modal-backdrop" data-post-modal-close></div>
+    <section class="social-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="post-modal-title" tabindex="-1">
+        <button class="social-modal-close" type="button" data-post-modal-close aria-label="Đóng">×</button>
+
+        <section class="social-modal-step" data-post-modal-step="choice">
+            <header class="social-modal-heading">
+                <h2 id="post-modal-title">BẠN MUỐN ĐĂNG NỘI DUNG GÌ?</h2>
+                <p>Hai cách chia sẻ khác nhau trong OZZONE.</p>
+            </header>
+            <div class="social-post-type-grid">
+                <button class="social-post-type-card" type="button" data-post-modal-next="compose">
+                    <span class="social-post-type-avatar">
+                        {% if request.user.last_name or request.user.first_name %}{{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                    </span>
+                    <span class="social-post-type-title">BÀI VIẾT CÁ NHÂN</span>
+                    <span class="social-post-type-copy">Đăng bằng hồ sơ của bạn để chia sẻ công việc, ý tưởng hoặc trao đổi cùng đồng nghiệp.</span>
+                    <span class="social-post-type-features">
+                        Chia sẻ và thảo luận<br>
+                        Ảnh hoặc tài liệu đính kèm<br>
+                        Bình luận và tương tác
+                    </span>
+                    <span class="social-post-type-action">Tạo bài cá nhân <span aria-hidden="true">→</span></span>
+                </button>
+
+                {% url 'notifications:create' as official_create_url %}
+                {% if official_create_url and perms.projectp.cong_bo_thong_bao %}
+                    <a class="social-post-type-card social-post-type-official" href="{{ official_create_url }}">
+                        <span class="social-post-type-brand"><span class="social-brand-mark">O</span> OZZONE</span>
+                        <span class="social-post-type-title">THÔNG BÁO CHÍNH THỨC</span>
+                        <span class="social-post-type-copy">Phát hành thông tin chính thức của công ty tới phạm vi và nhóm người nhận đã chọn.</span>
+                        <span class="social-post-type-features social-post-type-features-light">
+                            Phát hành đến người nhận<br>
+                            Có thể yêu cầu xác nhận đã tiếp nhận<br>
+                            Theo dõi trạng thái tiếp nhận
+                        </span>
+                        <span class="social-post-type-action">Soạn thông báo <span aria-hidden="true">→</span></span>
+                    </a>
+                {% else %}
+                    <div class="social-post-type-card social-post-type-official is-disabled" aria-disabled="true" title="Chức năng phát hành thông báo chính thức chỉ dành cho tài khoản có quyền và phân hệ tương ứng.">
+                        <span class="social-post-type-brand"><span class="social-brand-mark">O</span> OZZONE</span>
+                        <span class="social-post-type-title">THÔNG BÁO CHÍNH THỨC</span>
+                        <span class="social-post-type-copy">Phát hành thông tin chính thức của công ty tới phạm vi và nhóm người nhận đã chọn.</span>
+                        <span class="social-post-type-features social-post-type-features-light">
+                            Phát hành đến người nhận<br>
+                            Có thể yêu cầu xác nhận đã tiếp nhận<br>
+                            Theo dõi trạng thái tiếp nhận
+                        </span>
+                        <span class="social-post-type-action">Chưa khả dụng với tài khoản này</span>
+                    </div>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="social-modal-step" data-post-modal-step="compose" hidden>
+            <header class="social-modal-heading social-compose-heading">
+                <h2>TẠO BÀI VIẾT CÁ NHÂN</h2>
+                <p>Đăng bằng hồ sơ của bạn.</p>
+            </header>
+
+            <div class="social-modal-author">
+                <span class="social-modal-avatar">
+                    {% if request.user.last_name or request.user.first_name %}{{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                </span>
+                <span>
+                    <strong>{{ request.user|ho_ten }}</strong>
+                    <small>{% if profile %}{{ profile.phong_ban.ten_phong_ban }} · Hồ sơ cá nhân{% else %}Hồ sơ cá nhân{% endif %}</small>
+                </span>
+            </div>
+
+            <div class="social-post-destination"><span>Đăng vào</span><strong>Bảng tin công ty</strong></div>
+
+            <form method="post" action="{% url 'social:create' %}" enctype="multipart/form-data" class="social-modal-form" data-post-modal-form>
+                {% csrf_token %}
+                {{ post_form.request_token }}
+                <input type="hidden" name="tieu_de" value="">
+                <input type="hidden" name="source_context" value="{{ post_modal_source|default:'feed' }}">
+                <input type="hidden" name="return_tab" value="{{ active_tab|default:'for_you' }}">
+
+                {% if post_form.non_field_errors %}<div class="social-alert social-alert-error">{{ post_form.non_field_errors }}</div>{% endif %}
+                {{ post_form.noi_dung.errors }}
+                <label class="social-sr-only" for="id_noi_dung">Nội dung bài viết</label>
+                <textarea id="id_noi_dung" name="noi_dung" rows="7" maxlength="20000" required placeholder="Bạn muốn chia sẻ điều gì với đồng nghiệp?">{{ post_form.noi_dung.value|default_if_none:"" }}</textarea>
+
+                <div class="social-modal-attachment-row">
+                    <span class="social-modal-file-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
+                    </span>
+                    <span class="social-modal-file-copy"><strong>Thêm ảnh hoặc tài liệu</strong><small data-file-names>Đính kèm tối đa 5 tệp, 10 MB/tệp.</small></span>
+                    <input id="id_tep_dinh_kem" type="file" name="tep_dinh_kem" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip">
+                    <label class="social-modal-file-button" for="id_tep_dinh_kem">Chọn tệp</label>
+                </div>
+                {{ post_form.tep_dinh_kem.errors }}
+
+                <div class="social-modal-form-footer">
+                    <button class="social-modal-change-type" type="button" data-post-modal-back>Đổi loại nội dung</button>
+                    <button class="social-button social-button-primary social-modal-submit" type="submit">Đăng bài</button>
+                </div>
+            </form>
+        </section>
+    </section>
+</div>
+<script src="{% static 'social/js/post-modal.js' %}?v=20261111-social-ui1" defer></script>
+{% endif %}

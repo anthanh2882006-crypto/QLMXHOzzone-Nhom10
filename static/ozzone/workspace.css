@@ -1,0 +1,452 @@
+/* Chữ, màu và thành phần dùng chung của Dự án, Cộng đồng và Tài khoản. */
+.oz-page-navigation {
+    display: flex;
+    margin-bottom: 20px;
+}
+.oz-space-card {
+    min-width: 0;
+    min-height: 350px;
+}
+.oz-space-cover {
+    position: relative;
+    display: flex;
+    flex: 0 0 112px;
+    align-items: flex-end;
+    overflow: hidden;
+    padding: 20px 24px;
+    color: #56846B;
+    background: #EAF3EC;
+}
+.cm-card .oz-space-cover {
+    color: #75678E;
+    background: #F1EDF6;
+}
+.oz-space-cover::before,
+.oz-space-cover::after {
+    position: absolute;
+    right: -28px;
+    bottom: -84px;
+    width: 220px;
+    height: 220px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    opacity: .18;
+    content: "";
+}
+.oz-space-cover::after {
+    right: 35px;
+    bottom: -110px;
+    width: 170px;
+    height: 170px;
+}
+.oz-space-cover span {
+    font-size: 12px;
+    font-weight: 500;
+}
+.oz-space-cover svg {
+    position: absolute;
+    right: 18px;
+    bottom: 15px;
+    width: 96px;
+    height: 72px;
+    opacity: .65;
+}
+.project-main .oz-space-card h2,
+.cm-main .oz-space-card h2 {
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.5;
+    font-weight: 600;
+}
+.project-main .oz-space-card h2 a,
+.cm-main .oz-space-card h2 a {
+    color: var(--oz-brand);
+    text-decoration: none;
+}
+.oz-space-card h2 a:hover {
+    text-decoration: underline;
+}
+.cm-main .oz-space-card .cm-kicker {
+    padding: 6px 12px;
+    border-radius: 7px;
+    background: #F1EDF6;
+    color: #75678E;
+    text-transform: none;
+    font-size: 12px;
+}
+.oz-post-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+.oz-feed-post {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.oz-post-avatar {
+    display: inline-flex;
+    flex: 0 0 46px;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--oz-brand-soft);
+    color: var(--oz-brand);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+}
+.oz-post-identity {
+    flex: 1;
+    min-width: 0;
+}
+.oz-post-identity strong {
+    font-weight: 600;
+}
+.oz-post-identity p {
+    margin: 3px 0 0;
+    color: var(--oz-muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+.oz-post-kind {
+    flex-shrink: 0;
+    max-width: 180px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--oz-canvas);
+    color: var(--oz-muted);
+    font-size: 12px;
+}
+.oz-post-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--oz-border);
+}
+.oz-post-counts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    margin: 0;
+    color: var(--oz-muted);
+    font-size: 12px;
+}
+.oz-post-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+}
+.oz-post-actions form {
+    margin: 0;
+}
+.oz-post-actions button,
+.oz-post-actions a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--oz-muted);
+    font: 500 13px/1.5 var(--oz-font);
+    text-decoration: none;
+    cursor: pointer;
+}
+.oz-post-actions .is-selected,
+.oz-post-actions button:hover,
+.oz-post-actions a:hover {
+    color: var(--oz-brand);
+}
+@media (max-width: 540px) {
+    .oz-post-heading {
+        flex-wrap: wrap;
+    }
+    .oz-post-identity {
+        flex: 1 0 calc(100% - 58px);
+    }
+    .oz-post-kind {
+        margin-left: 58px;
+    }
+    .oz-post-footer {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+:root {
+    --oz-font: "Be Vietnam Pro", Arial, sans-serif;
+    --oz-brand: #3B7132;
+    --oz-brand-dark: #315F29;
+    --oz-canvas: #F2F4F0;
+    --oz-surface: #FFFFFF;
+    --oz-text: #202D34;
+    --oz-muted: #697582;
+    --oz-border: #E2E7EA;
+    --oz-brand-soft: #EAF1E7;
+    --oz-danger: #C0313F;
+}
+:is(.project-main, .cm-main, .acc-main) {
+    min-width: 0;
+    background: var(--oz-canvas);
+    color: var(--oz-text);
+    font: 400 14px/1.6 var(--oz-font);
+}
+:is(.project-main, .cm-main, .acc-main) h1 {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.45;
+    text-transform: none;
+    letter-spacing: normal;
+    overflow-wrap: anywhere;
+}
+:is(.cm-main, .acc-main) .oz-card-title,
+.project-main h2 {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+:is(.cm-main, .acc-main) .oz-page {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    padding: 32px;
+}
+:is(.cm-main, .acc-main) .oz-page-title {
+    margin-bottom: 16px;
+}
+:is(.cm-main, .acc-main) :is(.oz-card, .cm-card) {
+    border-radius: 10px;
+    border-color: var(--oz-border);
+}
+:is(.cm-main, .acc-main) .oz-card {
+    padding: 24px;
+    margin-bottom: 24px;
+}
+:is(.cm-main, .acc-main) .oz-btn,
+.project-main .pm-button,
+.oz-auth .lg-btn {
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font: 500 14px/1.5 var(--oz-font);
+    white-space: normal;
+    text-align: center;
+}
+:is(.cm-main, .acc-main) .oz-btn-primary {
+    background: var(--oz-brand);
+    border-color: var(--oz-brand);
+    color: #FFFFFF;
+}
+:is(.cm-main, .acc-main) .oz-btn-primary:hover,
+.oz-auth .lg-btn:hover {
+    background: var(--oz-brand-dark);
+}
+:is(.cm-main, .acc-main) :is(.oz-input, .oz-field input:where(:not([type=checkbox]):not([type=radio]):not([type=hidden])), .oz-field textarea, .oz-field select),
+.oz-auth .lg-field input {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border-color: var(--oz-border);
+    color: var(--oz-text);
+    font: 400 14px/1.6 var(--oz-font);
+}
+.oz-auth .lg-field input {
+    height: 44px;
+}
+:is(.cm-main, .acc-main) .oz-field label {
+    font-size: 14px;
+    font-weight: 500;
+}
+:is(.cm-main, .acc-main) .oz-badge {
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: normal;
+}
+:is(.cm-main, .acc-main) .oz-badge-blue {
+    background: #ECF2FA;
+    color: #3568B0;
+}
+:is(.cm-main, .acc-main) .oz-badge-warn {
+    background: #FFF5DB;
+    color: #946000;
+}
+:is(.cm-main, .acc-main) .oz-breadcrumb,
+:is(.cm-sidebar, .acc-sidebar) .oz-sidebar-foot {
+    color: var(--oz-muted);
+    font-size: 12px;
+}
+:is(.cm-sidebar, .acc-sidebar) .oz-sidebar-title,
+.cm-main .cm-kicker, .oz-auth .lg-kicker {
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: normal;
+}
+:is(.cm-sidebar, .acc-sidebar, .pm-sidebar) {
+    flex: 0 0 232px;
+    width: 232px;
+    min-width: 0;
+    padding: 24px 16px;
+    color: var(--oz-muted);
+    background: var(--oz-surface);
+    font: 400 14px/1.6 var(--oz-font);
+}
+:is(.cm-sidebar, .acc-sidebar) .oz-side-link,
+.pm-sidebar a {
+    min-height: 44px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: var(--oz-muted);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+:is(.cm-sidebar, .acc-sidebar) .oz-side-link.is-active,
+.pm-sidebar a.is-active {
+    color: var(--oz-brand);
+    background: var(--oz-brand-soft);
+    font-weight: 500;
+}
+.cm-main .oz-searchbar {
+    padding: 20px;
+    border: 1px solid var(--oz-border);
+    border-radius: 10px;
+    background: var(--oz-surface);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.cm-main .oz-field-search .oz-input {
+    padding-left: 38px;
+}
+.cm-main .cm-card-head {
+    min-height: 112px;
+    padding: 20px;
+    color: var(--oz-brand);
+}
+.cm-main .cm-card-head.is-project {
+    color: #3568B0;
+}
+.cm-main .cm-card-title {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.45;
+}
+.cm-main .cm-card-title a {
+    color: inherit;
+    text-decoration: none;
+}
+.cm-main .cm-card-title a:hover {
+    text-decoration: underline;
+}
+.cm-main .cm-card-body {
+    align-items: flex-start;
+    padding: 20px;
+    gap: 12px;
+}
+.cm-main .cm-card-body > p {
+    margin: 0;
+}
+.cm-main .cm-desc {
+    font-size: 14px;
+    line-height: 1.6;
+}
+.cm-main .cm-meta {
+    font-size: 12px;
+}
+.cm-main .cm-card-actions {
+    width: 100%;
+    padding-top: 8px;
+}
+.acc-main :is(h1, h2, p, dd, td, a, .oz-cell-sub) {
+    overflow-wrap: anywhere;
+}
+.acc-main :is(.oz-field, .oz-card, .oz-form-grid > *, .oz-dl dd) {
+    min-width: 0;
+}
+.acc-main .oz-avatar-sm, .acc-main .oz-avatar-lg {
+    flex-shrink: 0;
+}
+.acc-main input[type=file] {
+    width: 100%;
+}
+.oz-workspace-table {
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+.oz-workspace-table table {
+    min-width: 640px;
+}
+.acc-main .oz-table td:last-child {
+    white-space: normal;
+}
+:is(.cm-main, .acc-main, .project-main, .oz-auth) :focus-visible {
+    outline: 2px solid var(--oz-brand);
+    outline-offset: 3px;
+}
+.oz-auth .lg-row {
+    grid-template-columns: minmax(0, 1fr);
+}
+.oz-auth :is(.lg-panel, .lg-hero, .lg-field) {
+    min-width: 0;
+}
+.oz-auth .lg-panel h2 {
+    font-size: 28px;
+    line-height: 1.45;
+}
+.oz-auth :is(p, h1, h2) {
+    overflow-wrap: anywhere;
+}
+@media (max-width: 1200px) {
+    :is(.cm-sidebar, .acc-sidebar, .pm-sidebar) {
+        flex-basis: 216px;
+        width: 216px;
+    }
+}
+@media (max-width: 900px) {
+    .oz-layout:has(> :is(.acc-main, .project-main, .cm-main)) {
+        flex-direction: column;
+    }
+    :is(.cm-sidebar, .acc-sidebar, .pm-sidebar) {
+        flex-basis: auto;
+        width: 100%;
+        min-height: 0;
+        padding: 16px;
+    }
+    :is(.cm-sidebar, .acc-sidebar) nav, .pm-sidebar {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+    }
+    .pm-sidebar :is(.pm-project-name, .pm-project-code, .pm-account) {
+        grid-column: 1 / -1;
+    }
+}
+@media (max-width: 760px) {
+    :is(.cm-main, .acc-main) .oz-page {
+        padding: 20px 16px 40px;
+    }
+    :is(.cm-main, .acc-main, .project-main) h1,
+    .oz-auth .lg-panel h2 {
+        font-size: 24px;
+    }
+    :is(.cm-main, .acc-main) .oz-card {
+        padding: 20px;
+    }
+    .oz-auth .lg-wrap {
+        padding: 20px 16px 40px;
+    }
+    .oz-auth .lg-top {
+        padding-right: 16px;
+        padding-left: 16px;
+    }
+}

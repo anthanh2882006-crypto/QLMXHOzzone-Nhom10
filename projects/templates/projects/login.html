@@ -1,0 +1,24 @@
+{% extends "projects/base.html" %}
+{% block project_content %}
+    <section class="pm-panel pm-login">
+        <h1>Đăng nhập OZZONE</h1>
+        <p>Dùng tài khoản tổ chức cấp để truy cập các dự án được phân công.</p>
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="pm-error" role="alert">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% for field in form %}
+                <div class="pm-field">
+                    {{ field.label_tag }}
+                    {{ field }}
+                    {{ field.errors }}
+                </div>
+            {% endfor %}
+            <div class="pm-actions">
+                <button class="pm-button" type="submit">Đăng nhập</button>
+            </div>
+        </form>
+    </section>
+{% endblock %}

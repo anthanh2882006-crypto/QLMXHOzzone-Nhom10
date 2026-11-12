@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bộ lọc tra cứu | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'knowledge/knowledge.css' %}">
+{% endblock %}
+
+{% block sidebar %}
+<aside class="knw-sidebar">
+    <div class="knw-sidebar-heading">TRI THỨC</div>
+    <a class="knw-side-item" href="{% url 'knowledge:list' %}">Tổng quan</a>
+    <a class="knw-side-item active" href="{% url 'knowledge:search' %}" aria-current="page">Tra cứu</a>
+    <span class="knw-side-item knw-side-item--muted">Bài học kinh nghiệm</span>
+    <span class="knw-side-item knw-side-item--muted">Bài viết tri thức</span>
+    <span class="knw-side-item knw-side-item--muted">Tìm người hỗ trợ</span>
+    <a class="knw-side-item" href="{% url 'knowledge:saved' %}">Đã lưu</a>
+    <div class="knw-side-label">Đóng góp tri thức</div>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:review_queue' %}">Đánh giá tri thức</a>
+    <a class="knw-side-item knw-side-item--action" href="{% url 'knowledge:create' %}">Viết bài tri thức</a>
+</aside>
+{% endblock %}
+
+{% block content %}
+<div class="knw-page knw-filter-page">
+    {% if requires_login %}
+        <section class="knw-login-notice">
+            <h2>Vui lòng đăng nhập</h2>
+            <a class="knw-button" href="{% url 'accounts:login' %}?next={% url 'knowledge:filter' %}">Đăng nhập</a>
+        </section>
+    {% else %}
+        <div class="knw-page-title-row">
+            <a class="knw-back-button" href="{% url 'knowledge:search' %}?q={{ current.q|urlencode }}">← Quay lại</a>
+            <div><h1>Bộ lọc tra cứu</h1></div>
+        </div>
+
+        <div class="knw-filter-layout">
+            <form method="get" action="{% url 'knowledge:search' %}" class="knw-filter-form">
+                <div class="knw-form-field">
+                    <label for="filter-q">Từ khóa</label>
+                    <input id="filter-q" type="search" name="q" value="{{ current.q }}" placeholder="Nhập từ khóa tra cứu">
+                </div>
+
+                <div class="knw-form-field">
+                    <label for="filter-kind">Loại nội dung</label>
+                    <select id="filter-kind" name="kind">
+                        {% for value,label in kind_options %}
+                            <option value="{{ value }}" {% if current.kind == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="knw-form-field">
+                    <label for="filter-project">Dự án</label>
+                    <select id="filter-project" name="project">
+                        <option value="">Chọn dự án được phép xem</option>
+                        {% for member in projects %}
+                            <option value="{{ member.du_an_id }}" {% if current.project == member.du_an_id|stringformat:"s" %}selected{% endif %}>{{ member.du_an.ten_du_an }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="knw-form-field">
+                    <label for="filter-device">Thiết bị</label>
+                    <input id="filter-device" type="text" name="device" value="{{ current.device }}" placeholder="Mã hoặc tên thiết bị liên quan">
+                </div>
+
+                <div class="knw-form-field">
+                    <label for="filter-topic">Chủ đề</label>
+                    <select id="filter-topic" name="topic">
+                        <option value="">Tất cả chủ đề được phép xem</option>
+                        {% for topic in topics %}
+                            <option value="{{ topic.ma_chu_de }}" {% if current.topic == topic.ma_chu_de|stringformat:"s" %}selected{% endif %}>{{ topic.ten_chu_de }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="knw-form-field">
+                    <label for="filter-period">Thời gian</label>
+                    <select id="filter-period" name="period">
+                        {% for value,label in period_options %}
+                            <option value="{{ value }}" {% if current.period == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="knw-form-actions">
+                    <button type="submit" class="knw-button">Áp dụng bộ lọc</button>
+                    <a href="{% url 'knowledge:search' %}?q={{ current.q|urlencode }}" class="knw-text-button">Hủy</a>
+                </div>
+            </form>
+
+            <aside class="knw-filter-info">
+                <h3>Thông tin liên quan</h3>
+                <h4>Phạm vi kết quả</h4>
+                <p>Bộ lọc chỉ áp dụng trên nội dung bạn được phép biết. Việc chọn dự án, thiết bị hoặc chủ đề không mở rộng quyền truy cập.</p>
+                <div class="knw-filter-info-divider"></div>
+                <h4>Nguồn dữ liệu</h4>
+                <p>Bài học kinh nghiệm, bài viết tri thức đã công bố và kết luận xử lý đã xác nhận đủ điều kiện hiển thị.</p>
+            </aside>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

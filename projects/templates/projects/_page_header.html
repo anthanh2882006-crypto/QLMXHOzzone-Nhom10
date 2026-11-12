@@ -1,0 +1,13 @@
+<header class="pm-heading">
+    <div class="pm-heading-main">
+        <h1>{{ page_title }}</h1>
+        {% if page_subtitle %}
+            <p class="pm-muted">{{ page_subtitle }}</p>
+        {% endif %}
+    </div>
+    {% if cancel_url and not project %}
+        <a class="pm-button pm-secondary" href="{{ cancel_url }}">← Quay lại</a>
+    {% elif back_url and not project %}
+        <a class="pm-button pm-secondary" href="{{ back_url }}">← Quay lại</a>
+    {% endif %}
+</header>

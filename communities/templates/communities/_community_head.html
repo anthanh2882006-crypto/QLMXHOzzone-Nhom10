@@ -1,0 +1,18 @@
+<p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / {{ community.ten_cong_dong }}{% if crumb %} / {{ crumb }}{% endif %}</p>
+<div class="oz-page-head">
+  <div>
+    <h1 class="oz-page-title">{{ community.ten_cong_dong }}</h1>
+    <span class="oz-badge {% if community.loai_cong_dong == 'du_an' %}oz-badge-blue{% endif %}">{{ community.get_loai_cong_dong_display }}</span>
+    {% if membership %}<span class="oz-badge oz-badge-muted">{{ membership.get_vai_tro_display }}</span>{% endif %}
+  </div>
+  <div class="oz-actions">
+    {% if membership %}
+      {% if community.loai_cong_dong == 'chung' %}<a class="oz-btn" href="{% url 'communities:leave' community.pk %}">Rời cộng đồng</a>{% endif %}
+    {% endif %}
+  </div>
+</div>
+<nav class="oz-tabs" aria-label="Mục trong cộng đồng">
+  <a class="oz-tab {% if tab == 'feed' %}is-active{% endif %}" href="{% url 'communities:detail' community.pk %}">Bảng tin</a>
+  <a class="oz-tab {% if tab == 'members' %}is-active{% endif %}" href="{% url 'communities:members' community.pk %}">Thành viên</a>
+  <a class="oz-tab {% if tab == 'about' %}is-active{% endif %}" href="{% url 'communities:about' community.pk %}">Giới thiệu</a>
+</nav>

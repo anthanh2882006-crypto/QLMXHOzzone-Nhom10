@@ -1,0 +1,375 @@
+/*
+ * OZZONE — thành phần giao diện dùng chung cho vùng nội dung.
+ * Màu lấy từ bảng màu Figma, khai báo bằng biến CSS trong templates/base.html.
+ * Các phân hệ chỉ cần {% static 'ozzone/components.css' %} trong block extra_css.
+ */
+
+/*
+ * Màu dự phòng: 9 biến dưới đây base.html của nhóm đã khai báo.
+ * Đặt trong @layer nên nếu base.html có thì base.html thắng (CSS không
+ * xếp lớp luôn ưu tiên hơn CSS xếp lớp). Chỉ dùng tới khi mở riêng một
+ * trang không kế thừa base.html, để không bị mất màu.
+ */
+@layer oz-fallback {
+  :root {
+    --oz-brand: #3B7132;      /* xanh thương hiệu: nút chính, link, nhãn đang chọn */
+    --oz-canvas: #F2F4F0;     /* nền trang */
+    --oz-surface: #FFFFFF;    /* nền card, bảng, form */
+    --oz-text: #202D34;       /* chữ chính */
+    --oz-muted: #697582;      /* chữ phụ, chú thích */
+    --oz-border: #E2E7EA;     /* đường kẻ, viền ô input */
+    --oz-selected: #DAF9C9;   /* nền mục đang chọn ở sidebar */
+    --oz-search: #F3FFED;     /* nền ô tìm kiếm */
+    --oz-brand-soft: #EAF1E7; /* nền nhạt: chip, badge, hàng tiêu đề bảng */
+  }
+}
+
+/* 8 biến còn lại Figma không có, mình tự đặt cho thông báo và bo góc */
+:root {
+  --oz-brand-dark: #2F5C28;
+  --oz-info-bg: #EBF2FA;
+  --oz-info-text: #2F5F8F;
+  --oz-warn-bg: #FFF5DC;
+  --oz-warn-text: #8A5A00;
+  --oz-danger: #C0313F;
+  --oz-danger-bg: #FDECEE;
+  --oz-radius: 8px;
+}
+
+/* ---------- Sidebar trái ---------- */
+/* Rộng 200px đo theo bản Figma trong báo cáo, đủ chỗ cho "Kiểm duyệt cộng đồng" */
+.oz-sidebar {
+  flex: 0 0 200px;
+  width: 200px;
+  padding: 16px 12px;
+  background: var(--oz-surface);
+}
+.oz-sidebar-title {
+  margin: 0 0 12px 1px;
+  color: var(--oz-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.oz-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.oz-side-link {
+  display: block;
+  padding: 10px 8px;
+  border-radius: 4px;
+  color: var(--oz-text);
+  font-size: 14px;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.oz-side-link:hover { background: var(--oz-brand-soft); }
+.oz-side-link.is-active {
+  background: var(--oz-brand-soft);
+  color: var(--oz-brand);
+  font-weight: 600;
+}
+.oz-side-link .oz-count {
+  float: right;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--oz-brand);
+  color: #fff;
+  font-size: 11px;
+  line-height: 20px;
+  text-align: center;
+}
+.oz-sidebar-foot {
+  margin: 14px 1px 0;
+  color: var(--oz-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* ---------- Khung trang ---------- */
+.oz-page {
+  max-width: 1000px;
+  padding: 28px 28px 48px;
+}
+.oz-breadcrumb {
+  margin: 0 0 10px;
+  color: var(--oz-muted);
+  font-size: 11px;
+}
+.oz-breadcrumb a { color: var(--oz-muted); text-decoration: none; }
+.oz-breadcrumb a:hover { color: var(--oz-brand); }
+.oz-page-title {
+  margin: 0 0 14px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.oz-page-lead {
+  margin: -8px 0 18px;
+  color: var(--oz-muted);
+}
+.oz-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.oz-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* ---------- Card ---------- */
+.oz-card {
+  margin-bottom: 16px;
+  padding: 20px 22px;
+  border: 1px solid var(--oz-border);
+  border-radius: var(--oz-radius);
+  background: var(--oz-surface);
+}
+.oz-card-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.oz-card-sub { margin: -6px 0 12px; color: var(--oz-muted); font-size: 12px; }
+
+/* Bảng thuộc tính dạng nhãn — giá trị (Giới thiệu cộng đồng, Hồ sơ) */
+.oz-dl {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+.oz-dl dt { color: var(--oz-muted); font-size: 12px; }
+.oz-dl dd { margin: 0; }
+
+/* ---------- Nút ---------- */
+.oz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 18px;
+  border: 1px solid var(--oz-border);
+  border-radius: 6px;
+  background: var(--oz-surface);
+  color: var(--oz-brand);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.oz-btn:hover { border-color: var(--oz-brand); }
+.oz-btn-primary {
+  border-color: var(--oz-brand);
+  background: var(--oz-brand);
+  color: #fff;
+}
+.oz-btn-primary:hover { background: var(--oz-brand-dark); }
+.oz-btn-danger {
+  border-color: var(--oz-danger);
+  background: var(--oz-danger);
+  color: #fff;
+}
+.oz-btn-sm { min-height: 30px; padding: 0 12px; font-size: 13px; }
+.oz-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--oz-brand);
+  font: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+}
+.oz-link:hover { text-decoration: underline; }
+.oz-link-danger { color: var(--oz-danger); }
+.oz-inline-form { display: inline; margin: 0; }
+
+/* ---------- Hộp thông báo ---------- */
+.oz-alert {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--oz-radius);
+  background: var(--oz-info-bg);
+}
+.oz-alert-title { margin: 0 0 4px; color: var(--oz-info-text); font-weight: 600; }
+.oz-alert p:last-child { margin-bottom: 0; }
+.oz-alert-warn { background: var(--oz-warn-bg); }
+.oz-alert-warn .oz-alert-title { color: var(--oz-warn-text); }
+.oz-alert-danger { background: var(--oz-danger-bg); }
+.oz-alert-danger .oz-alert-title { color: var(--oz-danger); }
+.oz-alert-success { background: var(--oz-brand-soft); }
+.oz-alert-success .oz-alert-title { color: var(--oz-brand); }
+
+/* Thông báo từ django.contrib.messages (base.html in ra <p>) */
+.oz-main > div[role="status"] { padding: 16px 28px 0; }
+.oz-main > div[role="status"] p {
+  max-width: 944px;
+  margin: 0 0 8px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--oz-brand-soft);
+  color: var(--oz-brand);
+  font-weight: 500;
+}
+
+/* ---------- Badge ---------- */
+.oz-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--oz-brand-soft);
+  color: var(--oz-brand);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.oz-badge-blue { background: var(--oz-info-bg); color: var(--oz-info-text); }
+.oz-badge-warn { background: var(--oz-warn-bg); color: var(--oz-warn-text); }
+.oz-badge-muted { background: #EEF1F3; color: var(--oz-muted); }
+.oz-badge-danger { background: var(--oz-danger-bg); color: var(--oz-danger); }
+
+/* ---------- Bảng ---------- */
+.oz-table { width: 100%; border-collapse: collapse; }
+.oz-table th {
+  padding: 10px 12px;
+  background: #F2F4F0;
+  color: var(--oz-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+.oz-table td {
+  padding: 13px 12px;
+  border-bottom: 1px solid var(--oz-border);
+  vertical-align: middle;
+}
+.oz-table tr:last-child td { border-bottom: 0; }
+.oz-cell-sub { display: block; color: var(--oz-muted); font-size: 12px; }
+.oz-table td:last-child { white-space: nowrap; }
+
+/* ---------- Form ---------- */
+.oz-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+.oz-field { margin-bottom: 14px; }
+.oz-form-grid .oz-field { margin-bottom: 0; }
+.oz-field-full { grid-column: 1 / -1; }
+.oz-field label,
+.oz-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.oz-field input[type="text"],
+.oz-field input[type="password"],
+.oz-field input[type="email"],
+.oz-field input[type="search"],
+.oz-field input[type="tel"],
+.oz-field select,
+.oz-field textarea,
+.oz-input {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--oz-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--oz-text);
+  font: inherit;
+}
+.oz-field textarea { min-height: 110px; resize: vertical; }
+.oz-field select[multiple] { min-height: 150px; }
+.oz-field input:focus,
+.oz-field select:focus,
+.oz-field textarea:focus,
+.oz-input:focus {
+  border-color: var(--oz-brand);
+  outline: 2px solid var(--oz-selected);
+}
+.oz-help { margin-top: 4px; color: var(--oz-muted); font-size: 12px; }
+.oz-error, .errorlist { margin: 4px 0 0; padding: 0; color: var(--oz-danger); font-size: 12px; list-style: none; }
+.oz-checks { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 0; padding: 0; list-style: none; }
+.oz-checks label { display: inline-flex; gap: 6px; align-items: center; font-weight: 400; }
+
+/* Thanh tìm kiếm trong trang */
+.oz-searchbar { display: flex; gap: 10px; margin-bottom: 18px; }
+.oz-searchbar .oz-input { flex: 1; }
+
+/* Ô tìm có kính lúp bên trong, giống thanh tìm kiếm trên base.html và bản Figma */
+.oz-field-search { position: relative; flex: 1; display: flex; }
+.oz-field-search .oz-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: var(--oz-muted);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.oz-field-search .oz-input { flex: 1; padding-left: 38px; }
+
+/* ---------- Tab ---------- */
+.oz-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.oz-tab {
+  padding: 7px 14px;
+  border-radius: 6px;
+  color: var(--oz-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+.oz-tab:hover { background: var(--oz-brand-soft); }
+.oz-tab.is-active { background: var(--oz-brand); color: #fff; }
+
+/* ---------- Avatar chữ ---------- */
+.oz-avatar-sm {
+  display: inline-flex;
+  flex: 0 0 34px;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--oz-brand-soft);
+  color: var(--oz-brand);
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+}
+.oz-avatar-sm img, .oz-avatar-lg img { width: 100%; height: 100%; object-fit: cover; }
+.oz-avatar-lg {
+  display: inline-flex;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--oz-brand-soft);
+  color: var(--oz-brand);
+  font-size: 20px;
+  font-weight: 700;
+  overflow: hidden;
+}
+
+.oz-empty { padding: 24px 0; color: var(--oz-muted); text-align: center; }
+.oz-muted { color: var(--oz-muted); }
+.oz-small { font-size: 12px; }
+.oz-pagination { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 12px; }
+
+@media (max-width: 900px) {
+  .oz-layout { flex-direction: column; }
+  .oz-sidebar { width: auto; flex: none; }
+  .oz-sidebar nav { flex-direction: row; flex-wrap: wrap; }
+  .oz-form-grid { grid-template-columns: 1fr; }
+  .oz-dl { grid-template-columns: 1fr; }
+  .oz-page { padding: 20px 16px 40px; }
+}

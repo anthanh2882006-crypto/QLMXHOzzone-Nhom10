@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% load ozzone_names %}
+{% load static %}
+
+{% block title %}Bảng tin | OZZONE{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+{% endblock %}
+
+{% block main_class %}oz-social-main{% endblock %}
+
+{% block content %}
+{% url 'accounts:profile' as profile_url %}
+{% url 'communities:list' as communities_url %}
+{% url 'projects:list' as projects_url %}
+{% url 'notifications:list' as notifications_url %}
+<div class="social-page social-feed-page">
+    <div class="social-feed-grid">
+        <!-- CỘT TRÁI: HỒ SƠ VÀ KHÔNG GIAN CỦA BẠN -->
+        <aside class="social-feed-left" aria-label="Hồ sơ và không gian của bạn">
+            <section class="social-rail-card social-profile-card">
+                <div class="social-profile-cover" aria-hidden="true">
+                    <svg viewBox="0 0 240 90" role="presentation">
+                        <circle cx="105" cy="27" r="17"></circle>
+                        <circle cx="145" cy="24" r="14"></circle>
+                        <path d="M72 76v-7c0-18 15-32 33-32s33 14 33 32v7M132 44c19-5 37 8 37 27v5"></path>
+                    </svg>
+                </div>
+                <div class="social-profile-body">
+                    <div class="social-profile-identity">
+                        <span class="social-profile-avatar">
+                            {% if request.user.last_name or request.user.first_name %}{{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                        </span>
+                        <strong>{{ display_name }}</strong>
+                    </div>
+                    <p class="social-profile-role">{% if profile %}{{ profile.vi_tri.ten_vi_tri }}{% else %}Nhân viên OZZONE{% endif %}</p>
+                    <p class="social-profile-department">{% if profile %}{{ profile.phong_ban.ten_phong_ban }}{% else %}Hồ sơ cá nhân{% endif %}</p>
+                    {% if profile_url %}
+                        <a class="social-profile-button" href="{{ profile_url }}">Hồ sơ của tôi <span aria-hidden="true">→</span></a>
+                    {% else %}
+                        <span class="social-profile-button is-disabled" aria-disabled="true">Hồ sơ của tôi</span>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section class="social-rail-card social-space-card" aria-labelledby="space-title">
+                <h2 id="space-title">Không gian của bạn</h2>
+                <nav class="social-space-nav" aria-label="Điều hướng bảng tin">
+                    <a class="is-active" href="{% url 'social:feed' %}">
+                        <span class="social-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21H3zM9 21v-7h6v7"/></svg></span>
+                        Bảng tin công ty
+                    </a>
+                    <a href="{% url 'social:my_posts' %}">
+                        <span class="social-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H5V3zM14 3v5h5M8 13h8M8 17h8"/></svg></span>
+                        Bài đăng của tôi
+                    </a>
+                    <a href="{% url 'social:saved' %}">
+                        <span class="social-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span>
+                        Nội dung đã lưu
+                    </a>
+                </nav>
+                <div class="social-space-divider"></div>
+                {% for membership in community_memberships|slice:":2" %}
+                    <a class="social-space-mini-item" href="{% if communities_url %}{{ communities_url }}{% else %}{% url 'social:feed' %}{% endif %}">
+                        <span class="social-space-mini-icon social-space-mini-community" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM17 4.5a3.2 3.2 0 0 1 0 6.2"/></svg></span>
+                        <span><strong>{{ membership.cong_dong.ten_cong_dong }}</strong><small>{{ membership.cong_dong.get_loai_cong_dong_display }}</small></span>
+                    </a>
+                {% endfor %}
+                {% for membership in project_memberships|slice:":2" %}
+                    <a class="social-space-mini-item" href="{% if projects_url %}{{ projects_url }}{% else %}{% url 'social:feed' %}{% endif %}">
+                        <span class="social-space-mini-icon social-space-mini-project" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 7h7l2 2h9v10.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19.5zM3 7V5.5A1.5 1.5 0 0 1 4.5 4H9l2 2h5"/></svg></span>
+                        <span><strong>{{ membership.du_an.ten_du_an }}</strong><small>Dự án · {{ membership.du_an.get_trang_thai_display }}</small></span>
+                    </a>
+                {% endfor %}
+                {% if not community_memberships and not project_memberships %}
+                    <p class="social-rail-empty-note">Cộng đồng và dự án bạn tham gia sẽ xuất hiện tại đây.</p>
+                {% endif %}
+            </section>
+
+            <section class="social-rail-card social-internal-activity-card">
+                <h2>Hoạt động nội bộ</h2>
+                <div class="social-disabled-activity">
+                    <span class="social-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h5"/></svg></span>
+                    <span>Khảo sát và bình chọn</span>
+                    <small>Chưa tích hợp</small>
+                </div>
+                <div class="social-disabled-activity">
+                    <span class="social-rail-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg></span>
+                    <span>Sự kiện và tham gia</span>
+                    <small>Chưa tích hợp</small>
+                </div>
+            </section>
+        </aside>
+
+        <!-- CỘT GIỮA: TAB, KHUNG ĐĂNG VÀ BÀI VIẾT -->
+        <main class="social-feed-center" aria-label="Nội dung bảng tin">
+            <nav class="social-tabs social-feed-tabs" aria-label="Các chế độ bảng tin">
+                <a href="?tab=for_you" class="social-tab {% if active_tab == 'for_you' %}is-active{% endif %}" {% if active_tab == 'for_you' %}aria-current="page"{% endif %}>Dành cho bạn</a>
+                <a href="?tab=latest" class="social-tab {% if active_tab == 'latest' %}is-active{% endif %}" {% if active_tab == 'latest' %}aria-current="page"{% endif %}>Mới nhất</a>
+                <a href="?tab=official" class="social-tab {% if active_tab == 'official' %}is-active{% endif %}" {% if active_tab == 'official' %}aria-current="page"{% endif %}>Thông báo chính thức</a>
+            </nav>
+
+            {% if can_post and active_tab != 'official' %}
+                <section class="social-composer social-feed-composer" aria-label="Tạo bài viết mới">
+                    <span class="social-composer-avatar">
+                        {% if request.user.last_name or request.user.first_name %}{{ request.user.last_name|first|upper }}{{ request.user.first_name|first|upper }}{% else %}{{ request.user.username|slice:":2"|upper }}{% endif %}
+                    </span>
+                    <div class="social-composer-main">
+                        <button type="button" class="social-composer-prompt" data-post-modal-open>Bạn muốn chia sẻ điều gì?</button>
+                        <div class="social-feed-composer-tools">
+                            <button type="button" data-post-modal-open><span class="social-tool-icon social-tool-blue" aria-hidden="true">▤</span>Tệp đính kèm</button>
+                            <span class="social-composer-tool-disabled" title="Phân hệ Sự kiện chưa có model dữ liệu trong projectp."><span class="social-tool-icon social-tool-blue" aria-hidden="true">▦</span>Sự kiện</span>
+                            <span class="social-composer-tool-disabled" title="Phân hệ Khảo sát chưa có model dữ liệu trong projectp."><span class="social-tool-icon" aria-hidden="true">☷</span>Khảo sát</span>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+
+            {% if active_tab == 'official' %}
+                <div class="social-section-label">Thông báo đã công bố và bạn có quyền đọc hiện tại</div>
+                {% for notice in notices %}
+                    <article class="social-card social-notice-card">
+                        <div class="social-card-topline">
+                            <span class="social-pill social-pill-notice">Thông báo chính thức</span>
+                            <time>{{ notice.ngay_xuat_ban|date:'d/m/Y H:i' }}</time>
+                        </div>
+                        <h2><a href="{% url 'social:notice_detail' notice.pk %}">{{ notice.bai_viet.tieu_de|default:notice.bai_viet.noi_dung|truncatechars:130 }}</a></h2>
+                        <p class="social-post-excerpt">{{ notice.bai_viet.noi_dung|truncatechars:260 }}</p>
+                        <div class="social-card-footer">
+                            <span>Phát hành bởi {% if notice.nguoi_xuat_ban %}{{ notice.nguoi_xuat_ban|ho_ten }}{% else %}OZZONE{% endif %}</span>
+                            {% if notice.yeu_cau_xac_nhan %}<span class="social-pill social-pill-ack">Có yêu cầu xác nhận</span>{% else %}<span class="social-muted">Không yêu cầu xác nhận</span>{% endif %}
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="social-empty">
+                        <div class="social-empty-icon">✓</div>
+                        <h2>Chưa có thông báo để hiển thị</h2>
+                        <p>Thông báo sẽ xuất hiện tại đây khi được công bố và bạn có quyền đọc.</p>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="social-section-label">{% if active_tab == 'latest' %}Nội dung mới nhất trong phạm vi bạn được phép xem{% else %}Nội dung thuộc phạm vi tham gia của bạn, sắp xếp mới nhất{% endif %}</div>
+                {% for post in posts %}
+                    <article class="social-card social-feed-post-card" id="post-{{ post.pk }}">
+                        <div class="social-card-header">
+                            <div class="social-author-avatar">{% if post.nguoi_dang.first_name or post.nguoi_dang.last_name %}{{ post.nguoi_dang.last_name|first|upper }}{{ post.nguoi_dang.first_name|first|upper }}{% else %}{{ post.nguoi_dang.username|slice:":2"|upper }}{% endif %}</div>
+                            <div class="social-author-meta">
+                                <strong>{{ post.nguoi_dang|ho_ten }}</strong>
+                                <span>
+                                    {{ post.ngay_tao|date:'d/m/Y H:i' }}
+                                    {% if post.cong_dong %} · {{ post.cong_dong.ten_cong_dong }}{% elif post.du_an %} · {{ post.du_an.ten_du_an }}{% else %} · Bảng tin công ty{% endif %}
+                                </span>
+                            </div>
+                            {% if post.loai_bai_viet == 'cap_nhat_hien_truong' %}<span class="social-pill">Cập nhật hiện trường</span>{% endif %}
+                        </div>
+                        <a class="social-post-link" href="{% url 'social:post_detail' post.pk %}">
+                            {% if post.tieu_de %}<h2>{{ post.tieu_de }}</h2>{% endif %}
+                            <p class="social-post-excerpt">{{ post.noi_dung|truncatechars:420|linebreaksbr }}</p>
+                        </a>
+                        {% with attachment_count=post.dinhkem_set.count %}
+                            {% if attachment_count %}<div class="social-attachment-summary">▤ {{ attachment_count }} tệp đính kèm</div>{% endif %}
+                        {% endwith %}
+                        <div class="social-card-footer social-card-actions">
+                            <span>{{ post.reaction_count }} đồng nghiệp đã bày tỏ cảm xúc <span class="social-feed-comment-count">{{ post.comment_count }} bình luận</span></span>
+                            <div class="social-action-group">
+                                {% if not post.du_an.da_luu_tru %}
+                                <form method="post" action="{% url 'social:reaction_set' post.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="state" value="{% if post.liked_by_me %}off{% else %}on{% endif %}">
+                                    <input type="hidden" name="loai_cam_xuc" value="thich">
+                                    <input type="hidden" name="next" value="{% url 'social:feed' %}?tab={{ active_tab }}#post-{{ post.pk }}">
+                                    <button class="social-action-button {% if post.liked_by_me %}is-selected{% endif %}" type="submit">♡ {% if post.liked_by_me %}Đã thích{% else %}Thích{% endif %}</button>
+                                </form>
+                                {% endif %}
+                                <a class="social-action-button" href="{% if post.che_do_xu_ly and post.du_an_id %}{% url 'projects:issue' post.du_an_id post.pk %}#analysis{% else %}{% url 'social:post_detail' post.pk %}#comments{% endif %}">Bình luận</a>
+                                <form method="post" action="{% url 'social:save_set' post.pk %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="state" value="{% if post.saved_by_me %}off{% else %}on{% endif %}">
+                                    <input type="hidden" name="next" value="{% url 'social:feed' %}?tab={{ active_tab }}#post-{{ post.pk }}">
+                                    <button class="social-action-button {% if post.saved_by_me %}is-selected{% endif %}" type="submit">{% if post.saved_by_me %}Đã lưu{% else %}Lưu{% endif %}</button>
+                                </form>
+                            </div>
+                        </div>
+                    </article>
+                {% empty %}
+                    <div class="social-empty">
+                        <div class="social-empty-icon">✦</div>
+                        <h2>Chưa có bài viết trong bảng tin</h2>
+                        <p>Các bài viết bạn có quyền xem sẽ xuất hiện tại đây. Khi tạo bài viết cá nhân, bài mới sẽ được đưa vào Bảng tin công ty.</p>
+                        {% if can_post %}<button class="social-button social-button-primary" type="button" data-post-modal-open>Tạo bài viết đầu tiên</button>{% endif %}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        </main>
+
+        <!-- CỘT PHẢI: THÔNG BÁO, CỘNG ĐỒNG VÀ HOẠT ĐỘNG -->
+        <aside class="social-feed-right" aria-label="Thông tin và kết nối">
+            <section class="social-rail-card social-right-notices" aria-labelledby="right-notice-title">
+                <div class="social-rail-heading">
+                    <h2 id="right-notice-title">THÔNG BÁO CHÍNH THỨC</h2>
+                    {% if notifications_url %}<a href="{{ notifications_url }}" aria-label="Xem tất cả thông báo">→</a>{% endif %}
+                </div>
+                {% for notice in sidebar_notices|slice:":1" %}
+                    <h3>{{ notice.bai_viet.tieu_de|default:notice.bai_viet.noi_dung|truncatechars:70 }}</h3>
+                    {% if notice.social_ack_pending %}
+                        <span class="social-right-ack">Cần xác nhận</span>
+                    {% elif notice.yeu_cau_xac_nhan %}
+                        <span class="social-right-ack is-complete">Đã xác nhận hoặc không thuộc tập nhận</span>
+                    {% else %}
+                        <span class="social-right-ack is-neutral">Thông báo đã công bố</span>
+                    {% endif %}
+                    <a class="social-right-primary-link" href="{% url 'social:notice_detail' notice.pk %}">Đọc thông báo</a>
+                {% empty %}
+                    <p class="social-rail-empty-note">Hiện chưa có thông báo chính thức phù hợp với quyền truy cập của bạn.</p>
+                {% endfor %}
+            </section>
+
+            <section class="social-rail-card social-right-communities" aria-labelledby="right-community-title">
+                <h2 id="right-community-title">CỘNG ĐỒNG PHÙ HỢP</h2>
+                {% for community in suggested_communities|slice:":2" %}
+                    <a class="social-right-community-item" href="{% if communities_url %}{{ communities_url }}{% else %}{% url 'social:feed' %}{% endif %}">
+                        <span class="social-right-community-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 20v-1.5a3.5 3.5 0 0 0-3.5-3.5h-5A3.5 3.5 0 0 0 4 18.5V20M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM17 4.5a3.2 3.2 0 0 1 0 6.2"/></svg></span>
+                        <span><strong>{{ community.ten_cong_dong }}</strong><small>{{ community.social_member_count }} thành viên</small></span>
+                    </a>
+                {% empty %}
+                    <p class="social-rail-empty-note">Chưa có cộng đồng phù hợp để gợi ý trong phạm vi hiện tại.</p>
+                {% endfor %}
+                {% if communities_url %}<a class="social-right-primary-link" href="{{ communities_url }}">Khám phá cộng đồng</a>{% endif %}
+            </section>
+
+            <section class="social-rail-card social-right-activities" aria-labelledby="right-activity-title">
+                <h2 id="right-activity-title">SẮP DIỄN RA</h2>
+                <p class="social-rail-empty-note">Lịch sự kiện và khảo sát chưa được kết nối với dữ liệu nghiệp vụ. Nội dung sẽ xuất hiện tại đây khi phân hệ tương ứng được tích hợp.</p>
+                <div class="social-right-activity-disabled"><span aria-hidden="true">▦</span> Sự kiện & tham gia <small>Chưa tích hợp</small></div>
+                <div class="social-right-activity-disabled"><span aria-hidden="true">☷</span> Khảo sát & bình chọn <small>Chưa tích hợp</small></div>
+            </section>
+        </aside>
+    </div>
+</div>
+{% include "social/_post_create_modal.html" %}
+{% endblock %}
