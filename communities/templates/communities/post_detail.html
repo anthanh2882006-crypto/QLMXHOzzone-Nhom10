@@ -13,25 +13,11 @@
     <div class="cm-post-body">{{ post.noi_dung|linebreaks }}</div>
     {% if attachments %}
       <h2 class="oz-card-title" style="margin-top:16px">Tệp đính kèm</h2>
-      <ul class="cm-files">{% for a in attachments %}<li>📎 <a class="oz-link" href="{{ a.tep_tin.tep.url }}">{{ a.tep_tin.ten_tep }}</a> <span class="oz-muted oz-small">{{ a.tep_tin.kich_thuoc|filesizeformat }}</span></li>{% endfor %}</ul>
+      <ul class="cm-files">{% for a in attachments %}<li>📎 <a class="oz-link" href="{% url 'communities:attachment_download' community.pk a.pk %}">{{ a.tep_tin.ten_tep }}</a> <span class="oz-muted oz-small">{{ a.tep_tin.kich_thuoc|filesizeformat }}</span></li>{% endfor %}</ul>
     {% endif %}
     {% if post.trang_thai == 'hien' %}{% include "includes/post_actions.html" %}{% endif %}
   </article>
 
-  <section class="oz-card">
-    <h2 class="oz-card-title">Bình luận ({{ comments|length }})</h2>
-    {% for c in comments %}
-      <div class="cm-comment {% if c.binh_luan_cha_id %}is-reply{% endif %}">
-        <span class="oz-avatar-sm">{% if c.nguoi_dung.first_name or c.nguoi_dung.last_name %}{{ c.nguoi_dung.last_name|first|upper }}{{ c.nguoi_dung.first_name|first|upper }}{% else %}{{ c.nguoi_dung.username|slice:":2"|upper }}{% endif %}</span>
-        <div><b>{{ c.nguoi_dung|ho_ten }}</b> <span class="oz-muted oz-small">{{ c.ngay_tao|date:"H:i d/m/Y" }}</span><p>{{ c.noi_dung|linebreaksbr }}</p></div>
-      </div>
-    {% empty %}
-      <p class="oz-muted" style="margin:0">Chưa có bình luận.</p>
-    {% endfor %}
-    {% if post.trang_thai == 'hien' %}
-      <a class="oz-btn" href="{% url 'social:post_detail' post.pk %}">Bình luận và tương tác</a>
-    {% endif %}
-  </section>
-  <a class="oz-btn" href="{% url 'communities:detail' community.pk %}">← Quay lại cộng đồng</a>
+  {% include "includes/post_comments.html" %}
 </div>
 {% endblock %}

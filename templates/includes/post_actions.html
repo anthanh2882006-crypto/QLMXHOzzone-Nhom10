@@ -1,8 +1,10 @@
+{% load post_navigation %}
+{% post_navigation post as post_links %}
 <footer class="oz-post-footer">
     <p class="oz-post-counts">{{ post.reaction_count }} đồng nghiệp đã bày tỏ cảm xúc <span>{{ post.comment_count }} bình luận</span></p>
     <div class="oz-post-actions">
         {% if not post.du_an.da_luu_tru %}
-            <form method="post" action="{% url 'social:reaction_set' post.pk %}">
+            <form method="post" action="{{ post_links.reaction_set }}">
                 {% csrf_token %}
                 <input type="hidden" name="state" value="{% if post.liked_by_me %}off{% else %}on{% endif %}">
                 <input type="hidden" name="loai_cam_xuc" value="thich">
@@ -10,8 +12,8 @@
                 <button type="submit"{% if post.liked_by_me %} class="is-selected"{% endif %}>♡ {% if post.liked_by_me %}Đã thích{% else %}Thích{% endif %}</button>
             </form>
         {% endif %}
-        <a href="{% if post.che_do_xu_ly and post.du_an_id %}{% url 'projects:issue' post.du_an_id post.pk %}#analysis{% else %}{% url 'social:post_detail' post.pk %}#comments{% endif %}">{% if post.du_an.da_luu_tru %}Xem bình luận{% else %}Bình luận{% endif %}</a>
-        <form method="post" action="{% url 'social:save_set' post.pk %}">
+        <a href="{{ post_links.comments }}">{% if post.du_an.da_luu_tru or post.che_do_xu_ly %}Xem trao đổi{% else %}Bình luận{% endif %}</a>
+        <form method="post" action="{{ post_links.save_set }}">
             {% csrf_token %}
             <input type="hidden" name="state" value="{% if post.saved_by_me %}off{% else %}on{% endif %}">
             <input type="hidden" name="next" value="{{ request.get_full_path }}#post-{{ post.pk }}">

@@ -6,10 +6,10 @@ post_detail      : đọc 1 bài trong đúng cộng đồng; bài ẩn chỉ ng
 
 from django.contrib.auth.decorators import login_required
 from ._chung import community_posts, handled
-from social.views import _post_cards
-from django.shortcuts import redirect, render
+from social.views import _post_cards, post_discussion_context
+from django.shortcuts import render
 
-from projectp.models import BaiViet, BinhLuan, DinhKem, MemberStatus, YeuCauThamGia
+from projectp.models import BaiViet, DinhKem, MemberStatus, YeuCauThamGia
 
 from ..forms import JoinRequestForm
 from ._chung import (
@@ -34,7 +34,6 @@ def community_detail(request, pk):
             .order_by("-da_ghim", "-ngay_tao")
         )
 
-    if duoc_doc(cd, tv):
         posts = _post_cards(posts, request.user).order_by("-da_ghim", "-ngay_tao", "-ma_bai_viet")
 
     context = {
@@ -74,12 +73,12 @@ def post_detail(request, pk, post_id):
         return render(request, "communities/unavailable.html", context)
 
     project = du_an_lien_ket(cd)
-    if project and post.du_an_id == project.pk and post.che_do_xu_ly and post.trang_thai == "hien":
-        return redirect("projects:issue", pk=project.pk, post_id=post.pk)
+    if project and not post.du_an_id:
+        post.du_an = project
+    context.update(post_discussion_context(request, post))
     context.update({
         "project": project,
         "post": post,
-        "comments": BinhLuan.objects.filter(bai_viet=post, da_xoa_mem=False).order_by("ngay_tao"),
         "attachments": DinhKem.objects.filter(bai_viet=post, tep_tin__trang_thai="san_sang", tep_tin__da_xoa_mem=False).select_related("tep_tin"),
     })
     return render(request, "communities/post_detail.html", context)

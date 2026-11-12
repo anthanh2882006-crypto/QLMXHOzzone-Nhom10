@@ -32,7 +32,7 @@
         <tbody>
         {% for m in rows %}{% with hs=m.nguoi_dung.ho_so_nhan_vien %}
           <tr>
-            <td><div style="display:flex;gap:10px;align-items:center"><span class="oz-avatar-sm">{% if m.nguoi_dung.first_name or m.nguoi_dung.last_name %}{{ m.nguoi_dung.last_name|first|upper }}{{ m.nguoi_dung.first_name|first|upper }}{% else %}{{ m.nguoi_dung.username|slice:":2"|upper }}{% endif %}</span><span>{{ m.nguoi_dung|ho_ten }}{% if m.nguoi_dung == request.user %} <span class="oz-muted oz-small">(bạn)</span>{% endif %}<span class="oz-cell-sub">{% if hs %}{{ hs.phong_ban.ten_phong_ban }}{% endif %}</span></span></div></td>
+            <td><div style="display:flex;gap:10px;align-items:center"><span class="oz-avatar-sm">{% if m.nguoi_dung.first_name or m.nguoi_dung.last_name %}{{ m.nguoi_dung.last_name|first|upper }}{{ m.nguoi_dung.first_name|first|upper }}{% else %}{{ m.nguoi_dung.username|slice:":2"|upper }}{% endif %}</span><span><a class="oz-link" href="{% url 'accounts:employee' m.nguoi_dung.username %}">{{ m.nguoi_dung|ho_ten }}</a>{% if m.nguoi_dung == request.user %} <span class="oz-muted oz-small">(bạn)</span>{% endif %}<span class="oz-cell-sub">{% if hs %}{{ hs.phong_ban.ten_phong_ban }}{% endif %}</span></span></div></td>
             <td>{% if hs %}{{ hs.vi_tri.ten_vi_tri }}{% else %}—{% endif %}</td>
             <td><span class="oz-badge {% if m.vai_tro == 'chu_so_huu' %}{% elif m.vai_tro == 'kiem_duyet_vien' %}oz-badge-blue{% else %}oz-badge-muted{% endif %}">{{ m.get_vai_tro_display }}</span></td>
             <td>{{ m.ngay_tham_gia|date:"d/m/Y" }}</td>

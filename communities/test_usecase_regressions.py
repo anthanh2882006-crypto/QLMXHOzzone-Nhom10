@@ -162,4 +162,5 @@ class CommunityRegressionTests(Base):
         post = BaiViet.objects.create(cong_dong=self.kin, nguoi_dang=self.owner, noi_dung="Bài")
         self.client.force_login(self.owner)
         response = self.client.get(reverse("communities:post", args=[self.kin.pk, post.pk]))
-        self.assertContains(response, reverse("social:post_detail", args=[post.pk]))
+        self.assertContains(response, reverse("communities:comment_create", args=[self.kin.pk, post.pk]))
+        self.assertNotContains(response, reverse("social:post_detail", args=[post.pk]))

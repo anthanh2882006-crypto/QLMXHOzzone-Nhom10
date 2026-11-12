@@ -1,0 +1,26 @@
+{% load post_navigation %}
+{% post_navigation post as post_links %}
+<section class="oz-comments" id="comments" aria-labelledby="post-comments-heading">
+    <h2 id="post-comments-heading">Bình luận và trao đổi</h2>
+    {% if can_comment %}
+        <form method="post" action="{{ post_links.comment_create }}" class="oz-discussion-form">
+            {% csrf_token %}
+            <input type="hidden" name="request_token" value="{{ comment_form.request_token.value }}">
+            <label for="comment-content">Bình luận của bạn</label>
+            <textarea id="comment-content" name="noi_dung" rows="3" maxlength="5000" required placeholder="Viết bình luận của bạn..."></textarea>
+            <button type="submit">Gửi bình luận</button>
+        </form>
+    {% elif post.che_do_xu_ly %}
+        <p class="oz-discussion-note">Trao đổi kỹ thuật được ghi theo luồng xử lý vấn đề trong dự án.</p>
+        {% if community and project %}
+            <a class="oz-discussion-project-link" href="{% url 'projects:issue' project.pk post.pk %}#analysis">Mở xử lý trong dự án {{ project.ten_du_an }}</a>
+        {% endif %}
+    {% else %}
+        <p class="oz-discussion-note">Nội dung đang ở chế độ chỉ đọc.</p>
+    {% endif %}
+    {% for comment in comments %}
+        {% include "includes/post_comment.html" %}
+    {% empty %}
+        <p class="oz-discussion-note">Chưa có bình luận.</p>
+    {% endfor %}
+</section>

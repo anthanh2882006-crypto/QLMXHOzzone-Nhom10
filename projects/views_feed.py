@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from projectp.models import BaiViet, DinhKem, TepTin
-from social.views import _post_cards
+from social.views import _post_cards, post_discussion_context
 from .ui import with_issue_state
 from .permissions import project_access, readable_project_posts
 from .presentation import handled, screen
@@ -74,13 +74,11 @@ def post_detail(request, pk, post_id):
     if post.che_do_xu_ly:
         return redirect("projects:issue", pk=pk, post_id=post.pk)
     context = screen(project, membership, post.tieu_de or "Chi tiết bài đăng", "feed")
+    context.update(post_discussion_context(request, post))
     context.update(
         post=post,
-        social_post_url=reverse("social:post_detail", kwargs={"pk": post.pk}),
+        back_url=reverse("projects:feed", kwargs={"pk": project.pk}),
         attachments=attachments_for(bai_viet=post),
-        comments=post.binhluan_set.filter(da_xoa_mem=False)
-        .select_related("nguoi_dung")
-        .order_by("ngay_tao"),
     )
     return render(request, "projects/post_detail.html", context)
 

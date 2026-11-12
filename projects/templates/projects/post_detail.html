@@ -17,26 +17,5 @@
         {% include "projects/_attachments.html" %}
         {% include "includes/post_actions.html" %}
     </article>
-    <section class="pm-panel">
-        <h2>
-            Trao đổi đã có
-        </h2>
-        {% for comment in comments %}
-            <article class="pm-comment">
-                <strong>
-                    {{ comment.nguoi_dung|ho_ten }}
-                </strong>
-                <div>
-                    {{ comment.noi_dung|linebreaks }}
-                </div>
-            </article>
-        {% empty %}
-            <p>
-                Chưa có trao đổi.
-            </p>
-        {% endfor %}
-    </section>
-    <a href="{% url 'projects:feed' project.pk %}">
-        Về bảng tin dự án
-    </a>
+    {% include "includes/post_comments.html" %}
 {% endblock %}

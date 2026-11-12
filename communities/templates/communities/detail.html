@@ -1,4 +1,5 @@
 {% extends "communities/_base.html" %}
+{% load post_navigation %}
 {% block title %}{{ community.ten_cong_dong }} | OZZONE{% endblock %}
 {% block content %}
 <div class="oz-page">
@@ -64,11 +65,13 @@
     {% endif %}
 
     {% for post in posts %}
+      {% post_navigation post as post_links %}
       <article id="post-{{ post.pk }}" class="oz-card cm-post oz-feed-post {% if post.da_ghim %}is-pinned{% endif %}">
         {% if post.da_ghim %}<p class="cm-pin">📌 Đã ghim</p>{% endif %}
         {% include "includes/post_header.html" with post_scope=community.ten_cong_dong %}
-        {% if post.tieu_de %}<h2 class="cm-post-title">{{ post.tieu_de }}</h2>{% endif %}
+        {% if post.tieu_de %}<h2 class="cm-post-title"><a href="{{ post_links.detail }}">{{ post.tieu_de }}</a></h2>{% endif %}
         <p class="cm-post-body">{{ post.noi_dung|truncatechars:320|linebreaksbr }}</p>
+        <a class="oz-post-read-link" href="{{ post_links.detail }}">Đọc bài viết</a>
         {% include "includes/post_actions.html" %}
         <div class="cm-post-foot">
           {% if can_moderate %}

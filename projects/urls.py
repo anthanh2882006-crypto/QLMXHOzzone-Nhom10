@@ -1,10 +1,15 @@
 """Các lối vào bình thường của UC-PRJ-01 đến UC-PRJ-10."""
 
 from django.urls import path
+from social import views as interaction_views
 from . import views
 
 app_name = "projects"
 urlpatterns = [
+    path("<int:project_id>/posts/<int:pk>/binh-luan/", interaction_views.create_comment, name="comment_create"),
+    path("<int:project_id>/posts/<int:pk>/cam-xuc/", interaction_views.set_reaction, name="reaction_set"),
+    path("<int:project_id>/posts/<int:pk>/luu/", interaction_views.set_saved, name="save_set"),
+
     path("login/", views.project_login, name="login"),
     path("logout/", views.project_logout, name="logout"),
     path("", views.project_list, name="list"),

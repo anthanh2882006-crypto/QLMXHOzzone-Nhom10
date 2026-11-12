@@ -1,0 +1,27 @@
+{% load ozzone_names %}
+<article class="oz-discussion-comment">
+    <div class="oz-post-avatar" aria-hidden="true">{% if comment.nguoi_dung.first_name or comment.nguoi_dung.last_name %}{{ comment.nguoi_dung.last_name|first|upper }}{{ comment.nguoi_dung.first_name|first|upper }}{% else %}{{ comment.nguoi_dung.username|slice:":2"|upper }}{% endif %}</div>
+    <div class="oz-discussion-content">
+        <div class="oz-discussion-bubble">
+            <strong>{{ comment.nguoi_dung|ho_ten }}</strong>
+            {{ comment.noi_dung|linebreaks }}
+        </div>
+        <time>{{ comment.ngay_tao|date:"d/m/Y H:i" }}</time>
+        {% if can_comment %}
+            <details>
+                <summary>Trả lời</summary>
+                <form method="post" action="{{ post_links.comment_create }}" class="oz-discussion-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="request_token" value="{{ comment.reply_token }}">
+                    <input type="hidden" name="binh_luan_cha" value="{{ comment.pk }}">
+                    <label for="reply-{{ comment.pk }}">Trả lời {{ comment.nguoi_dung|ho_ten }}</label>
+                    <textarea id="reply-{{ comment.pk }}" name="noi_dung" rows="2" maxlength="5000" required></textarea>
+                    <button type="submit">Gửi trả lời</button>
+                </form>
+            </details>
+        {% endif %}
+        {% for reply in comment.replies %}
+            {% include "includes/post_comment.html" with comment=reply %}
+        {% endfor %}
+    </div>
+</article>

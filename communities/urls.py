@@ -1,10 +1,16 @@
 from django.urls import path
+from social import views as interaction_views
 
 from . import views
 
 app_name = "communities"
 
 urlpatterns = [
+    path("<int:community_id>/bai-viet/<int:pk>/binh-luan/", interaction_views.create_comment, name="comment_create"),
+    path("<int:community_id>/bai-viet/<int:pk>/cam-xuc/", interaction_views.set_reaction, name="reaction_set"),
+    path("<int:community_id>/bai-viet/<int:pk>/luu/", interaction_views.set_saved, name="save_set"),
+    path("<int:community_id>/tep/<int:attachment_id>/", interaction_views.attachment_download, name="attachment_download"),
+
     path("", views.community_list, name="list"),
     path("yeu-cau-tham-gia/", views.join_requests, name="requests"),
     path("yeu-cau-tham-gia/<int:request_id>/xu-ly/", views.decide, name="decide"),

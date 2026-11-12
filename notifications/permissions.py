@@ -70,18 +70,30 @@ def _criterion_user_ids(criteria, *, distribution=False):
                 ).values_list("nguoi_dung_id", flat=True)
             )
         elif kind == "cong_dong" and item.cong_dong_id:
+            community = item.cong_dong
             members = ThanhVienCongDong.objects.filter(
                 cong_dong_id=item.cong_dong_id,
                 trang_thai=MemberStatus.ACTIVE,
                 ket_thuc_luc__isnull=True,
                 nguoi_dung__is_active=True,
                 cong_dong__da_xoa_mem=False,
-            ).values_list("nguoi_dung_id", flat=True)
-            result.update(members)
+            )
+            if community.loai_cong_dong == CongDong.Type.PROJECT:
+                project_members = ThanhVienDuAn.objects.filter(
+                    du_an__cong_dong=community,
+                    trang_thai=MemberStatus.ACTIVE,
+                    ket_thuc_luc__isnull=True,
+                    nguoi_dung__is_active=True,
+                ).values("nguoi_dung_id")
+                members = members.filter(nguoi_dung_id__in=project_members)
+            result.update(members.values_list("nguoi_dung_id", flat=True))
             # Quyền đọc cộng đồng nội bộ áp dụng cho toàn công ty theo quy tắc UC-SOC-02.
             if not distribution:
-                community = item.cong_dong
-                if community.pham_vi_truy_cap == "noi_bo" and not community.da_xoa_mem:
+                if (
+                    community.loai_cong_dong == CongDong.Type.GENERAL
+                    and community.pham_vi_truy_cap == "noi_bo"
+                    and not community.da_xoa_mem
+                ):
                     result.update(_active_user_ids())
         elif kind == "du_an" and item.du_an_id:
             result.update(
