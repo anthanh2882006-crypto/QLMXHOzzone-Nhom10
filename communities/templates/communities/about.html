@@ -9,7 +9,7 @@
     <h2 class="oz-card-title">{{ community.ten_cong_dong }}</h2>
     <dl class="oz-dl">
       <dt>Mô tả</dt><dd>{{ community.mo_ta|default:"—"|linebreaksbr }}</dd>
-      <dt>Loại cộng đồng</dt><dd>{{ community.get_loai_cong_dong_display }}{% if project %} — {{ project.ma_du_an_nghiep_vu }} {{ project.ten_du_an }}{% endif %}</dd>
+      <dt>Loại cộng đồng</dt><dd>{{ community.get_loai_cong_dong_display }}{% if project %} — {{ project.ten_du_an }}{% endif %}</dd>
       <dt>Thành viên</dt><dd>{{ member_count }} người</dd>
       <dt>Chủ sở hữu</dt><dd>{% for o in owners %}{{ o.nguoi_dung|ho_ten }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd>
       <dt>Quy tắc tham gia</dt><dd>{{ community.get_quy_tac_tham_gia_display }}</dd>

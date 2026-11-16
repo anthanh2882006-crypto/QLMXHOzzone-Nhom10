@@ -5,7 +5,7 @@
 {% block title %}Chi tiết bài viết | OZZONE{% endblock %}
 {% block extra_css %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261116-image-sizing">
 {% endblock %}
 
 {% block content %}
@@ -22,18 +22,7 @@
         {% if post.tieu_de %}<h1 class="social-detail-title">{{ post.tieu_de }}</h1>{% endif %}
         <div class="social-detail-content">{{ post.noi_dung|linebreaks }}</div>
 
-        {% if attachments %}
-        <section class="social-attachments">
-            <h3>Tệp đính kèm</h3>
-            {% for attachment in attachments %}
-                <a class="social-attachment" href="{% url 'social:attachment_download' attachment.pk %}">
-                    <span class="social-file-icon">📎</span>
-                    <span><strong>{{ attachment.tep_tin.ten_tep }}</strong><small>{{ attachment.tep_tin.kich_thuoc|filesizeformat }}</small></span>
-                    <span class="social-file-download">Tải xuống</span>
-                </a>
-            {% endfor %}
-        </section>
-        {% endif %}
+        {% include "includes/post_attachments.html" with post_files=attachments %}
 
         <div class="social-detail-actions">
             {% if can_interact %}

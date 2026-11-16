@@ -11,15 +11,12 @@ from projects.permissions import active_memberships, can_resolve, readable_proje
 from social.permissions import accessible_posts
 
 from projectp.models import (
-    BaiHocKinhNghiem,
-    BaiViet,
     CongDong,
     HoSoNhanVien,
     KetQuaThu,
     LanThuPhuongAn,
     NguoiNhanThongBao,
     ThanhVienCongDong,
-    ThanhVienDuAn,
     ThongBaoChinhThuc,
     TieuChiThongBao,
 )
@@ -318,8 +315,10 @@ def build_home_context(user):
 
     announcements = _readable_official_notices(user, profile, scope)
 
+    from social.services import with_post_attachments
+
     new_posts = list(
-        accessible_posts(user).select_related("nguoi_dang", "cong_dong", "du_an")
+        with_post_attachments(accessible_posts(user)).select_related("nguoi_dang", "cong_dong", "du_an")
         .exclude(loai_bai_viet="thong_bao")
         .order_by("-ngay_tao", "-ma_bai_viet")[:1]
     )

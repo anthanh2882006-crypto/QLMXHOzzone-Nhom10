@@ -1,0 +1,6 @@
+<ol class="breadcrumbs">
+  <li><a href="{% url 'admin:index' %}">Quản trị</a></li>
+  {% if console_current_group and console_current_group.title != console_model.name %}<li><a href="{{ console_current_group.url }}">{{ console_current_group.title }}</a></li>{% endif %}
+  {% if console_model %}<li{% if not original and not add %} aria-current="page"{% endif %}>{% if original or add %}<a href="{{ console_model.admin_url }}">{{ console_model.name }}</a>{% else %}{{ console_model.name }}{% endif %}</li>{% endif %}
+  {% if add %}<li aria-current="page">Thêm mới</li>{% elif original %}<li aria-current="page">{{ original|truncatechars:65 }}</li>{% endif %}
+</ol>

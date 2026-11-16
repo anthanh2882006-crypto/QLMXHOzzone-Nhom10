@@ -5,8 +5,7 @@
             <section class="pm-panel">
                 <h2>Thông tin dự án</h2>
                 <p class="pm-caption">
-                    {{ project.ma_du_an_nghiep_vu }}
-                    · {{ project.get_trang_thai_display }}
+                    {{ project.get_trang_thai_display }}
                 </p>
                 <form method="post">
                     {% include "projects/_manage_fields.html" %}

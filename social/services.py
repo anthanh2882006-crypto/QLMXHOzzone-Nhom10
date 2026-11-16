@@ -1,14 +1,25 @@
 import hashlib
+import codecs
 import uuid
 from pathlib import Path
 
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import F
+from django.db.models import F, Prefetch
 from django.utils import timezone
 from django.utils.text import get_valid_filename
 
-from projectp.models import BaiViet, DinhKem, DuAn, NhatKyNghiepVu, TepTin
+from projectp.models import BaiViet, CongDong, DinhKem, DuAn, NhatKyNghiepVu, TepTin
+
+
+def with_post_attachments(queryset):
+    return queryset.prefetch_related(Prefetch(
+        "dinhkem_set",
+        queryset=DinhKem.objects.filter(
+            tep_tin__trang_thai="san_sang", tep_tin__da_xoa_mem=False,
+        ).select_related("tep_tin").order_by("pk"),
+        to_attr="visible_attachments",
+    ))
 
 
 def _editable_post(post, user):
@@ -17,7 +28,12 @@ def _editable_post(post, user):
 
     if post.du_an_id:
         DuAn.objects.filter(pk=post.du_an_id).update(ngay_cap_nhat=F("ngay_cap_nhat"))
+    if post.cong_dong_id:
+        CongDong.objects.filter(pk=post.cong_dong_id).update(ngay_cap_nhat=F("ngay_cap_nhat"))
     BaiViet.objects.filter(pk=post.pk).update(ngay_cap_nhat=F("ngay_cap_nhat"))
+    from django.contrib.auth import get_user_model
+    if not get_user_model().objects.filter(pk=user.pk, is_active=True).exists():
+        raise PermissionDenied("Tài khoản không còn hoạt động.")
     current = BaiViet.objects.select_related("du_an", "cong_dong").get(pk=post.pk)
     allowed, reason = can_manage_own_post(user, current)
     if not allowed or not accessible_posts(user).filter(pk=current.pk).exists():
@@ -65,12 +81,17 @@ def _verified_mime(uploaded_file):
         ),
     }
     if extension in {".txt", ".csv"}:
+        decoder = codecs.getincrementaldecoder("utf-8-sig")()
         try:
-            header.decode("utf-8-sig")
+            for chunk in uploaded_file.chunks():
+                if b"\x00" in chunk:
+                    raise ValidationError(f"Tệp {uploaded_file.name} chứa byte nhị phân không hợp lệ.")
+                decoder.decode(chunk, final=False)
+            decoder.decode(b"", final=True)
         except UnicodeDecodeError as exc:
             raise ValidationError(f"Tệp {uploaded_file.name} không phải văn bản UTF-8 hợp lệ.") from exc
-        if b"\x00" in header:
-            raise ValidationError(f"Tệp {uploaded_file.name} chứa byte nhị phân không hợp lệ.")
+        finally:
+            uploaded_file.seek(0)
         return "text/csv" if extension == ".csv" else "text/plain"
 
     signature = signatures.get(extension)
@@ -161,6 +182,14 @@ def create_company_post(*, user, title, content, files, request=None):
     created_storage_names = []
     try:
         with transaction.atomic():
+            from django.contrib.auth import get_user_model
+            from .permissions import can_create_company_post
+
+            User = get_user_model()
+            User.objects.filter(pk=user.pk).update(is_active=F("is_active"))
+            current_user = User.objects.get(pk=user.pk)
+            if not can_create_company_post(current_user):
+                raise PermissionDenied("Tài khoản không còn quyền đăng bài tại công ty.")
             post = BaiViet(
                 nguoi_dang=user,
                 loai_bai_viet=BaiViet.Kind.STANDARD,
@@ -170,7 +199,6 @@ def create_company_post(*, user, title, content, files, request=None):
             )
             post.full_clean()
             post.save()
-            # Track all stored files, enabling best-effort cleanup if DB transaction fails.
             created_storage_names.extend(_save_attachments(post, user, files, request=request))
             _audit(
                 user,
@@ -181,11 +209,10 @@ def create_company_post(*, user, title, content, files, request=None):
             )
         return post
     except Exception:
-        # Database rollback cannot roll back files written to storage.
+        # Giao dịch database không hoàn tác được tệp đã ghi vào kho.
         for stored_name in created_storage_names:
             try:
                 from django.core.files.storage import default_storage
-
                 default_storage.delete(stored_name)
             except Exception:
                 pass
@@ -197,6 +224,16 @@ def update_company_post(*, post, user, title, content, files, remove_attachment_
     try:
         with transaction.atomic():
             post = _editable_post(post, user)
+            from .forms import MAX_ATTACHMENTS
+            current = DinhKem.objects.filter(bai_viet=post)
+            selected = {int(value) for value in remove_attachment_ids}
+            if not selected.issubset(set(current.values_list("pk", flat=True))):
+                raise ValidationError("Tệp cần gỡ không thuộc bài viết đang sửa.")
+            remaining = current.exclude(pk__in=selected).filter(
+                tep_tin__trang_thai="san_sang", tep_tin__da_xoa_mem=False,
+            ).count()
+            if remaining + len(files) > MAX_ATTACHMENTS:
+                raise ValidationError("Tổng số tệp giữ lại và thêm mới không được vượt quá 5.")
             if request:
                 from .views import _has_session_token
                 if not _has_session_token(request, request.POST.get("request_token", "")):

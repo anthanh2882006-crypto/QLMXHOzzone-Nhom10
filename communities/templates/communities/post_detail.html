@@ -11,10 +11,7 @@
     {% include "includes/post_header.html" with post_scope=community.ten_cong_dong %}
     {% if post.tieu_de %}<h1 class="cm-post-title" style="font-size:22px">{{ post.tieu_de }}</h1>{% endif %}
     <div class="cm-post-body">{{ post.noi_dung|linebreaks }}</div>
-    {% if attachments %}
-      <h2 class="oz-card-title" style="margin-top:16px">Tệp đính kèm</h2>
-      <ul class="cm-files">{% for a in attachments %}<li>📎 <a class="oz-link" href="{% url 'communities:attachment_download' community.pk a.pk %}">{{ a.tep_tin.ten_tep }}</a> <span class="oz-muted oz-small">{{ a.tep_tin.kich_thuoc|filesizeformat }}</span></li>{% endfor %}</ul>
-    {% endif %}
+    {% include "includes/post_attachments.html" with post_files=attachments %}
     {% if post.trang_thai == 'hien' %}{% include "includes/post_actions.html" %}{% endif %}
   </article>
 

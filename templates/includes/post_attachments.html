@@ -1,0 +1,26 @@
+{% if post_files %}
+<section class="oz-post-attachments" aria-label="Tệp đính kèm">
+    {% for attachment in post_files %}
+    {% if community %}{% url 'communities:attachment_download' community.pk attachment.pk as file_url %}{% else %}{% url 'social:attachment_download' attachment.pk as file_url %}{% endif %}
+    <div class="oz-post-attachment">
+        {% if attachment.tep_tin.loai_tep == 'image/jpeg' or attachment.tep_tin.loai_tep == 'image/png' or attachment.tep_tin.loai_tep == 'image/gif' or attachment.tep_tin.loai_tep == 'image/webp' %}
+        <a class="oz-post-image" href="{{ file_url }}?preview=1" target="_blank" rel="noopener" aria-label="Xem ảnh {{ attachment.tep_tin.ten_tep }}">
+            <img src="{{ file_url }}?preview=1" alt="{{ attachment.tep_tin.ten_tep }}" loading="lazy" decoding="async">
+        </a>
+        {% endif %}
+        <div class="oz-post-file">
+            <div class="oz-post-file-info">
+                <a href="{{ file_url }}">{{ attachment.tep_tin.ten_tep }}</a>
+                <small>{% if attachment.tep_tin.loai_tep == 'application/pdf' %}PDF{% elif attachment.tep_tin.loai_tep|slice:':6' == 'image/' %}Ảnh{% else %}Tài liệu{% endif %} · {{ attachment.tep_tin.kich_thuoc|filesizeformat }}</small>
+            </div>
+            <div class="oz-post-file-actions">
+                {% if attachment.tep_tin.loai_tep == 'application/pdf' or attachment.tep_tin.loai_tep|slice:':6' == 'image/' %}
+                <a href="{{ file_url }}?preview=1" target="_blank" rel="noopener">Xem</a>
+                {% endif %}
+                <a href="{{ file_url }}">Tải xuống</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</section>
+{% endif %}

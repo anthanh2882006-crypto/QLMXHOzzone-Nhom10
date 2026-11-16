@@ -44,8 +44,7 @@
                         <div class="pm-rich">{{ post.noi_dung|truncatechars:600|linebreaks }}</div>
                         {% if post.ma_the_thiet_bi %}
                             <p class="pm-caption">
-                                {{ post.ma_the_thiet_bi.ma_thiet_bi }}
-                                · {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa gắn tài sản tại thời điểm ghi" }}
+                                {{ post.ma_the_thiet_bi.ten_thiet_bi }}
                             </p>
                         {% endif %}
                         {% include "projects/_attachments.html" with attachments=row.attachments %}

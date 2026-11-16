@@ -6,7 +6,7 @@ leave : GET hỏi lại; POST chuyển tư cách sang 'kết thúc' (giữ dòng
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from ._chung import active_community_memberships, community_change, handled
+from ._chung import community_change, handled
 from django.shortcuts import redirect, render
 from django.utils import timezone
 

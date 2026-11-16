@@ -8,7 +8,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
-from projectp.models import BaiViet, DinhKem, TepTin
+from projectp.models import DinhKem, TepTin
 from social.views import _post_cards, post_discussion_context
 from .ui import with_issue_state
 from .permissions import project_access, readable_project_posts

@@ -1,0 +1,79 @@
+/* Tệp và ảnh dùng chung trên trang chủ, bảng tin và chi tiết bài đăng. */
+.oz-post-attachments {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+    margin: 16px 0;
+}
+
+.oz-post-attachment {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--oz-border, #E2E7EA);
+    border-radius: 8px;
+    background: var(--oz-surface, #FFFFFF);
+}
+
+.oz-post-file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-width: 0;
+    padding: 12px 14px;
+    background: var(--oz-surface, #FFFFFF);
+}
+
+.oz-post-file-info {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.oz-post-file-info a {
+    color: var(--oz-brand, #3B7132);
+    font-weight: 500;
+    overflow-wrap: anywhere;
+}
+
+.oz-post-file-info small {
+    color: var(--oz-muted, #697582);
+    font-size: 12px;
+}
+
+.oz-post-file-actions {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.oz-post-file-actions a {
+    color: var(--oz-brand, #3B7132);
+    font-size: 13px;
+}
+
+.oz-post-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--oz-canvas, #F2F4F0);
+    border-bottom: 1px solid var(--oz-border, #E2E7EA);
+}
+
+.oz-post-image img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 560px;
+    object-fit: contain;
+}
+
+@media (max-width: 540px) {
+    .oz-post-file {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+}

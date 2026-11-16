@@ -5,7 +5,7 @@
 {% block title %}Bảng tin | OZZONE{% endblock %}
 {% block extra_css %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261116-image-sizing">
 {% endblock %}
 
 {% block main_class %}oz-social-main{% endblock %}
@@ -158,9 +158,7 @@
                             {% if post.tieu_de %}<h2>{{ post.tieu_de }}</h2>{% endif %}
                             <p class="social-post-excerpt">{{ post.noi_dung|truncatechars:420|linebreaksbr }}</p>
                         </a>
-                        {% with attachment_count=post.dinhkem_set.count %}
-                            {% if attachment_count %}<div class="social-attachment-summary">▤ {{ attachment_count }} tệp đính kèm</div>{% endif %}
-                        {% endwith %}
+                        {% include "includes/post_attachments.html" with post_files=post.visible_attachments %}
                         <div class="social-card-footer social-card-actions">
                             <span>{{ post.reaction_count }} đồng nghiệp đã bày tỏ cảm xúc <span class="social-feed-comment-count">{{ post.comment_count }} bình luận</span></span>
                             <div class="social-action-group">

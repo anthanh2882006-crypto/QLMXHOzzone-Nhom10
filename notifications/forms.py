@@ -3,7 +3,7 @@ from pathlib import Path
 from django import forms
 from django.contrib.auth import get_user_model
 
-from projectp.models import CongDong, DuAn, DinhKem, HoSoNhanVien, PhongBan, ThongBaoChinhThuc
+from projectp.models import CongDong, DuAn, DinhKem, PhongBan, ThongBaoChinhThuc
 from social.forms import MultipleFileField
 
 

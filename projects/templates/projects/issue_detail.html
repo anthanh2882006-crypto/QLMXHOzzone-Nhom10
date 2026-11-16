@@ -7,7 +7,7 @@
             <p class="pm-muted">
                 {{ project.ten_du_an }}
                 {% if post.ma_the_thiet_bi %}
-                    / {{ post.ma_the_thiet_bi.ma_thiet_bi }}
+                    / {{ post.ma_the_thiet_bi.ten_thiet_bi }}
                 {% endif %}
                 / PRB-{{ post.pk }}
             </p>
@@ -213,11 +213,11 @@
                     </dd>
                     <dt>Thiết bị</dt>
                     <dd>
-                        {{ post.ma_the_thiet_bi.ma_thiet_bi|default:"Không gắn thiết bị" }}
+                        {{ post.ma_the_thiet_bi.ten_thiet_bi|default:"Không gắn thiết bị" }}
                     </dd>
                     <dt>Tài sản tại thời điểm ghi</dt>
                     <dd>
-                        {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa gắn tài sản" }}
+                        {% if post.tai_san_id %}Đã ghi nhận tài sản tại thời điểm đăng{% else %}Chưa gắn tài sản{% endif %}
                     </dd>
                     <dt>Người tạo</dt>
                     <dd>

@@ -1,0 +1,24 @@
+{% extends "admin/base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} | OZZONE Admin{% endblock %}
+{% block dark-mode-vars %}{% endblock %}
+{% block extrahead %}{{ block.super }}<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap">{% endblock %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'ozzone/components.css' %}"><link rel="stylesheet" href="{% static 'projectp/admin/console.css' %}">{% endblock %}
+{% block branding %}
+<a class="oz-brand" href="{% url 'admin:index' %}">
+  <img src="{% static 'ozzone/logo.jpg' %}" width="44" height="44" alt="">
+  <span>OZZONE</span>
+</a>
+{% endblock %}
+{% block usertools %}
+{% if has_permission %}
+<div id="user-tools">
+  <a href="{{ site_url }}">Về website</a>
+  {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">Đổi mật khẩu</a>{% endif %}
+  <span class="oz-user-name">{% firstof user.get_full_name user.get_username %}</span>
+  <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Đăng xuất</button></form>
+</div>
+{% endif %}
+{% endblock %}
+{% block nav-sidebar %}{% if has_permission %}{% include 'admin/console/sidebar.html' %}{% endif %}{% endblock %}

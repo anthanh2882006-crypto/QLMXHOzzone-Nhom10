@@ -1,0 +1,17 @@
+<aside class="oz-admin-sidebar" aria-label="Điều hướng quản trị">
+  <p class="oz-nav-heading">Quản trị hệ thống</p>
+  <nav>
+    <a href="{% url 'admin:index' %}"{% if console_home_active %} class="is-active" aria-current="page"{% endif %}>Tổng quan</a>
+    {% for group in console_groups %}
+    <a href="{{ group.url }}"{% if group.active %} class="is-active" aria-current="page"{% endif %}>{{ group.title }}</a>
+    {% endfor %}
+    {% if console_audit %}
+    <p class="oz-nav-heading oz-nav-divider">Dữ liệu và lịch sử</p>
+    <a href="{{ console_audit.admin_url }}"{% if console_audit_active %} class="is-active" aria-current="page"{% endif %}>Nhật ký quản trị</a>
+    {% endif %}
+  </nav>
+  <div class="oz-sidebar-account">
+    <span>Đang dùng tài khoản</span>
+    <strong>{% firstof user.get_full_name user.get_username %}</strong>
+  </div>
+</aside>

@@ -13,7 +13,6 @@ from projectp.models import (
     DuAn,
     MemberStatus,
     ThanhVienCongDong,
-    ThanhVienDuAn,
 )
 
 
@@ -129,10 +128,20 @@ def can_manage_own_post(user, post):
         return False, "Bạn chỉ được quản lý bài viết do chính mình tạo."
     if post.da_xoa_mem:
         return False, "Bài viết đã được xóa mềm."
-    if post.loai_bai_viet != BaiViet.Kind.STANDARD:
-        return False, "Chức năng này chỉ áp dụng cho bài chia sẻ/thảo luận cá nhân."
+    if post.loai_bai_viet not in {BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE}:
+        return False, "Loại nội dung này được quản lý qua quy trình riêng."
     if post.che_do_xu_ly:
         return False, "Vấn đề kỹ thuật được xử lý trong đúng không gian dự án."
+    if post.du_an_id:
+        if not readable_projects(user).filter(pk=post.du_an_id).exists():
+            return False, "Bạn không còn tư cách thành viên trong dự án này."
+    elif post.cong_dong_id:
+        from communities.views._chung import duoc_dang, tu_cach
+
+        if not duoc_dang(post.cong_dong, tu_cach(user, post.cong_dong)):
+            return False, "Bạn không còn quyền đăng hoặc sửa bài trong cộng đồng này."
+    elif not can_create_company_post(user):
+        return False, "Bạn không còn quyền đăng bài tại bảng tin công ty."
     reason = protected_source_reason(post)
     if reason:
         return False, reason

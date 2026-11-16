@@ -21,7 +21,6 @@ from projectp.models import (
 )
 from . import forms_manage as forms
 from .services_manage import archive_reasons, execute, managed_project, outstanding, revision
-from .utils import related_url
 from .permissions import project_access
 from .policies import curator_limit
 

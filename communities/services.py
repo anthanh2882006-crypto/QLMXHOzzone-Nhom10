@@ -3,7 +3,7 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import F
-from projectp.models import CommunityRole, CongDong, DuAn, MemberStatus, ThanhVienCongDong, ThanhVienDuAn
+from projectp.models import CommunityRole, CongDong, DuAn, MemberStatus, ThanhVienDuAn
 
 
 def lock_community(pk):

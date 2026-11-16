@@ -8,7 +8,7 @@
         {% include "includes/post_header.html" with post_scope=project.ten_du_an %}
         {% if post.ma_the_thiet_bi %}
             <p>
-                {{ post.ma_the_thiet_bi.ma_thiet_bi }} · {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa gắn tài sản tại thời điểm ghi" }}
+                Thiết bị · {{ post.ma_the_thiet_bi.ten_thiet_bi }}
             </p>
         {% endif %}
         <div>

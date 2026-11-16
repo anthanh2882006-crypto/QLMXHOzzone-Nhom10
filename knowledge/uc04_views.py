@@ -9,7 +9,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import F, Q
-from django.http import Http404, HttpRequest, HttpResponse, HttpResponseForbidden
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone

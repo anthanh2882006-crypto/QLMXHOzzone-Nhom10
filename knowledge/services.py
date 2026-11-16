@@ -127,6 +127,9 @@ def check_references(user, version):
             file = reference.tep_nguon
             if file.da_xoa_mem or file.trang_thai != "san_sang":
                 raise ValidationError("Tệp tham khảo không còn khả dụng.")
+            from .files import can_read_reference_file
+            if not can_read_reference_file(user, reference):
+                raise PermissionDenied("Không còn quyền đọc nguồn của tệp tham khảo.")
             links = DinhKem.objects.filter(tep_tin=file)
             if links.filter(Q(ket_qua_thu__isnull=False) | Q(phuong_an__isnull=False)
                     | Q(bai_viet__che_do_xu_ly=True)).exists():

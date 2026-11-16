@@ -2,9 +2,9 @@
 {% block project_content %}
     {% include "projects/_page_header.html" %}
     <section class="pm-panel">
-        <h2>{{ device.ma_thiet_bi }}</h2>
+        <h2>{{ device.ten_thiet_bi }}</h2>
         <div>{{ device.mo_ta|linebreaks }}</div>
-        <p>Tài sản hiện hành {{ current_asset.ma_tai_san_noi_bo|default:"Chưa có tài sản" }}</p>
+        <p>{% if current_asset %}Tài sản đang sử dụng{% if current_asset.so_serial %} · Serial {{ current_asset.so_serial }}{% endif %} · Từ {{ current_asset.ngay_bat_dau_su_dung|date:"d/m/Y" }}{% else %}Chưa có tài sản đang sử dụng{% endif %}</p>
         {% if asset_error %}
             <div class="pm-error">{{ asset_error }}</div>
         {% endif %}
@@ -19,7 +19,6 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Tài sản</th>
                         <th>Serial</th>
                         <th>Bắt đầu</th>
                         <th>Kết thúc</th>
@@ -29,7 +28,6 @@
                 <tbody>
                     {% for asset in assets %}
                         <tr>
-                            <td>{{ asset.ma_tai_san_noi_bo }}</td>
                             <td>{{ asset.so_serial|default:"—" }}</td>
                             <td>{{ asset.ngay_bat_dau_su_dung|date:"d/m/Y" }}</td>
                             <td>{{ asset.ngay_ket_thuc_su_dung|date:"d/m/Y"|default:"—" }}</td>
@@ -37,7 +35,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="5">Chưa có tài sản.</td>
+                            <td colspan="4">Chưa có tài sản.</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -53,7 +51,7 @@
                 </a>
                 <p class="pm-caption">
                     {{ post.ngay_tao|date:"d/m/Y H:i" }}
-                    · Tài sản tại thời điểm ghi: {{ post.tai_san.ma_tai_san_noi_bo|default:"Chưa có tài sản" }}
+                    {% if post.tai_san_id %}· Đã ghi nhận tài sản tại thời điểm đăng{% else %}· Chưa gắn tài sản{% endif %}
                 </p>
             </article>
         {% empty %}

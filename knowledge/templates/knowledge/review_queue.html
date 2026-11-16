@@ -63,7 +63,7 @@
                     <td>
                         <strong>{{ item.bai_viet_nguon.tieu_de|default:item.bai_viet_nguon.noi_dung|truncatechars:90 }}</strong>
                         {% if item.bai_viet_nguon.ma_the_thiet_bi_id %}
-                            <small>{{ item.bai_viet_nguon.ma_the_thiet_bi.ma_thiet_bi }} · {{ item.bai_viet_nguon.ma_the_thiet_bi.ten_thiet_bi }}</small>
+                            <small>{{ item.bai_viet_nguon.ma_the_thiet_bi.ten_thiet_bi }}</small>
                         {% endif %}
 
                         {% if item.is_archived_project %}<small class="knw04-archive-note">Dự án đã lưu trữ · chỉ xử lý theo phân công còn hiệu lực</small>{% endif %}

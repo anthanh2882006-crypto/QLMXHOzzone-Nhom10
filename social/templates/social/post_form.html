@@ -4,7 +4,7 @@
 {% block title %}{{ page_title }} | OZZONE{% endblock %}
 {% block extra_css %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-post-files-20261116">
 {% endblock %}
 
 {% block content %}
@@ -13,7 +13,7 @@
     <section class="social-card social-form-card">
         <p class="social-eyebrow">OZZONE · BÀI VIẾT CÁ NHÂN</p>
         <h1>{{ page_title }}</h1>
-        <p class="social-muted">Bài đăng được tạo dưới tư cách cá nhân trên Bảng tin công ty. Không sử dụng biểu mẫu này để phát hành thông báo chính thức.</p>
+        <p class="social-muted">Nơi đăng · {% if post.du_an_id %}{{ post.du_an.ten_du_an }}{% elif post.cong_dong_id %}{{ post.cong_dong.ten_cong_dong }}{% else %}Bảng tin công ty{% endif %}</p>
         <form method="post" enctype="multipart/form-data" class="social-form">
             {% csrf_token %}
             {{ form.request_token }}

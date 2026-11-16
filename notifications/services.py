@@ -15,7 +15,6 @@ from projectp.models import (
     ThongBaoChinhThuc,
     ThongBaoHeThong,
     TieuChiThongBao,
-    TepTin,
 )
 from social.services import _save_attachments
 

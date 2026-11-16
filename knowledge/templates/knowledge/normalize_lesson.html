@@ -39,8 +39,8 @@
             <span class="knw04-source-badge">Nguồn đã giải quyết</span>
             <h2>{{ source_post.tieu_de|default:"Nguồn xử lý dự án" }}</h2>
             <p class="knw04-project-name">{{ project.ten_du_an }}</p>
-            {% if device %}<p class="knw04-device-line">{{ device.ma_thiet_bi }} · {{ device.ten_thiet_bi }}</p>{% endif %}
-            {% if asset %}<p class="knw04-device-line">Tài sản: {{ asset.ma_tai_san_noi_bo }}{% if asset.so_serial %} · Serial {{ asset.so_serial }}{% endif %}</p>{% endif %}
+            {% if device %}<p class="knw04-device-line">{{ device.ten_thiet_bi }}</p>{% endif %}
+            {% if asset %}<p class="knw04-device-line">Tài sản tại thời điểm ghi{% if asset.so_serial %} · Serial {{ asset.so_serial }}{% endif %} · Sử dụng từ {{ asset.ngay_bat_dau_su_dung|date:"d/m/Y" }}</p>{% endif %}
             <p><a class="knw-back-button" href="{% url 'projects:issue' project.pk source_post.pk %}">Xem nguồn xử lý</a></p>
             <div class="knw04-source-result">
                 <strong>Kết luận đã xác nhận</strong>

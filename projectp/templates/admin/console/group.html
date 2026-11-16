@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}<ol class="breadcrumbs"><li><a href="{% url 'admin:index' %}">Quản trị</a></li><li aria-current="page">{{ console_group.title }}</li></ol>{% endblock %}
+{% block content %}
+<p class="oz-page-description">{{ console_group.description }}</p>
+<div class="oz-model-table">
+  <table>
+    <caption class="visually-hidden">Danh mục quản trị {{ console_group.title|lower }}</caption>
+    <thead><tr><th scope="col">Dữ liệu</th><th scope="col">Thao tác</th></tr></thead>
+    <tbody>
+      {% for model in console_group.models %}
+      <tr>
+        <th scope="row"><a href="{{ model.admin_url }}">{{ model.name }}</a></th>
+        <td class="oz-model-actions"><a href="{{ model.admin_url }}">Xem danh sách</a>{% if model.add_url %}<a class="oz-add-link" href="{{ model.add_url }}">Thêm mới</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

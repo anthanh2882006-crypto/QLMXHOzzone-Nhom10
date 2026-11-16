@@ -23,7 +23,6 @@ from projectp.models import (
     NguonThamKhao,
     HoSoNhanVien,
     KyNangNhanVien,
-    ThanhVienCongDong,
     ThanhVienDuAn,
 )
 
@@ -593,10 +592,14 @@ def _article_reference_rows(user, sources, version):
         if reference.loai_tham_chieu == "url" and reference.url:
             row["url"] = reference.url
             row["status_label"] = "Nguồn bên ngoài"
+            row["external"] = True
+            row["open_label"] = "Mở nguồn bên ngoài"
         elif reference.loai_tham_chieu == "bai_viet":
             if _can_read_source_post(user, reference.bai_viet_nguon, sources):
                 row["status_label"] = "Nguồn nội bộ · có quyền đọc"
                 row["target_available"] = True
+                row["url"] = reverse("social:post_detail", args=[reference.bai_viet_nguon_id])
+                row["open_label"] = "Mở bài nguồn"
             else:
                 # Do not leak the title, author, citation or URL of a restricted source.
                 row.update(
@@ -612,12 +615,12 @@ def _article_reference_rows(user, sources, version):
                 )
         elif reference.loai_tham_chieu == "tep":
             file_obj = reference.tep_nguon
-            # The database has no general-purpose file preview route/access service.
-            # Only show file metadata if the file is still ready and belongs to this user.
-            if file_obj and not file_obj.da_xoa_mem and file_obj.trang_thai == "san_sang":
+            from .files import can_read_reference_file
+            if file_obj and can_read_reference_file(user, reference):
                 row["title"] = file_obj.ten_tep
                 row["status_label"] = "Tệp tham khảo"
                 row["url"] = reverse("knowledge:reference_download", args=[reference.pk])
+                row["open_label"] = "Tải tệp nguồn"
             else:
                 row.update(
                     {

@@ -9,28 +9,28 @@
     {{ block.super }}
     <link rel="stylesheet"
           href="{% static 'projects/projects.css' %}?v=20261111-project-cards">
-    <link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261113-context">
+    <link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261116-post-files">
 {% endblock %}
 {% block sidebar %}
-    {% if project %}
-        <aside class="pm-sidebar" aria-label="Điều hướng dự án">
-            <p class="pm-project-name">{{ project.ten_du_an }}</p>
-            <p class="pm-project-code">{{ project.ma_du_an_nghiep_vu }}</p>
-            <a href="{% url 'projects:list' %}">Dự án của tôi</a>
-            {% for key, label, href in project_nav %}
-                {% if href %}
-                    <a href="{{ href }}"{% if key == section %} class="is-active" aria-current="page"{% endif %}>
-                        {{ label }}
-                    </a>
-                {% endif %}
-            {% endfor %}
-            <p class="pm-caption pm-account">
-                Đang dùng tài khoản
-                <br>
-                {{ request.user|ho_ten }}
-            </p>
-        </aside>
-    {% endif %}
+    <aside class="pm-sidebar oz-module-sidebar" aria-label="Điều hướng dự án">
+        <h2 class="oz-module-title">Dự án</h2>
+        <nav class="oz-module-nav" aria-label="Mục chung của dự án">
+            <a href="{% url 'projects:list' %}"{% if not project and section == 'list' %} class="is-active" aria-current="page"{% endif %}>Dự án</a>
+        </nav>
+        {% if project %}
+        <section class="oz-module-context" aria-label="Dự án đang xem">
+            <h3 class="oz-module-context-title">{{ project.ten_du_an }}</h3>
+            <nav class="oz-module-nav" aria-label="Mục trong {{ project.ten_du_an }}">
+                {% for key, label, href in project_nav %}
+                    {% if href %}
+                        <a href="{{ href }}"{% if key == section %} class="is-active" aria-current="page"{% endif %}>{{ label }}</a>
+                    {% endif %}
+                {% endfor %}
+            </nav>
+        </section>
+        {% endif %}
+        <p class="oz-sidebar-foot">Đang dùng tài khoản<br>{{ request.user|ho_ten }}</p>
+    </aside>
 {% endblock %}
 {% block main_class %}
     project-main

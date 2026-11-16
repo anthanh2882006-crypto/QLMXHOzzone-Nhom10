@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+{% block bodyclass %}{{ block.super }} oz-console-dashboard{% endblock %}
+{% block breadcrumbs %}<ol class="breadcrumbs"><li aria-current="page">Quản trị / Tổng quan</li></ol>{% endblock %}
+{% block content %}
+<p class="oz-page-description">Quản lý dữ liệu OZZONE theo quyền được cấp.</p>
+{% if console_count_error %}<p class="errornote">Chưa tải được một số số liệu. Hãy tải lại trang để thử lại.</p>{% endif %}
+<div class="oz-dashboard-grid">
+  {% for group in console_groups %}
+  <section class="oz-dashboard-card">
+    <h2><a href="{{ group.url }}">{{ group.title }}</a></h2>
+    <p>{{ group.description }}</p>
+    {% if group.count != None %}<div class="oz-metric"><strong>{{ group.count }}</strong><span>{{ group.count_label }}</span></div>{% endif %}
+    <a class="oz-button" href="{{ group.url }}">Mở {{ group.title|lower }}</a>
+  </section>
+  {% empty %}
+  <div class="oz-empty-state">Tài khoản chưa được cấp quyền vào các nhóm quản trị. Liên hệ người quản trị tài khoản để được kiểm tra.</div>
+  {% endfor %}
+</div>
+{% if console_audit %}
+<section class="oz-audit-card"><div><h2>Nhật ký quản trị</h2><p>Tra cứu người thao tác, thời điểm và lịch sử thay đổi theo quyền.</p></div><a class="oz-button oz-button-secondary" href="{{ console_audit.admin_url }}">Xem nhật ký</a></section>
+{% endif %}
+{% endblock %}

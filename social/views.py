@@ -26,7 +26,6 @@ from projectp.models import (
     NguoiNhanThongBao,
     ThongBaoChinhThuc,
     ThanhVienCongDong,
-    ThanhVienDuAn,
 )
 
 from .forms import CommentForm, PostForm
@@ -38,7 +37,7 @@ from .permissions import (
     can_create_company_post,
     can_manage_own_post,
 )
-from .services import create_company_post, soft_delete_post, update_company_post
+from .services import create_company_post, soft_delete_post, update_company_post, with_post_attachments
 from .tokens import consume_post_token, has_post_token, issue_post_token
 
 REACTION_CHOICES = {value for value, _label in CamXuc._meta.get_field("loai_cam_xuc").choices}
@@ -47,12 +46,12 @@ REACTION_CHOICES = {value for value, _label in CamXuc._meta.get_field("loai_cam_
 def _post_cards(queryset, user):
     liked = CamXuc.objects.filter(bai_viet_id=OuterRef("pk"), nguoi_dung=user)
     saved = BaiVietDaLuu.objects.filter(bai_viet_id=OuterRef("pk"), nguoi_dung=user)
-    return queryset.annotate(
+    return with_post_attachments(queryset.annotate(
         comment_count=Count("binhluan", filter=Q(binhluan__da_xoa_mem=False), distinct=True),
         reaction_count=Count("camxuc", distinct=True),
         liked_by_me=Exists(liked),
         saved_by_me=Exists(saved),
-    ).order_by("-ngay_tao", "-ma_bai_viet")
+    ).order_by("-ngay_tao", "-ma_bai_viet"))
 
 
 def _interaction_post(request, pk, *, community_id=None, project_id=None):
@@ -281,7 +280,9 @@ def feed(request):
 
 @login_required(login_url="accounts:login")
 def post_detail(request, pk):
-    post = get_object_or_404(accessible_posts(request.user), pk=pk)
+    post = accessible_posts(request.user).filter(pk=pk).first()
+    if post is None:
+        return render(request, "social/unavailable.html", status=404)
     if post.du_an_id and post.che_do_xu_ly:
         return redirect("projects:issue", pk=post.du_an_id, post_id=post.pk)
     if post.du_an_id:
@@ -412,8 +413,8 @@ def create_post(request):
                 files=form.cleaned_data["tep_dinh_kem"],
                 request=request,
             )
-        except ValidationError as exc:
-            form.add_error(None, exc)
+        except (ValidationError, PermissionDenied) as exc:
+            form.add_error(None, exc.messages if isinstance(exc, ValidationError) else str(exc))
         except Exception:
             form.add_error(None, "Không thể lưu bài viết. Dữ liệu cũ vẫn được giữ; vui lòng thử lại.")
         else:
@@ -540,7 +541,7 @@ def my_posts(request):
         BaiViet.objects.filter(
             nguoi_dang=request.user,
             da_xoa_mem=False,
-            loai_bai_viet=BaiViet.Kind.STANDARD,
+            loai_bai_viet__in=[BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE],
         )
         .select_related("nguoi_dang", "cong_dong", "du_an")
         .order_by("-ngay_tao", "-ma_bai_viet")
@@ -566,7 +567,7 @@ def edit_post(request, pk):
         BaiViet.objects.filter(
             nguoi_dang=request.user,
             da_xoa_mem=False,
-            loai_bai_viet=BaiViet.Kind.STANDARD,
+            loai_bai_viet__in=[BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE],
         ),
         pk=pk,
     )
@@ -606,6 +607,8 @@ def edit_post(request, pk):
                 remove_attachment_ids=form.cleaned_data["remove_attachment_ids"],
                 request=request,
             )
+        except (ValidationError, PermissionDenied) as exc:
+            form.add_error(None, exc.messages if isinstance(exc, ValidationError) else str(exc))
         except Exception:
             form.add_error(
                 None, "Không thể lưu thay đổi. Tệp và nội dung cũ được giữ lại; vui lòng kiểm tra và thử lại."
@@ -635,7 +638,7 @@ def delete_post(request, pk):
         BaiViet.objects.filter(
             nguoi_dang=request.user,
             da_xoa_mem=False,
-            loai_bai_viet=BaiViet.Kind.STANDARD,
+            loai_bai_viet__in=[BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE],
         ),
         pk=pk,
     )
@@ -664,7 +667,14 @@ def attachment_download(request, attachment_id, community_id=None):
         file_handle = attachment.tep_tin.tep.open("rb")
     except (FileNotFoundError, OSError, ValueError):
         raise Http404("Tệp không khả dụng.")
-    return FileResponse(file_handle, as_attachment=True, filename=attachment.tep_tin.ten_tep)
+    file = attachment.tep_tin
+    previewable = file.loai_tep in {
+        "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",
+    }
+    return FileResponse(
+        file_handle, as_attachment=not (request.GET.get("preview") == "1" and previewable),
+        filename=file.ten_tep, content_type=file.loai_tep or "application/octet-stream",
+    )
 
 
 @login_required(login_url="accounts:login")

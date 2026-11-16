@@ -65,7 +65,7 @@
                         {% if reference.citation %}<p>{{ reference.citation|linebreaks }}</p>{% endif %}
                         {% if reference.note %}<p>{{ reference.note|linebreaks }}</p>{% endif %}
                         {% if reference.url %}
-                            <a href="{{ reference.url }}" target="_blank" rel="noopener noreferrer">Mở nguồn bên ngoài ↗</a>
+                            <a href="{{ reference.url }}"{% if reference.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ reference.open_label|default:"Mở nguồn" }}{% if reference.external %} ↗{% endif %}</a>
                         {% elif reference.status == "restricted" %}
                             <span class="knw-reference-status knw-reference-status--restricted">{{ reference.status_label }}</span>
                         {% else %}

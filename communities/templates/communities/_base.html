@@ -5,24 +5,37 @@
 <link rel="stylesheet" href="{% static 'ozzone/components.css' %}">
 <link rel="stylesheet" href="{% static 'communities/communities.css' %}">
 <link rel="stylesheet" href="{% static 'communities/responsive.css' %}?v=20261113-context">
-<link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261113-context">
+<link rel="stylesheet" href="{% static 'ozzone/workspace.css' %}?v=20261116-image-sizing">
 {% endblock %}
 {% block main_class %}cm-main{% endblock %}
 {% block sidebar %}
-<aside class="oz-sidebar cm-sidebar" aria-label="Cộng đồng">
-  <p class="oz-sidebar-title">Cộng đồng</p>
-  <nav>
-    <a class="oz-side-link {% if active_side == 'explore' %}is-active{% endif %}" href="{% url 'communities:list' %}">Khám phá</a>
-    {# Mục 2: cộng đồng đang làm việc / mở gần nhất (Figma: "Kỹ thuật & Vận hành") — xem sidebar() trong views/_chung.py #}
-    {% if side_community %}
-      <a class="oz-side-link {% if active_side == 'community' %}is-active{% endif %}" href="{% url 'communities:detail' side_community.pk %}" title="{{ side_community.ten_cong_dong }}">{{ side_community.ten_cong_dong }}</a>
-      <a class="oz-side-link {% if active_side == 'members' %}is-active{% endif %}" href="{% url 'communities:members' side_community.pk %}">Thành viên</a>
-    {% endif %}
-    <a class="oz-side-link {% if active_side == 'requests' %}is-active{% endif %}" href="{% url 'communities:requests' %}">Yêu cầu tham gia{% if side_pending %}<span class="oz-count">{{ side_pending }}</span>{% endif %}</a>
-    {% if side_can_moderate %}
-      <a class="oz-side-link {% if active_side == 'moderation' %}is-active{% endif %}" href="{% if side_moderation_pk %}{% url 'communities:moderation' side_moderation_pk %}{% else %}{% url 'communities:moderation_home' %}{% endif %}">Kiểm duyệt cộng đồng</a>
-    {% endif %}
+<aside class="oz-sidebar cm-sidebar oz-module-sidebar" aria-label="Điều hướng cộng đồng">
+  <h2 class="oz-module-title">Cộng đồng</h2>
+  <nav class="oz-module-nav" aria-label="Mục chung của cộng đồng">
+    <a class="oz-side-link {% if active_side == 'explore' %}is-active{% endif %}"
+       href="{% url 'communities:list' %}"{% if active_side == 'explore' %} aria-current="page"{% endif %}>Khám phá</a>
+    <a class="oz-side-link {% if active_side == 'requests' %}is-active{% endif %}"
+       href="{% url 'communities:requests' %}"{% if active_side == 'requests' %} aria-current="page"{% endif %}>
+      <span>Yêu cầu tham gia</span>{% if side_pending %}<span class="oz-count" aria-label="{{ side_pending }} yêu cầu chờ duyệt">{{ side_pending }}</span>{% endif %}
+    </a>
   </nav>
-  <p class="oz-sidebar-foot">Đang dùng tài khoản<br>{% if request.user.last_name or request.user.first_name %}{{ request.user|ho_ten }}{% else %}{{ request.user.get_username }}{% endif %}</p>
+  {% if community %}
+  <section class="oz-module-context" aria-label="Cộng đồng đang xem">
+    <h3 class="oz-module-context-title">{{ community.ten_cong_dong }}</h3>
+    <nav class="oz-module-nav" aria-label="Mục trong {{ community.ten_cong_dong }}">
+      <a class="oz-side-link {% if active_side == 'community' and tab != 'about' %}is-active{% endif %}"
+         href="{% url 'communities:detail' community.pk %}"{% if active_side == 'community' and tab != 'about' %} aria-current="page"{% endif %}>Bảng tin</a>
+      <a class="oz-side-link {% if active_side == 'members' %}is-active{% endif %}"
+         href="{% url 'communities:members' community.pk %}"{% if active_side == 'members' %} aria-current="page"{% endif %}>Thành viên</a>
+      <a class="oz-side-link {% if tab == 'about' %}is-active{% endif %}"
+         href="{% url 'communities:about' community.pk %}"{% if tab == 'about' %} aria-current="page"{% endif %}>Giới thiệu</a>
+      {% if side_moderation_pk %}
+      <a class="oz-side-link {% if active_side == 'moderation' %}is-active{% endif %}"
+         href="{% url 'communities:moderation' community.pk %}"{% if active_side == 'moderation' %} aria-current="page"{% endif %}>Kiểm duyệt cộng đồng</a>
+      {% endif %}
+    </nav>
+  </section>
+  {% endif %}
+  <p class="oz-sidebar-foot">Đang dùng tài khoản<br>{{ request.user|ho_ten }}</p>
 </aside>
 {% endblock %}

@@ -14,8 +14,8 @@
 
 {% block extra_css %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'core/css/home.css' %}?v=20261111-social-ui1">
-    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261111-social-ui1">
+    <link rel="stylesheet" href="{% static 'core/css/home.css' %}?v=20261116-image-sizing">
+    <link rel="stylesheet" href="{% static 'social/css/social.css' %}?v=20261116-image-sizing">
 {% endblock %}
 
 {% block main_class %}oz-home-main{% endblock %}
@@ -271,6 +271,7 @@
                                 </div>
                                 {% if post.tieu_de %}<h3>{{ post.tieu_de }}</h3>{% endif %}
                                 <p class="home-post-body">{{ post.noi_dung|truncatechars:220 }}</p>
+                                {% include "includes/post_attachments.html" with post_files=post.visible_attachments %}
                                 <div class="home-post-footer">
                                     <span>{{ post.get_loai_bai_viet_display }}</span>
                                     {% url 'social:post_detail' post.pk as post_detail_url %}

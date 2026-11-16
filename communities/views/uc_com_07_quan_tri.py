@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from projectp.models import BaiViet, CommunityRole, CongDong, DuAn, MemberStatus, ThanhVienDuAn
+from projectp.models import BaiViet, CommunityRole, DuAn, MemberStatus, ThanhVienDuAn
 from social.permissions import protected_source_reason
 from ..services import handover_roles
 from ._chung import (

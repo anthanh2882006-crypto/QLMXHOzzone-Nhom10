@@ -37,7 +37,7 @@
                     {% for post in page_obj %}
                         <tr>
                             <td>{{ post.tieu_de|default:"Vấn đề kỹ thuật" }}</td>
-                            <td>{{ post.ma_the_thiet_bi.ma_thiet_bi|default:"—" }}</td>
+                            <td>{{ post.ma_the_thiet_bi.ten_thiet_bi|default:"—" }}</td>
                             <td>{% include "projects/_issue_state.html" %}</td>
                             <td>
                                 <a href="{% url 'projects:issue' project.pk post.pk %}">Mở</a>

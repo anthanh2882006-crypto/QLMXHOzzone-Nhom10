@@ -1,0 +1,3 @@
+{% extends "admin/base_site.html" %}
+{% block content_title %}<h1>Danh mục quản trị</h1>{% endblock %}
+{% block content %}<div class="module">{% include 'admin/app_list.html' with app_list=app_list show_changelinks=True %}</div>{% endblock %}

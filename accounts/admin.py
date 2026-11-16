@@ -2,21 +2,12 @@
 
 Tài khoản (User), nhóm và phân quyền dùng trang có sẵn của Django: /admin/auth/user/.
 Ở đây tùy chỉnh trang quản lý hồ sơ nhân viên và danh mục phòng ban, vị trí, kỹ năng.
-(Các model này đã được bỏ khỏi danh sách BUSINESS_MODELS trong projectp/admin.py.)
 """
 
 from django.contrib import admin
 
 from projectp.models import HoSoNhanVien, KyNang, KyNangNhanVien, PhongBan, ViTriCongViec
 from . import admin_users  # noqa: F401 — tùy chỉnh UserAdmin của Django
-
-# Ch.3 mục 3.4: đổi tên hiển thị của trang quản trị.
-# site_header hiện ở đầu trang và trang đăng nhập, site_title ở thẻ <title>,
-# index_title ở trang liệt kê model.
-admin.site.site_header = "OZZONE — Quản trị hệ thống"
-admin.site.site_title = "OZZONE Admin"
-admin.site.index_title = "Quản trị dữ liệu nội bộ"
-
 
 @admin.register(HoSoNhanVien)
 class HoSoNhanVienAdmin(admin.ModelAdmin):

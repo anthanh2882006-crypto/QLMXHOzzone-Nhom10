@@ -4,10 +4,6 @@
     <header class="pm-heading">
         <div class="pm-heading-main">
             <h1>{{ project.ten_du_an }}</h1>
-            <p class="pm-muted">
-                {{ project.ma_du_an_nghiep_vu }}
-                · Không gian cộng tác dự án
-            </p>
             <span class="pm-badge {% if project.da_luu_tru %}pm-amber{% else %}pm-blue{% endif %}">
                 {{ project.get_trang_thai_display }}
             </span>
@@ -48,7 +44,7 @@
                         <a href="{% url 'projects:issue' project.pk post.pk %}">
                             <strong>{{ post.tieu_de|default:"Vấn đề kỹ thuật" }}</strong>
                         </a>
-                        <p class="pm-caption">{{ post.ma_the_thiet_bi.ma_thiet_bi|default:"Không gắn thiết bị" }}</p>
+                        <p class="pm-caption">{{ post.ma_the_thiet_bi.ten_thiet_bi|default:"Không gắn thiết bị" }}</p>
                         {% include "projects/_issue_state.html" %}
                     </article>
                 {% empty %}

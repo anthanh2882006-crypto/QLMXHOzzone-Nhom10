@@ -21,17 +21,16 @@
                 {% if device %}
                     <div class="pm-fields">
                         <div class="pm-field">
-                            <span>Mã thiết bị</span>
+                            <span>Thiết bị</span>
                             <span class="pm-readonly">
-                                {{ device.ma_thiet_bi }}
-                                · {{ device.ten_thiet_bi }}
+                                {{ device.ten_thiet_bi }}
                             </span>
                         </div>
                         <div class="pm-field">
                             <span>Tài sản được xác định</span>
                             <span class="pm-readonly">
                                 {% if current_asset %}
-                                    {{ current_asset.ma_tai_san_noi_bo }}
+                                    Đã xác định tài sản đang sử dụng
                                 {% else %}
                                     Chưa có tài sản
                                 {% endif %}

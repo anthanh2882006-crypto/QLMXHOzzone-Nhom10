@@ -2,6 +2,8 @@
 
 from pathlib import Path
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from projectp.models import DinhKem, NguonThamKhao
@@ -19,6 +21,48 @@ def can_read_version(user, version):
     return False
 
 
+def can_read_reference_file(user, reference):
+    """Quyền bài tri thức và quyền tệp nguồn được xét tại thời điểm truy cập."""
+    file = reference.tep_nguon
+    if not file or file.da_xoa_mem or file.trang_thai != "san_sang":
+        return False
+    try:
+        if not can_read_version(user, reference.phien_ban):
+            return False
+    except PermissionDenied:
+        return False
+    attachments = DinhKem.objects.filter(tep_tin=file)
+    if not attachments.exists():
+        # Tệp cung cấp trực tiếp làm nguồn của phiên bản, chưa gắn nguồn khác.
+        return True
+    from social.permissions import accessible_posts
+    from .views import _knowledge_sources_for
+
+    posts = accessible_posts(user).values("pk")
+    if attachments.filter(
+        Q(bai_viet_id__in=posts)
+        | Q(binh_luan__bai_viet_id__in=posts, binh_luan__da_xoa_mem=False)
+        | Q(phuong_an__bai_viet_id__in=posts)
+        | Q(ket_qua_thu__lan_thu__phuong_an__bai_viet_id__in=posts)
+    ).exists():
+        return True
+    sources = _knowledge_sources_for(user)
+    if attachments.filter(
+        Q(bai_hoc_id__in=sources["lessons"].values("pk"))
+        | Q(phien_ban_tri_thuc_id__in=sources["articles"].values("phien_ban_dang_cong_bo_id"))
+    ).exists():
+        return True
+    for attachment in attachments.filter(
+        phien_ban_tri_thuc__trang_thai="ban_nhap",
+    ).select_related("phien_ban_tri_thuc__bai_viet_tri_thuc"):
+        try:
+            if can_read_version(user, attachment.phien_ban_tri_thuc):
+                return True
+        except PermissionDenied:
+            continue
+    return False
+
+
 @login_required(login_url="accounts:login")
 def download(request, attachment_id=None, reference_id=None):
     if reference_id:
@@ -27,7 +71,7 @@ def download(request, attachment_id=None, reference_id=None):
             pk=reference_id,
             loai_tham_chieu="tep",
         )
-        allowed = can_read_version(request.user, reference.phien_ban)
+        allowed = can_read_reference_file(request.user, reference)
         file = reference.tep_nguon
     else:
         attachment = get_object_or_404(
