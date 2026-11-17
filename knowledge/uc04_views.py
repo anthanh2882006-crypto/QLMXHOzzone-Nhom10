@@ -6,7 +6,7 @@ import uuid
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import F, Q
 from django.http import Http404, HttpRequest, HttpResponse
@@ -45,10 +45,6 @@ def _base_review_queue():
     """Business-valid review sources, independent of which curator is logged in."""
     return (
         ChoDanhGiaTriThuc.objects.filter(
-            phan_cong__isnull=False,
-            phan_cong__ket_thuc_luc__isnull=True,
-            phan_cong__ngay_phan_cong__lte=timezone.now(),
-            bai_viet_nguon__du_an_id=F("phan_cong__du_an_id"),
             bai_viet_nguon__che_do_xu_ly=True,
             bai_viet_nguon__trang_thai_xu_ly="da_giai_quyet",
             bai_viet_nguon__giai_quyet_luc__isnull=False,
@@ -87,15 +83,20 @@ def _base_review_queue():
 
 def _assignment_scoped_queue(user):
     """Production/normal-user view: only the curator's own active assignments."""
-    from projects.permissions import readable_project_posts, readable_projects
+    from projects.permissions import readable_projects
 
     projects = readable_projects(user)
     # Cùng kiểm tra nguồn hiện hành với Dự án, không dùng quyền Admin thay phân công.
     from social.permissions import accessible_posts
 
+    assignments = PhanCongTriThuc.objects.filter(
+        nguoi_phu_trach=user,
+        du_an__in=projects,
+        ket_thuc_luc__isnull=True,
+        ngay_phan_cong__lte=timezone.now(),
+    )
     return _base_review_queue().filter(
-        phan_cong__nguoi_phu_trach=user,
-        phan_cong__du_an__in=projects,
+        bai_viet_nguon__du_an_id__in=assignments.values("du_an_id"),
         bai_viet_nguon_id__in=accessible_posts(user).values("pk"),
     )
 
@@ -104,7 +105,7 @@ def _queue_for_user(user):
     return _assignment_scoped_queue(user)
 
 
-def _get_assigned_queue_item(user, pk, *, lock=False):
+def _get_assigned_queue_item(user, pk, *, lock=False, write=False):
     if lock:
         # Khóa dự án trước các bản ghi con, cùng thứ tự với quản lý phân công.
         project_id = (
@@ -116,6 +117,17 @@ def _get_assigned_queue_item(user, pk, *, lock=False):
         qs = qs.select_for_update()
     item = qs.filter(pk=pk).first()
     if item is not None:
+        if write and item.bai_viet_nguon.du_an.da_luu_tru:
+            raise PermissionDenied("Dự án đã lưu trữ. Chỉ được xem lịch sử đánh giá và bài học theo quyền.")
+        assignment = PhanCongTriThuc.objects.filter(
+            du_an_id=item.bai_viet_nguon.du_an_id,
+            nguoi_phu_trach=user,
+            ket_thuc_luc__isnull=True,
+            ngay_phan_cong__lte=timezone.now(),
+        ).first()
+        if assignment is None:
+            raise Http404("Phân công tri thức không còn hiệu lực.")
+        item.phan_cong = assignment
         return item
 
     # Hide both missing and out-of-scope queue records.
@@ -147,6 +159,10 @@ def _source_context(item):
 def _review_snapshot(item):
     if not item.danh_gia_luc and not item.nguoi_danh_gia_id:
         return None
+    # Mở đánh giá lại giữ kết quả của lượt cũ, chưa phát sinh một lượt đánh giá mới.
+    review_status = item.trang_thai
+    if review_status in OPEN_STATES:
+        review_status = "khong_tao_bai_hoc"
     return {
         "actor_id": item.nguoi_danh_gia_id,
         "actor": _user_name(item.nguoi_danh_gia) if item.nguoi_danh_gia_id else "Không rõ",
@@ -156,8 +172,8 @@ def _review_snapshot(item):
         ),
         "reason": item.ly_do_danh_gia,
         "outcome": item.ket_luan_danh_gia,
-        "status": item.trang_thai,
-        "status_label": QUEUE_LABELS.get(item.trang_thai, item.trang_thai),
+        "status": review_status,
+        "status_label": QUEUE_LABELS.get(review_status, review_status),
     }
 
 
@@ -177,6 +193,12 @@ def _history_entries(item):
     def add_review(snapshot, *, legacy=False):
         if not snapshot:
             return
+        snapshot = dict(snapshot)
+        if snapshot.get("status") in OPEN_STATES:
+            snapshot.update(
+                status="khong_tao_bai_hoc",
+                status_label=QUEUE_LABELS["khong_tao_bai_hoc"],
+            )
         key = (
             snapshot.get("time_iso", ""),
             snapshot.get("actor_id"),
@@ -321,7 +343,11 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
     if not request.user.is_authenticated:
         return _login_redirect(request)
 
-    item = _get_assigned_queue_item(request.user, pk)
+    item = _get_assigned_queue_item(request.user, pk, write=request.method == "POST")
+
+    if item.bai_viet_nguon.du_an.da_luu_tru:
+        messages.info(request, "Dự án đã lưu trữ. Xem lịch sử đánh giá và bài học đã hoàn tất.")
+        return redirect(f"{reverse('knowledge:review_queue')}?status=completed")
 
     if item.trang_thai == "khong_tao_bai_hoc":
         messages.info(
@@ -384,7 +410,7 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
 
     try:
         with transaction.atomic():
-            locked = _get_assigned_queue_item(request.user, pk, lock=True)
+            locked = _get_assigned_queue_item(request.user, pk, lock=True, write=True)
             old_snapshot = _review_snapshot(locked)
             if locked.trang_thai not in OPEN_STATES:
                 raise ValidationError("Lượt đánh giá không còn ở trạng thái chờ xử lý.")
@@ -426,6 +452,7 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
                 locked.full_clean()
                 locked.save(
                     update_fields=[
+                        "phan_cong",
                         "trang_thai",
                         "nguoi_danh_gia",
                         "danh_gia_luc",
@@ -492,6 +519,7 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
                 locked.full_clean()
                 locked.save(
                     update_fields=[
+                        "phan_cong",
                         "trang_thai",
                         "bai_hoc",
                         "nguoi_danh_gia",
@@ -567,7 +595,7 @@ def reopen_review(request: HttpRequest, pk: int) -> HttpResponse:
 
     try:
         with transaction.atomic():
-            item = _get_assigned_queue_item(request.user, pk, lock=True)
+            item = _get_assigned_queue_item(request.user, pk, lock=True, write=True)
             if item.trang_thai != "khong_tao_bai_hoc":
                 raise ValidationError(
                     "Chỉ nguồn đã được đánh giá Không chuyển thành bài học mới được mở đánh giá lại."
@@ -587,7 +615,7 @@ def reopen_review(request: HttpRequest, pk: int) -> HttpResponse:
             before_status = item.trang_thai
             item.trang_thai = "cho_danh_gia_lai"
             item.full_clean()
-            item.save(update_fields=["trang_thai", "ngay_cap_nhat"])
+            item.save(update_fields=["phan_cong", "trang_thai", "ngay_cap_nhat"])
             _write_audit(
                 request,
                 item,

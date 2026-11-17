@@ -172,12 +172,12 @@ def _task_items(user, profile, scope):
 
     reviews = _queue_for_user(user).filter(
         trang_thai__in=["cho_danh_gia", "cho_danh_gia_lai"],
-    ).order_by("ngay_tao")[:3]
+    ).exclude(bai_viet_nguon__du_an__trang_thai="luu_tru").order_by("ngay_tao")[:3]
     for review in reviews:
         items.append({
             "type": "knowledge",
             "title": "Đánh giá bài học kinh nghiệm",
-            "subtitle": review.phan_cong.du_an.ten_du_an,
+            "subtitle": review.bai_viet_nguon.du_an.ten_du_an,
             "detail": review.bai_viet_nguon.tieu_de or review.bai_viet_nguon.noi_dung[:110],
             "created_at": review.ngay_tao,
             "object_id": review.bai_viet_nguon_id,
@@ -185,10 +185,8 @@ def _task_items(user, profile, scope):
             "status": "Chờ đánh giá",
         })
 
-    # A successful result can appear as a conclusion task only when the user
-    # has the corresponding Django action permission and remains a member of
-    # the active project. The UI never infers this permission from role labels.
-    if user.has_perm("projectp.add_ketluanxuly") and scope["project_ids"]:
+    # UC-PRJ-09 dành cho thành viên dự án có quyền đọc nguồn và căn cứ hợp lệ.
+    if scope["project_ids"]:
         successful_results = (
             KetQuaThu.objects.select_related(
                 "lan_thu", "lan_thu__phuong_an", "lan_thu__phuong_an__bai_viet",

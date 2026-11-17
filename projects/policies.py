@@ -1,21 +1,27 @@
-"""Điều kiện thao tác Dự án được nhóm chốt ngày 11/11/2026.
-
-Một dự án có tối đa một phân công tri thức đang hiệu lực.
-Một vấn đề có tối đa một lần thử đang chờ kết quả.
-Lưu trữ yêu cầu hoàn tất xử lý kỹ thuật, vẫn giữ nguồn chờ đánh giá tri thức.
-"""
+"""Lưu trữ sau khi hoàn tất xử lý kỹ thuật và đánh giá tri thức của dự án."""
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils.module_loading import import_string
 from projectp.models import BaiViet, LanThuPhuongAn
 
 
-def curator_limit():
-    return getattr(settings, "OZZONE_KNOWLEDGE_MAX_ACTIVE", None)
-
-
-def trial_limit():
-    return getattr(settings, "OZZONE_MAX_PENDING_TRIALS", None)
+def pending_knowledge_sources(project):
+    """Nguồn đã giải quyết còn thiếu kết quả đánh giá hợp lệ, kể cả dữ liệu cũ thiếu hàng chờ."""
+    completed = Q(
+        muc_cho_tri_thuc__nguoi_danh_gia__isnull=False,
+        muc_cho_tri_thuc__danh_gia_luc__isnull=False,
+    ) & ~Q(muc_cho_tri_thuc__ly_do_danh_gia="") & ~Q(
+        muc_cho_tri_thuc__ket_luan_danh_gia=""
+    ) & (
+        Q(muc_cho_tri_thuc__trang_thai="khong_tao_bai_hoc")
+        | Q(muc_cho_tri_thuc__trang_thai="da_tao_bai_hoc", muc_cho_tri_thuc__bai_hoc__isnull=False)
+    )
+    return BaiViet.objects.filter(
+        du_an=project,
+        che_do_xu_ly=True,
+        trang_thai_xu_ly=BaiViet.TechnicalStatus.RESOLVED,
+    ).exclude(completed)
 
 
 def archive_reasons(project):
@@ -26,7 +32,7 @@ def archive_reasons(project):
 
 
 def technical_work_complete(project):
-    """Trả các việc kỹ thuật cần hoàn tất trước khi quản lý xác nhận lưu trữ."""
+    """Kiểm tra đồng thời xử lý kỹ thuật và kết quả đánh giá tri thức."""
     reasons = []
     if BaiViet.objects.filter(
         du_an=project,
@@ -39,4 +45,6 @@ def technical_work_complete(project):
         trang_thai__in=("cho_ket_qua", "dang_thuc_hien"),
     ).exists():
         reasons.append("Dự án còn lần thử đang chờ kết quả.")
+    if pending_knowledge_sources(project).exists():
+        reasons.append("Dự án còn nguồn chưa hoàn tất đánh giá tri thức. Người phụ trách cần hoàn tất UC-KNW-04 trước khi lưu trữ.")
     return reasons

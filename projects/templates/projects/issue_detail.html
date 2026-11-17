@@ -96,6 +96,7 @@
                                 Chưa xác định người thực hiện
                             {% endif %}
                         </p>
+                        {% if row.trial.ly_do_huy %}<p class="pm-caption">{{ row.trial.ly_do_huy }}</p>{% endif %}
                         {% if row.result %}
                             <p>
                                 <span class="pm-badge {% if row.result.thanh_cong %}pm-green{% else %}pm-amber{% endif %}">
@@ -194,7 +195,7 @@
                         Phương án đã được chọn thử. Thực hiện và kiểm tra tại hiện trường, sau đó ghi nhận kết quả của đúng lần thử.
                     </p>
                 {% elif post.ui_success %}
-                    <p>Đã có kết quả thành công. Người có trách nhiệm có thể đối chiếu căn cứ để đề nghị kết luận.</p>
+                    <p>Đã có kết quả thành công. Thành viên dự án có thể đối chiếu căn cứ để đề nghị kết luận.</p>
                 {% elif post.ui_failed %}
                     <p>Giữ kết quả chưa thành công; tiếp tục phân tích hoặc xác nhận một lần thử mới.</p>
                 {% else %}

@@ -490,9 +490,9 @@ class PhanCongTriThuc(TimeStamped):
         db_table = "PHAN_CONG_TRI_THUC"
         constraints = [
             models.UniqueConstraint(
-                fields=['du_an', 'nguoi_phu_trach'],
+                fields=['du_an'],
                 condition=Q(ket_thuc_luc__isnull=True),
-                name='uq_curator_active',
+                name='uq_curator_project_active',
             ),
             models.CheckConstraint(
                 condition=Q(ket_thuc_luc__isnull=True) | Q(ket_thuc_luc__gte=F('ngay_phan_cong')),

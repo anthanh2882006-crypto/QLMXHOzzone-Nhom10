@@ -20,7 +20,6 @@ from .permissions import (
     can_resolve,
     readable_project_posts,
 )
-from .policies import trial_limit
 from .services_common import attach_files, command, save_model
 
 
@@ -76,7 +75,7 @@ def choose_trial(user, project, solution, data, trial=None):
     target = trial.pk if trial else solution.pk
     with command(user, action, data["request_token"], data, project.pk, target) as task:
         if not can_choose_trial(user, task["project"]):
-            raise PermissionDenied("Bạn chưa được gán quyền chọn thử/xác định người thực hiện.")
+            raise PermissionDenied("Bạn cần có tư cách thành viên hợp lệ trong dự án để chọn thử hoặc xác định người thực hiện.")
         if not task["replay"]:
             post = writable_issue(user, task["project"], solution.bai_viet_id)
             solution = PhuongAnXuLy.objects.get(pk=solution.pk, bai_viet=post)
@@ -108,18 +107,6 @@ def choose_trial(user, project, solution, data, trial=None):
                 trial.nguoi_thuc_hien = performer
                 save_model(trial)
             else:
-                limit = trial_limit()
-                if type(limit) is not int or limit < 1:
-                    raise ValidationError(
-                        "UC-PRJ-07 cần chốt số lần thử cùng chờ kết quả trước khi tạo lần thử mới."
-                    )
-                pending = LanThuPhuongAn.objects.filter(
-                    phuong_an__bai_viet=post, trang_thai__in=("cho_ket_qua", "dang_thuc_hien")
-                ).count()
-                if pending >= limit:
-                    raise ValidationError(
-                        "Vấn đề đã đủ số lần thử đang chờ theo quy tắc đã cấu hình."
-                    )
                 number = (solution.lan_thu.aggregate(value=Max("so_lan"))["value"] or 0) + 1
                 trial = save_model(
                     LanThuPhuongAn(
@@ -181,7 +168,7 @@ def record_result(user, project, trial, data):
 def record_resolution(user, project, post, data):
     with command(user, "UC-PRJ-09", data["request_token"], data, project.pk, post.pk) as task:
         if not can_resolve(user, task["project"]):
-            raise PermissionDenied("Bạn chưa được gán quyền đề nghị kết luận xử lý.")
+            raise PermissionDenied("Bạn cần có tư cách thành viên hợp lệ trong dự án để đề nghị kết luận xử lý.")
         if not task["replay"]:
             post = writable_issue(user, task["project"], post.pk)
             result = KetQuaThu.objects.filter(
@@ -205,9 +192,24 @@ def record_resolution(user, project, post, data):
             post.trang_thai_xu_ly = BaiViet.TechnicalStatus.RESOLVED
             post.giai_quyet_boi, post.giai_quyet_luc = user, timezone.now()
             save_model(post)
+            pending_trials = LanThuPhuongAn.objects.filter(
+                phuong_an__bai_viet=post,
+                trang_thai__in=("cho_ket_qua", "dang_thuc_hien"),
+                ket_qua__isnull=True,
+            )
+            stopped_ids = list(pending_trials.values_list("pk", flat=True))
+            pending_trials.update(
+                trang_thai="da_huy",
+                ket_thuc_luc=post.giai_quyet_luc,
+                ly_do_huy="Dừng thử vì vấn đề đã được kết luận xử lý thành công.",
+                ngay_cap_nhat=post.giai_quyet_luc,
+            )
             # Giữ hàng chờ kể cả chưa có người phụ trách, tránh làm mất nguồn cần đánh giá.
             assignments = PhanCongTriThuc.objects.filter(
-                du_an=project, ket_thuc_luc__isnull=True, nguoi_phu_trach__is_active=True
+                du_an=project,
+                ket_thuc_luc__isnull=True,
+                ngay_phan_cong__lte=timezone.now(),
+                nguoi_phu_trach__is_active=True,
             ).order_by("pk")
             valid_assignments = [
                 a
@@ -225,11 +227,12 @@ def record_resolution(user, project, post, data):
                     ly_do_cho=(
                         ""
                         if assignment
-                        else "Cần xác định phân công phù hợp để đánh giá nguồn."
+                        else "Quản lý dự án cần giao nguồn cho một người phụ trách tri thức phù hợp."
                     ),
                 )
             )
             task.update(
-                result_id=post.pk, audit={"post_id": post.pk, "conclusion_id": conclusion.pk}
+                result_id=post.pk,
+                audit={"post_id": post.pk, "conclusion_id": conclusion.pk, "stopped_trial_ids": stopped_ids},
             )
     return task["result_id"]

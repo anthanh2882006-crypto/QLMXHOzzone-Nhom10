@@ -1,0 +1,7 @@
+PHIẾU GHI NHẬN HIỆN TRƯỜNG
+Phiếu kiểm tra bơm thiếu số serial đối chiếu
+Dự án Ổn định cụm bơm nước làm mát
+Thiết bị PUMP-02
+Ngày ghi nhận 06/11/2026
+Nội dung Phiếu kiểm tra dùng tên bơm, chưa đủ căn cứ phân biệt với bơm cùng loại trong khu vực.
+Người ghi nhận Lê Quang Huy

@@ -1,0 +1,7 @@
+PHIẾU GHI NHẬN HIỆN TRƯỜNG
+Cảm biến nhận diện sản phẩm bỏ sót theo chu kỳ
+Dự án Giám sát tủ điều khiển dây chuyền đóng gói
+Thiết bị PE-01
+Ngày ghi nhận 06/11/2026
+Nội dung Vận hành ghi nhận một số chu kỳ không có trạng thái nhận diện trên màn hình giám sát.
+Người ghi nhận Lê Quang Huy

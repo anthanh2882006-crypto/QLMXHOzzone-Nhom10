@@ -1,0 +1,7 @@
+PHIẾU GHI NHẬN HIỆN TRƯỜNG
+Thông điệp cảnh báo chưa nêu rõ vị trí thiết bị
+Dự án Giám sát tủ điều khiển dây chuyền đóng gói
+Thiết bị HMI-01
+Ngày ghi nhận 06/11/2026
+Nội dung Nội dung cảnh báo chỉ có mã lỗi, người vận hành phải tra thêm sơ đồ để xác định vị trí.
+Người ghi nhận Lê Quang Huy

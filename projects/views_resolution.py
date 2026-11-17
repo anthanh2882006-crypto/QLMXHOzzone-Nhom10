@@ -22,7 +22,7 @@ def resolution_create(request, pk, post_id):
     """GD-062. Gửi một căn cứ thành công để hệ thống kiểm tra và ghi kết luận."""
     project, _ = project_access(request.user, pk)
     if not can_resolve(request.user, project):
-        raise PermissionDenied("Bạn chưa được gán quyền đề nghị kết luận xử lý.")
+        raise PermissionDenied("Bạn cần có tư cách thành viên hợp lệ trong dự án để đề nghị kết luận xử lý.")
     post = get_issue(request.user, project, post_id)
     if request.method == "GET" and KetLuanXuLy.objects.filter(bai_viet_nguon=post).exists():
         messages.info(request, "Vấn đề đã có kết luận. Xem kết luận hiện hành và căn cứ.")
@@ -57,5 +57,6 @@ def resolution_create(request, pk, post_id):
         evidence=evidence,
         evidence_required=True,
         notice="Chọn đúng một kết quả thành công của vấn đề làm căn cứ. "
-        "Khi đủ điều kiện, hệ thống ghi kết luận, trạng thái Đã giải quyết và nhu cầu xem xét tri thức.",
+        "Khi đủ điều kiện, hệ thống ghi kết luận, trạng thái Đã giải quyết và nhu cầu xem xét tri thức. "
+        "Các lần thử còn chờ của vấn đề sẽ được dừng và lưu lý do trong lịch sử.",
     )

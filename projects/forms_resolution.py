@@ -1,4 +1,4 @@
-"""UC-PRJ-09, người có quyền chọn một kết quả thành công làm căn cứ kết luận."""
+"""UC-PRJ-09, thành viên dự án chọn một kết quả thành công làm căn cứ kết luận."""
 
 from django import forms
 from projectp.models import KetQuaThu

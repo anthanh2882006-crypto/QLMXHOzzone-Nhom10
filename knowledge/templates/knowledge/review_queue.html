@@ -66,7 +66,7 @@
                             <small>{{ item.bai_viet_nguon.ma_the_thiet_bi.ten_thiet_bi }}</small>
                         {% endif %}
 
-                        {% if item.is_archived_project %}<small class="knw04-archive-note">Dự án đã lưu trữ · chỉ xử lý theo phân công còn hiệu lực</small>{% endif %}
+                        {% if item.is_archived_project %}<small class="knw04-archive-note">Dự án đã lưu trữ · chỉ xem lịch sử và bài học</small>{% endif %}
                         {% if item.has_existing_lesson %}<small class="knw04-error-note">Nguồn đã có bài học logic (kể cả bài xóa mềm)</small>{% endif %}
                     </td>
                     <td>{{ item.bai_viet_nguon.du_an.ten_du_an }}</td>
@@ -85,7 +85,9 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if item.trang_thai == 'cho_danh_gia' or item.trang_thai == 'cho_danh_gia_lai' %}
+                        {% if item.is_archived_project %}
+                            {% if item.bai_hoc_id %}<a class="knw04-action" href="{% url 'knowledge:lesson_detail' item.bai_hoc_id %}">Xem bài học</a>{% else %}<span class="knw04-muted">Xem lịch sử bên dưới</span>{% endif %}
+                        {% elif item.trang_thai == 'cho_danh_gia' or item.trang_thai == 'cho_danh_gia_lai' %}
                             {% if item.has_existing_lesson %}
                                 <span class="knw04-muted">Không thể tạo trùng</span>
                             {% else %}
@@ -118,7 +120,7 @@
                                 <p class="knw04-muted">Chưa có lịch sử đánh giá.</p>
                             {% endif %}
                         </details>
-                        {% if item.trang_thai == 'khong_tao_bai_hoc' and not item.has_existing_lesson %}
+                        {% if item.trang_thai == 'khong_tao_bai_hoc' and not item.has_existing_lesson and not item.is_archived_project %}
                             <form method="post" action="{% url 'knowledge:reopen_review' item.pk %}" class="knw04-reopen-form">
                                 {% csrf_token %}
                                 <label for="reopen-{{ item.pk }}">Lý do đánh giá lại</label>

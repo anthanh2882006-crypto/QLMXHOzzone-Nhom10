@@ -1,3 +1,1 @@
-from django.shortcuts import render
-
-# Create your views here.
+"""App projectp tập trung model và cấu hình Django Admin của OZZONE."""

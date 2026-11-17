@@ -15,7 +15,6 @@ from .services_common import request_token
 from .services_technical import add_analysis, choose_trial, propose_solution, writable_issue
 from .views_feed import attachments_for
 from .ui import with_issue_state
-from .policies import trial_limit
 
 
 def get_issue(user, project, post_id):
@@ -220,10 +219,10 @@ def solution_create(request, pk, post_id):
 @require_http_methods(["GET", "POST"])
 @handled
 def trial_create(request, pk, target):
-    """UC-07. Người có quyền chọn phương án để tạo một lần thử riêng."""
+    """UC-07. Thành viên dự án chọn phương án để tạo một lần thử riêng."""
     project, _ = project_access(request.user, pk, write=request.method == "GET")
     if not can_choose_trial(request.user, project):
-        raise PermissionDenied("Bạn chưa được gán quyền chọn phương án thử.")
+        raise PermissionDenied("Bạn cần có tư cách thành viên hợp lệ trong dự án để chọn phương án thử.")
     solution = get_object_or_404(PhuongAnXuLy, pk=target, bai_viet__du_an=project)
     post = get_issue(request.user, project, solution.bai_viet_id)
     return technical_form(
@@ -238,11 +237,6 @@ def trial_create(request, pk, target):
         form_kwargs={"project": project},
         submit_label="Tạo lần thử",
         solution=solution,
-        policy_warning=(
-            "Chưa có quy tắc số lần thử đồng thời được áp dụng cho dự án này."
-            if trial_limit() is None
-            else ""
-        ),
         notice="Sau khi lưu, lần thử chờ kết quả thực tế. Hoạt động thử diễn ra ngoài hệ thống.",
     )
 
@@ -254,7 +248,7 @@ def trial_assign(request, pk, target):
     """UC-07. Bổ sung người thực hiện cho lần thử còn thiếu thông tin trách nhiệm."""
     project, _ = project_access(request.user, pk, write=request.method == "GET")
     if not can_choose_trial(request.user, project):
-        raise PermissionDenied("Bạn chưa có quyền xác định người thực hiện.")
+        raise PermissionDenied("Bạn cần có tư cách thành viên hợp lệ trong dự án để xác định người thực hiện.")
     trial = get_object_or_404(
         LanThuPhuongAn.objects.select_related("phuong_an"),
         pk=target,

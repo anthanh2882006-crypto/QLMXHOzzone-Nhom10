@@ -147,9 +147,5 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 # Cấu hình phục vụ minh chứng và các quy tắc của module Dự án.
 MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
-# UC-PRJ-03. Một người phụ trách tri thức đang hiệu lực trong mỗi dự án.
-OZZONE_KNOWLEDGE_MAX_ACTIVE = 1
-# UC-PRJ-07. Một lần thử đang chờ kết quả trong mỗi vấn đề.
-OZZONE_MAX_PENDING_TRIALS = 1
-# UC-PRJ-03. Hoàn tất xử lý kỹ thuật trước khi xác nhận lưu trữ.
+# UC-PRJ-03. Hoàn tất xử lý kỹ thuật và đánh giá tri thức trước khi lưu trữ.
 OZZONE_ARCHIVE_POLICY = "projects.policies.technical_work_complete"

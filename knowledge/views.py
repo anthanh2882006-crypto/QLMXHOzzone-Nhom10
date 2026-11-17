@@ -44,7 +44,7 @@ KIND_OPTIONS = (
 
 def _knowledge_sources_for(user):
     """Build permission-filtered querysets before search, count or pagination."""
-    from projects.permissions import readable_projects, active_memberships
+    from projects.permissions import readable_projects
     from communities.views._chung import active_community_memberships
 
     project_ids = list(readable_projects(user).values_list("pk", flat=True))

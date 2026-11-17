@@ -21,8 +21,8 @@ from projectp.models import (
 )
 from . import forms_manage as forms
 from .services_manage import archive_reasons, execute, managed_project, outstanding, revision
-from .permissions import project_access
-from .policies import curator_limit
+from .permissions import project_access, readable_project_posts
+from .policies import pending_knowledge_sources
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,6 @@ def management_form(request, pk, action, target=None):
             "member_end": "members",
             "equipment": "equipment",
             "knowledge": "knowledge",
-            "knowledge_end": "knowledge",
             "archive": "manage",
         }[action]
         titles = {
@@ -183,7 +182,6 @@ def management_form(request, pk, action, target=None):
             "member_end": "Kết thúc tư cách thành viên",
             "equipment": "Thông tin thiết bị",
             "knowledge": "Phân công tri thức dự án",
-            "knowledge_end": "Kết thúc phân công tri thức",
             "archive": "Lưu trữ dự án",
         }
         ctx = context(project, section, titles[action], request.user)
@@ -194,7 +192,6 @@ def management_form(request, pk, action, target=None):
             "member_end": "Kết thúc tư cách",
             "equipment": "Lưu thông tin",
             "knowledge": "Lưu phân công",
-            "knowledge_end": "Kết thúc phân công",
             "archive": "Xác nhận lưu trữ",
         }[action]
         initial = {"revision": revision(project)}
@@ -263,14 +260,11 @@ def management_form(request, pk, action, target=None):
                 "Tài sản hiện hành được giữ nếu không chọn thay/ngừng. Lịch sử và cập nhật cũ không chuyển sang tài sản mới."
             )
         elif action == "knowledge":
-            ctx["policy_warning"] = (
-                "Chưa có quy tắc số phân công đồng thời được áp dụng cho dự án này."
-                if curator_limit() is None
-                else ""
-            )
             form_class, kwargs = forms.KnowledgeForm, {"project": project}
             ctx["explanation"] = (
-                "Phạm vi: nguồn đủ điều kiện trong dự án. Phân công không tự cấp quyền đọc nguồn; UC-KNW-04 phải kiểm tra lại quyền trên từng nguồn."
+                "Mỗi dự án có tối đa một người phụ trách tri thức hiện hành. "
+                "Chọn thành viên và xác nhận khi thay người. Lịch sử phân công và đánh giá được lưu lại. "
+                "Quyền đọc từng nguồn được kiểm tra khi đánh giá tri thức."
             )
             ctx["history_columns"] = ["Người phụ trách", "Bắt đầu", "Kết thúc", "Căn cứ"]
             ctx["history_rows"] = [
@@ -281,32 +275,20 @@ def management_form(request, pk, action, target=None):
                         a.ket_thuc_luc or "Đang hiệu lực",
                         a.ghi_chu,
                     ],
-                    "end_url": (
-                        url("knowledge_end", project, target=a.pk)
-                        if a.ket_thuc_luc is None
-                        else None
-                    ),
                 }
                 for a in PhanCongTriThuc.objects.filter(du_an=project)
                 .select_related("nguoi_phu_trach")
                 .order_by("-ngay_phan_cong", "-pk")
             ]
-        elif action == "knowledge_end":
-            assignment = get_object_or_404(
-                PhanCongTriThuc.objects.select_related("nguoi_phu_trach"),
-                pk=target,
-                du_an=project,
-            )
-            ctx["subject"] = (
-                ho_ten(assignment.nguoi_phu_trach)
-            )
-            ctx["explanation"] = (
-                "Kết thúc hiệu lực, giữ phân công và lịch sử. Nếu còn nguồn đang chờ, phải thay người và bàn giao."
-            )
         elif action == "archive":
             ctx.update(work=outstanding(project), archive_reasons=archive_reasons(project))
+            ctx["pending_review_sources"] = pending_knowledge_sources(project).filter(
+                pk__in=readable_project_posts(request.user, project).values("pk")
+            )
             ctx["explanation"] = (
-                "Lưu trữ giữ lịch sử, chặn ghi mới trong dự án; UC này không có mở lại. Chuẩn hóa nguồn lịch sử theo UC-KNW-04 vẫn cần đủ quyền và điều kiện."
+                "Cần hoàn tất xử lý kỹ thuật và đánh giá tri thức trước khi lưu trữ. "
+                "Chuyển thành bài học hoặc không chuyển có lý do đều được tính là hoàn tất đánh giá. "
+                "Sau lưu trữ, dữ liệu và lịch sử được xem theo quyền truy cập."
             )
         ctx["cancel_url"] = url(
             "detail" if action == "info" else "manage" if action == "archive" else section,
@@ -409,13 +391,13 @@ def equipment_update(request, pk, target):
 
 
 def knowledge_assign(request, pk):
-    """GD-052, phân công/thay người và kiểm tra quyền đọc nguồn bàn giao."""
+    """GD-052, phân công hoặc thay người phụ trách tri thức hiện hành của dự án."""
     return management_form(request, pk, "knowledge")
 
 
 def knowledge_end(request, pk, target):
-    """Kết thúc phân công không còn công việc đang chờ bàn giao."""
-    return management_form(request, pk, "knowledge_end", target)
+    """Đường dẫn cũ chuyển về biểu mẫu bàn giao cho người phụ trách mới."""
+    return management_form(request, pk, "knowledge")
 
 
 def project_archive(request, pk):

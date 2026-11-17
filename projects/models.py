@@ -1,3 +1,1 @@
-from django.db import models
-
-# Create your models here.
+"""Các model nghiệp vụ của dự án được định nghĩa tại projectp.models."""

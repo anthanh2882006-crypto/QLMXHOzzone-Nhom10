@@ -106,12 +106,10 @@ def project_access(user, pk, write=False, manager=False):
 
 
 def can_choose_trial(user, project):
-    return active_memberships(user).filter(du_an=project).exists() and explicit_permission(
-        user, "add_lanthuphuongan"
-    )
+    """UC-PRJ-07 cho phép thành viên hợp lệ chọn thử và xác định người thực hiện."""
+    return readable_projects(user).filter(pk=project.pk).exists()
 
 
 def can_resolve(user, project):
-    return active_memberships(user).filter(du_an=project).exists() and explicit_permission(
-        user, "add_ketluanxuly"
-    )
+    """UC-PRJ-09 dành cho thành viên hợp lệ; căn cứ và trạng thái xét khi ghi."""
+    return readable_projects(user).filter(pk=project.pk).exists()

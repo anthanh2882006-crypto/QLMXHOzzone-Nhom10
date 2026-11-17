@@ -92,17 +92,11 @@ class KnowledgeForm(RevisionForm):
     nguoi_phu_trach = EmployeeChoice(
         label="Người được phân công", queryset=get_user_model().objects.none()
     )
-    thay_phan_cong = forms.ModelChoiceField(
-        label="Thay phân công đang hiệu lực",
-        required=False,
-        queryset=PhanCongTriThuc.objects.none(),
-        empty_label="Thêm phân công",
-    )
     ghi_chu = forms.CharField(
         label="Căn cứ trách nhiệm / lý do phân công", widget=forms.Textarea(attrs={"rows": 3})
     )
     ban_giao = forms.BooleanField(
-        label="Bàn giao các nguồn đang chờ đánh giá của phân công được thay", required=False
+        label="Xác nhận thay người phụ trách hiện hành và bàn giao trách nhiệm", required=False
     )
 
     def __init__(self, *args, project, **kwargs):
@@ -113,6 +107,8 @@ class KnowledgeForm(RevisionForm):
         self.fields["nguoi_phu_trach"].queryset = (
             get_user_model().objects.filter(pk__in=ids, is_active=True).order_by("first_name", "pk")
         )
-        self.fields["thay_phan_cong"].queryset = PhanCongTriThuc.objects.filter(
+        current = PhanCongTriThuc.objects.filter(
             du_an=project, ket_thuc_luc__isnull=True
-        ).select_related("nguoi_phu_trach")
+        ).first()
+        if current:
+            self.initial.setdefault("nguoi_phu_trach", current.nguoi_phu_trach_id)

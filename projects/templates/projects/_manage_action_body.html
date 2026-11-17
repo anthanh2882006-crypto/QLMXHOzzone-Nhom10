@@ -11,8 +11,16 @@
         <li>Nguồn chờ đánh giá tri thức {{ work.reviews }}</li>
     </ul>
     <p>
-        Sau lưu trữ, dữ liệu lịch sử tiếp tục được giữ. Nguồn tri thức lịch sử được xem xét theo phân công và quyền đọc riêng.
+        Hoàn tất đánh giá từng nguồn trước khi lưu trữ. Sau lưu trữ, chỉ xem lịch sử và bài học theo quyền truy cập.
     </p>
+    {% if pending_review_sources %}
+        <h3>Nguồn cần hoàn tất đánh giá tri thức</h3>
+        <ul>
+            {% for source in pending_review_sources %}
+                <li><a href="{% url 'projects:issue' project.pk source.pk %}">{{ source.tieu_de|default:source.noi_dung|truncatechars:100 }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
 {% endif %}
 {% if archive_reasons %}
     <ul class="pm-error">

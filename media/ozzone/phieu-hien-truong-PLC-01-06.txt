@@ -1,0 +1,7 @@
+PHIẾU GHI NHẬN HIỆN TRƯỜNG
+Thiếu dữ liệu đối chiếu trước thời điểm dao động tín hiệu
+Dự án Giám sát tủ điều khiển dây chuyền đóng gói
+Thiết bị PLC-01
+Ngày ghi nhận 06/11/2026
+Nội dung Nhật ký mới ghi thời điểm phát hiện, chưa có thông tin về trạng thái vận hành ngay trước đó.
+Người ghi nhận Lê Quang Huy

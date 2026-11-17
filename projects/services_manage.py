@@ -29,8 +29,7 @@ from projectp.models import (
     ThanhVienCongDong,
     ThanhVienDuAn,
 )
-from .permissions import readable_project_posts
-from .policies import archive_reasons as configured_archive_reasons, curator_limit
+from .policies import archive_reasons as configured_archive_reasons, pending_knowledge_sources
 
 SALT = "projects.manage.v1"
 PENDING = ("cho_danh_gia", "cho_danh_gia_lai")
@@ -104,18 +103,6 @@ def active_members(project):
     )
 
 
-def require_reader(project, user):
-    if not user.is_active or not active_members(project).filter(nguoi_dung=user).exists():
-        raise ValidationError("Người nhận không có tư cách đọc dự án đang hiệu lực.")
-    if not ThanhVienCongDong.objects.filter(
-        cong_dong_id=project.cong_dong_id,
-        nguoi_dung=user,
-        trang_thai=MemberStatus.ACTIVE,
-        ket_thuc_luc__isnull=True,
-    ).exists():
-        raise ValidationError("Người nhận chưa có tư cách cộng đồng liên kết hợp lệ.")
-
-
 def outstanding(project):
     return {
         "issues": BaiViet.objects.filter(
@@ -124,9 +111,7 @@ def outstanding(project):
         "trials": LanThuPhuongAn.objects.filter(
             phuong_an__bai_viet__du_an=project, trang_thai__in=("cho_ket_qua", "dang_thuc_hien")
         ).count(),
-        "reviews": ChoDanhGiaTriThuc.objects.filter(
-            bai_viet_nguon__du_an=project, trang_thai__in=PENDING
-        ).count(),
+        "reviews": pending_knowledge_sources(project).count(),
     }
 
 
@@ -310,66 +295,37 @@ def execute(user, pk, token, action, data, target=None):
                 save_checked(asset)
 
     elif action in ("knowledge", "knowledge_end"):
-        old = None
         if action == "knowledge_end":
-            old = get_object_or_404(
-                PhanCongTriThuc, pk=target, du_an=project, ket_thuc_luc__isnull=True
-            )
-        elif data["thay_phan_cong"]:
-            old = get_object_or_404(
-                PhanCongTriThuc,
-                pk=data["thay_phan_cong"].pk,
-                du_an=project,
-                ket_thuc_luc__isnull=True,
-            )
-        queue = (
-            ChoDanhGiaTriThuc.objects.filter(phan_cong=old, trang_thai__in=PENDING)
-            if old
-            else ChoDanhGiaTriThuc.objects.none()
-        )
-        if action == "knowledge_end" and queue.exists():
             raise ValidationError(
-                "Phân công còn nguồn chờ đánh giá. Dùng nhánh thay người và xác nhận bàn giao."
+                "Cần bàn giao cho người phụ trách tri thức mới qua chức năng phân công."
             )
-        if action == "knowledge":
-            limit = curator_limit()
-            if limit is None:
-                raise ValidationError(
-                    "UC-PRJ-03 chưa chốt số người phụ trách đồng thời; chưa kích hoạt phân công mới."
-                )
-            if limit is not None and (type(limit) is not int or limit < 1):
-                raise ValidationError("Cấu hình số phân công cần là số nguyên dương.")
-            person = get_object_or_404(
-                get_user_model(), pk=data["nguoi_phu_trach"].pk, is_active=True
-            )
-            require_reader(project, person)
-            active = PhanCongTriThuc.objects.filter(du_an=project, ket_thuc_luc__isnull=True)
-            if old:
-                active = active.exclude(pk=old.pk)
-            if active.filter(nguoi_phu_trach=person).exists():
-                raise ValidationError("Người nhận đã có phân công đang hiệu lực tại dự án.")
-            if limit is not None and active.count() >= limit:
-                raise ValidationError("Vượt số phân công đồng thời theo quy tắc đã cấu hình.")
-            if queue.exists():
-                if not data["ban_giao"]:
-                    raise ValidationError("Cần xác nhận bàn giao các nguồn đang chờ đánh giá.")
-                readable = readable_project_posts(person, project).values("pk")
-                if queue.exclude(bai_viet_nguon_id__in=readable).exists():
-                    raise ValidationError("Người nhận không được đọc toàn bộ nguồn cần bàn giao.")
+        person = get_object_or_404(get_user_model(), pk=data["nguoi_phu_trach"].pk, is_active=True)
+        if not active_members(project).filter(nguoi_dung=person).exists():
+            raise ValidationError("Người nhận phải là thành viên hợp lệ của đúng dự án.")
+        old = PhanCongTriThuc.objects.filter(du_an=project, ket_thuc_luc__isnull=True).first()
+        chosen = data.get("thay_phan_cong")
+        if chosen and (old is None or chosen.pk != old.pk):
+            raise ValidationError("Phân công hiện hành đã thay đổi. Tải lại để đối chiếu.")
+        if old and old.nguoi_phu_trach_id == person.pk:
+            return
         if old:
+            if not data.get("ban_giao"):
+                raise ValidationError("Cần xác nhận thay người phụ trách tri thức hiện hành.")
             old.ket_thuc_luc, old.nguoi_ket_thuc = now, user
             save_checked(old)
-        if action == "knowledge":
-            new = PhanCongTriThuc(
-                du_an=project,
-                nguoi_phu_trach=person,
-                nguoi_phan_cong=user,
-                ngay_phan_cong=now,
-                ghi_chu=data["ghi_chu"],
-            )
-            save_checked(new)
-            # Chỉ chuyển việc đang chờ đã xác nhận, không sửa lịch sử đánh giá hoàn tất.
-            queue.update(phan_cong=new, ngay_cap_nhat=now)
+        new = PhanCongTriThuc(
+            du_an=project,
+            nguoi_phu_trach=person,
+            nguoi_phan_cong=user,
+            ngay_phan_cong=now,
+            ghi_chu=data["ghi_chu"],
+        )
+        save_checked(new)
+        # Chuyển trách nhiệm hiện hành, giữ người đánh giá và lịch sử các lượt đã lưu.
+        ChoDanhGiaTriThuc.objects.filter(
+            bai_viet_nguon__du_an=project,
+            trang_thai__in=(*PENDING, "khong_tao_bai_hoc"),
+        ).update(phan_cong=new, ngay_cap_nhat=now)
 
     elif action == "archive":
         reasons = archive_reasons(project)
@@ -389,4 +345,5 @@ def execute(user, pk, token, action, data, target=None):
         ma_tai_nguyen=str(pk),
         du_lieu_truoc=before,
         du_lieu_sau=state(project),
+        ly_do=data.get("ghi_chu", ""),
     )
