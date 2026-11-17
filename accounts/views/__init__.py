@@ -7,7 +7,7 @@ UC-ACC-04 Tra cứu nhân viên  : uc_acc_04_tra_cuu.py     (directory, employee
 UC-ACC-05 Quản trị tài khoản : Django Admin (accounts/admin.py)
 Hàm dùng chung               : _chung.py                (can_doi_mat_khau, ho_ten, thong_tin_ho_so)
 
-File này gom lại để urls.py và app communities import `accounts.views` như trước.
+Xuất các view dùng trong urls.py và phân hệ Cộng đồng.
 """
 
 from ._chung import can_doi_mat_khau, da_doi_mat_khau, ho_ten, thong_tin_ho_so

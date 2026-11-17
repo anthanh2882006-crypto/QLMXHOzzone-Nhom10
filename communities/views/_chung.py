@@ -144,7 +144,7 @@ KHOA_CD_GAN_NHAT = "cong_dong_gan_nhat"   # session: cộng đồng (đã tham g
 
 
 def cong_dong_cua_toi(request, cong_dong=None):
-    """Cộng đồng hiện ở mục thứ 2 của sidebar (Figma Hình 40/41/43/48: 'Kỹ thuật & Vận hành').
+    """Xác định cộng đồng hiện tại hoặc cộng đồng đã truy cập gần nhất.
 
     1. Đang xem cộng đồng -> chính cộng đồng đó; ghi nhớ nếu có tư cách thành viên.
     2. Không thì cộng đồng mở gần nhất (lưu trong session), nếu vẫn còn là thành viên.
@@ -164,8 +164,7 @@ def cong_dong_cua_toi(request, cong_dong=None):
 
 
 def sidebar(request, active, cong_dong=None):
-    """Dữ liệu sidebar: luôn cố định 5 mục như Figma —
-    Khám phá · <cộng đồng của tôi> · Thành viên · Yêu cầu tham gia · Kiểm duyệt cộng đồng (chỉ người có quyền)."""
+    """Tạo điều hướng cộng đồng và các mục quản trị theo quyền của người dùng."""
     cua_toi = cong_dong_cua_toi(request, cong_dong)
 
     # Mục 2 / Thành viên chỉ tô đậm khi trang đang mở thuộc đúng cộng đồng của tôi

@@ -1,4 +1,4 @@
-"""Form của phân hệ Tài khoản — Chương 4 (Django Forms, ModelForm, clean_<trường>)."""
+"""Biểu mẫu đăng nhập, đổi mật khẩu và quản lý hồ sơ nhân viên."""
 
 from django import forms
 from django.contrib.auth import get_user_model

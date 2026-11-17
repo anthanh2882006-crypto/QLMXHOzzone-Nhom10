@@ -1,4 +1,4 @@
-"""UC-ACC-05 Quản trị tài khoản qua Django Admin — Chương 3 (ModelAdmin).
+"""UC-ACC-05 Quản trị tài khoản qua Django Admin.
 
 Tài khoản (User), nhóm và phân quyền dùng trang có sẵn của Django: /admin/auth/user/.
 Ở đây tùy chỉnh trang quản lý hồ sơ nhân viên và danh mục phòng ban, vị trí, kỹ năng.

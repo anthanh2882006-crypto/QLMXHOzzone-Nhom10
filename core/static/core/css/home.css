@@ -1,5 +1,4 @@
-/* OZZONE GD-003 — Homepage, aligned to Figma frame 1440 × 960.
-   Shared colors and type are inherited from templates/base.html. */
+/* GD-003 Trang chủ dùng màu sắc và kiểu chữ từ templates/base.html. */
 .oz-home-main {
     width: 100%;
     min-width: 0;
@@ -602,8 +601,7 @@
     .home-announcement-meta { align-items: flex-start; flex-direction: column; gap: 3px; }
 }
 
-/* Fine alignment: the Figma 1440 frame uses 24px below the shared 72px header,
-   87px quick links, and 360/604/380px content columns with 16px gutters. */
+/* Khoảng cách và kích thước các thẻ trên trang chủ. */
 .home-eyebrow { display: none; }
 .home-shortcuts-heading { justify-content: flex-start; }
 .home-shortcuts-heading h2 { text-transform: uppercase; }
@@ -620,5 +618,5 @@
 .home-column-connect .home-card:nth-child(2) { min-height: 190px; }
 .home-column-connect .home-help-card { min-height: 140px; }
 
-/* OZZONE Figma typography lock for the home shortcut heading. */
+/* Kiểu chữ tiêu đề các lối tắt trên trang chủ. */
 .home-page .home-shortcuts-heading #shortcuts-title { font-family: "Be Vietnam Pro", var(--oz-font, Arial, sans-serif); font-size: 14px; font-weight: 500; line-height: 1.5; letter-spacing: 0; }

@@ -1,8 +1,4 @@
-"""Permission-aware homepage queries for OZZONE.
-
-Only existing projectp models and the configured Django user model are used.
-This module intentionally does not introduce homepage-specific database tables.
-"""
+"""Truy vấn dữ liệu trang chủ theo phạm vi truy cập của người dùng."""
 from accounts.views._chung import ho_ten
 from django.db.models import Count, Prefetch, Q
 from django.utils import timezone

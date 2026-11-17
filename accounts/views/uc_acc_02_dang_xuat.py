@@ -14,7 +14,7 @@ from ._chung import can_doi_mat_khau
 
 
 def logout_view(request):
-    """GET: trang xác nhận 'Đăng xuất khỏi OZZONE?' (Figma). POST: đăng xuất thật."""
+    """Hiển thị xác nhận với GET và kết thúc phiên đăng nhập với POST."""
     if request.method == "POST":
         logout(request)
         return redirect("accounts:login")

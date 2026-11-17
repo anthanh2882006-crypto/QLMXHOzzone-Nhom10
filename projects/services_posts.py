@@ -81,7 +81,7 @@ def create_post(user, project, data, device=None):
     kind = BaiViet.Kind.FIELD_UPDATE if device else BaiViet.Kind.STANDARD
     if data.get("loai_bai_viet", kind) != kind:
         raise ValidationError("Loại nội dung không phù hợp với chức năng đang mở.")
-    # Loại bài do lối vào xác định. Giữ mã yêu cầu cũ tương thích khi thêm trường hiển thị loại bài.
+    # Loại bài do lối vào xác định và được loại khỏi nội dung kiểm tra gửi lặp.
     request_data = {key: value for key, value in data.items() if key != "loai_bai_viet"}
     with command(
         user, action, data["request_token"], request_data, project.pk, device.pk if device else None

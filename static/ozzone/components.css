@@ -1,11 +1,11 @@
 /*
  * OZZONE — thành phần giao diện dùng chung cho vùng nội dung.
- * Màu lấy từ bảng màu Figma, khai báo bằng biến CSS trong templates/base.html.
+ * Màu sắc dùng các biến CSS trong templates/base.html.
  * Các phân hệ chỉ cần {% static 'ozzone/components.css' %} trong block extra_css.
  */
 
 /*
- * Màu dự phòng: 9 biến dưới đây base.html của nhóm đã khai báo.
+ * Màu dự phòng cho các biến giao diện dùng chung.
  * Đặt trong @layer nên nếu base.html có thì base.html thắng (CSS không
  * xếp lớp luôn ưu tiên hơn CSS xếp lớp). Chỉ dùng tới khi mở riêng một
  * trang không kế thừa base.html, để không bị mất màu.
@@ -24,7 +24,7 @@
   }
 }
 
-/* 8 biến còn lại Figma không có, mình tự đặt cho thông báo và bo góc */
+/* Màu trạng thái và bán kính bo góc. */
 :root {
   --oz-brand-dark: #2F5C28;
   --oz-info-bg: #EBF2FA;
@@ -37,7 +37,7 @@
 }
 
 /* ---------- Sidebar trái ---------- */
-/* Rộng 200px đo theo bản Figma trong báo cáo, đủ chỗ cho "Kiểm duyệt cộng đồng" */
+/* Chiều rộng thanh điều hướng cộng đồng. */
 .oz-sidebar {
   flex: 0 0 200px;
   width: 200px;
@@ -305,7 +305,7 @@
 .oz-searchbar { display: flex; gap: 10px; margin-bottom: 18px; }
 .oz-searchbar .oz-input { flex: 1; }
 
-/* Ô tìm có kính lúp bên trong, giống thanh tìm kiếm trên base.html và bản Figma */
+/* Ô tìm kiếm có biểu tượng kính lúp. */
 .oz-field-search { position: relative; flex: 1; display: flex; }
 .oz-field-search .oz-icon {
   position: absolute;

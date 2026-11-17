@@ -6,13 +6,12 @@ from projectp.models import HoSoNhanVien, KyNangNhanVien, MemberStatus, ThanhVie
 
 
 def da_doi_mat_khau(user):
-    """Dùng với @user_passes_test (Chương 7, giống ví dụ veteran_user trong slide).
-    Trả về False nếu hồ sơ còn cờ 'bắt buộc đổi mật khẩu' -> Django chuyển sang trang đổi mật khẩu."""
+    """Kiểm tra tài khoản đã hoàn tất yêu cầu đổi mật khẩu lần đầu."""
     ho_so = HoSoNhanVien.objects.filter(nguoi_dung_id=user.pk).first()
     return ho_so is None or not ho_so.bat_buoc_doi_mat_khau
 
 
-# Viết gọn: mọi trang nghiệp vụ đều cần (1) đã đăng nhập và (2) đã đổi mật khẩu lần đầu.
+# Kiểm tra yêu cầu đổi mật khẩu trước khi sử dụng các chức năng nghiệp vụ.
 can_doi_mat_khau = user_passes_test(da_doi_mat_khau, login_url="accounts:first_password")
 
 

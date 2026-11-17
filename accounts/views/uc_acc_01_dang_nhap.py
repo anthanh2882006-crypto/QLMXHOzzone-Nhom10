@@ -18,7 +18,7 @@ from ..forms import DoiMatKhauForm, LoginForm
 
 
 class OzzoneLoginView(auth_views.LoginView):
-    """Dùng lại view đăng nhập của app authentication (Chương 7), chỉ đổi giao diện và form."""
+    """Sử dụng LoginView của Django với biểu mẫu và giao diện đăng nhập OZZONE."""
 
     template_name = "accounts/login.html"
     authentication_form = LoginForm
@@ -30,7 +30,7 @@ def after_login(request):
     """B4: nhân viên vào trang chủ. B4a: quản trị viên (không có hồ sơ) vào Django Admin."""
     if request.user.is_staff and not HoSoNhanVien.objects.filter(nguoi_dung=request.user).exists():
         return redirect("admin:index")
-    # Dùng trang chủ của bản ghép, giữ đường dự phòng cho cấu hình tách app.
+    # Chuyển đến trang chủ phù hợp với các phân hệ đang được cấu hình.
     for ten_url in ("core:home", "social:feed", "communities:list"):
         try:
             return redirect(reverse(ten_url))

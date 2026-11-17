@@ -1,4 +1,4 @@
-"""Form của phân hệ Cộng đồng (Chương 4, Chương 6 — tải tệp)."""
+"""Biểu mẫu tạo bài đăng và tải tệp của phân hệ Cộng đồng."""
 
 from pathlib import Path
 
@@ -38,7 +38,7 @@ class PostForm(forms.Form):
     )
 
     def clean_tep(self):
-        """Chỉ nhận đuôi tệp cho phép, tối đa 10 MB (Chương 4: clean_<trường>; Chương 6: tải tệp)."""
+        """Kiểm tra định dạng được phép và dung lượng tệp tối đa 10 MB."""
         tep = self.cleaned_data.get("tep")
         if tep:
             cho_phep = {".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",

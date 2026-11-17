@@ -95,7 +95,7 @@ class SharingScope(models.TextChoices):
 
 
 class KnowledgeAdminStatus(models.TextChoices):
-    """UC-KNW-06, trang 202–203: quản trị khả năng hiển thị, không đổi bản công bố."""
+    """UC-KNW-06 quản lý khả năng hiển thị của tri thức."""
     VISIBLE = "hien_thi", "Hiển thị"
     HIDDEN = "an", "Ẩn"
     ARCHIVED = "luu_tru", "Lưu trữ"
@@ -760,7 +760,7 @@ class BaiVietDaLuu(TimeStamped):
 
 
 class ThongBaoChinhThuc(TimeStamped):
-    # Bảng mở rộng dùng chung PK với bài viết, đúng ERD trang 221/233.
+    # Thông báo chính thức dùng chung khóa chính với bài viết.
     bai_viet = models.OneToOneField(
         BaiViet,
         primary_key=True,
@@ -974,7 +974,7 @@ class PhuongAnXuLy(TimeStamped):
         db_column='ma_binh_luan_nguon',
     )
     noi_dung_phuong_an = models.TextField()
-    # UC-PRJ-07, trang 132–133: phương án phải có nội dung và cơ sở đề xuất.
+    # UC-PRJ-07 yêu cầu nội dung phương án và cơ sở đề xuất.
     co_so_de_xuat = models.TextField()
     trang_thai = models.CharField(
         max_length=30,
@@ -1319,7 +1319,7 @@ class BaiVietTriThuc(SoftDeleted):
     ma_bai_viet_tri_thuc = models.BigAutoField(primary_key=True, db_column="ma_bai_tri_thuc")
     nguoi_tao = models.ForeignKey(USER, on_delete=models.PROTECT, related_name='+', db_column='nguoi_tao')
     khoa_khoi_tao = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
-    # Cột có trong ERD, được suy ra từ trạng thái quản trị khi validation.
+    # Giá trị được suy ra từ trạng thái quản trị khi kiểm tra dữ liệu.
     an_khoi_tra_cuu = models.BooleanField(default=False, editable=False)
     trang_thai_quan_tri = models.CharField(
         max_length=20,
@@ -1503,7 +1503,7 @@ class NguonThamKhao(TimeStamped):
     thu_tu = models.PositiveIntegerField(default=0)
     ngay_truy_cap = models.DateField(null=True, blank=True)
     ghi_chu = models.TextField(blank=True)
-    # Giá trị triển khai cho nguyên tắc quyền nguồn hiện hành trong báo cáo.
+    # Kiểm tra quyền hiện hành của nguồn trước khi chia sẻ.
     # Trường này không cấp quyền mở URL/tệp/bài nguồn.
     che_do_hien_thi = models.CharField(
         max_length=30,

@@ -10,7 +10,7 @@ UC-COM-07 Quản trị nội dung        : uc_com_07_quan_tri.py   (moderation_h
 UC-COM-08 Quản trị dữ liệu         : Django Admin (communities/admin.py)
 Hàm dùng chung                     : _chung.py               (tu_cach, duoc_doc, ghi_nhat_ky, sidebar, ...)
 
-File này gom lại để urls.py import `communities.views` như trước.
+Xuất các view dùng trong urls.py của phân hệ Cộng đồng.
 """
 
 from ._chung import (

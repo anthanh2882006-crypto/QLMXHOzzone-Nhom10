@@ -1,7 +1,7 @@
 """UC-COM-06 Tạo bài đăng cộng đồng — GD-019 Soạn bài đăng.
 
 post_create      : nơi đăng cố định là cộng đồng hiện tại; B3e không có quyền đăng.
-luu_tep_dinh_kem : Chương 6 — đọc tệp theo chunks, tính SHA-256, lưu TepTin rồi gắn DinhKem vào bài.
+luu_tep_dinh_kem : tính SHA-256, lưu TepTin và gắn DinhKem vào bài.
 """
 
 import hashlib
@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 def luu_tep_dinh_kem(request, upload, post, cd, created_files):
-    """Chương 6: đọc tệp theo từng đoạn (chunks), lưu vào FileField, gắn vào bài qua DinhKem.
-    Model TepTin của nhóm bắt buộc tệp 'sẵn sàng' có MIME type và mã SHA-256."""
+    """Lưu tệp theo từng đoạn và gắn vào bài qua DinhKem.
+    Tệp sẵn sàng cần có MIME type và mã SHA-256."""
     mime_type = _verified_mime(upload)
     sha = hashlib.sha256()
     for chunk in upload.chunks():
@@ -83,7 +83,7 @@ def post_create(request, pk):
                     if not duoc_dang(cd, tu_cach(request.user, cd)):
                         raise ValidationError("Quyền đăng đã thay đổi hoặc dự án đã lưu trữ.")
                     post.du_an = du_an_lien_ket(cd)
-                    post.full_clean()              # chạy các kiểm tra trong clean() của model nhóm
+                    post.full_clean()
                     post.save()
                     if form.cleaned_data["tep"]:
                         luu_tep_dinh_kem(request, form.cleaned_data["tep"], post, cd, created_files)

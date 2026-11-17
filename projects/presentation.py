@@ -1,4 +1,4 @@
-"""Tạo ngữ cảnh giao diện Figma, sidebar và thông báo dùng chung cho các UC."""
+"""Tạo ngữ cảnh giao diện, điều hướng và thông báo dùng chung cho các Use Case."""
 
 from functools import wraps
 import logging
