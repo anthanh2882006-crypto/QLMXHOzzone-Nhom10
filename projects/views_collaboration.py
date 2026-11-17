@@ -69,7 +69,7 @@ def issue_detail(request, pk, post_id):
     )
     trials = (
         LanThuPhuongAn.objects.filter(phuong_an__bai_viet=post)
-        .select_related("phuong_an", "nguoi_thuc_hien", "ket_qua__nguoi_ghi_nhan")
+        .select_related("phuong_an", "nguoi_thuc_hien", "nguoi_xac_nhan_dung", "ket_qua__nguoi_ghi_nhan")
         .order_by("-ngay_thu", "-pk")
     )
     trial_rows = []
@@ -81,11 +81,11 @@ def issue_detail(request, pk, post_id):
                 "result": result,
                 "attachments": attachments_for(ket_qua_thu=result) if result else [],
                 "can_record": open_issue
-                and trial.nguoi_thuc_hien_id == request.user.pk
+                and post.nguoi_dang_id == request.user.pk
                 and trial.trang_thai in ("cho_ket_qua", "dang_thuc_hien")
                 and result is None,
                 "can_assign": open_issue
-                and trial.nguoi_thuc_hien_id is None
+                and trial.nguoi_thuc_hien_id != post.nguoi_dang_id
                 and trial.trang_thai in ("cho_ket_qua", "dang_thuc_hien")
                 and can_choose_trial(request.user, project),
             }
@@ -162,6 +162,10 @@ def technical_form(
                 + "#"
                 + fragment
             )
+    if action == "UC-PRJ-09":
+        if form.errors:
+            form.refresh_pending_confirmation()
+        extra["pending_trials"] = form.pending_trials
     return form_page(
         request,
         form,
@@ -234,9 +238,9 @@ def trial_create(request, pk, target):
         "Ghi nhận phương án được chọn thử",
         lambda data: choose_trial(request.user, project, solution, data),
         target=target,
-        form_kwargs={"project": project},
         submit_label="Tạo lần thử",
         solution=solution,
+        trial_performer=post.nguoi_dang,
         notice="Sau khi lưu, lần thử chờ kết quả thực tế. Hoạt động thử diễn ra ngoài hệ thống.",
     )
 
@@ -256,7 +260,7 @@ def trial_assign(request, pk, target):
     )
     post = get_issue(request.user, project, trial.phuong_an.bai_viet_id)
     if request.method == "GET" and (
-        trial.nguoi_thuc_hien_id is not None
+        trial.nguoi_thuc_hien_id == post.nguoi_dang_id
         or trial.trang_thai not in ("cho_ket_qua", "dang_thuc_hien")
     ):
         messages.info(
@@ -274,7 +278,8 @@ def trial_assign(request, pk, target):
         "Xác định người thực hiện",
         lambda data: choose_trial(request.user, project, trial.phuong_an, data, trial=trial),
         target=target,
-        form_kwargs={"project": project, "assign_only": True},
-        submit_label="Lưu người thực hiện",
+        form_kwargs={"assign_only": True},
+        submit_label="Xác nhận người đăng bài thực hiện",
         trial=trial,
+        trial_performer=post.nguoi_dang,
     )

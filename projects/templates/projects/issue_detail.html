@@ -97,6 +97,9 @@
                             {% endif %}
                         </p>
                         {% if row.trial.ly_do_huy %}<p class="pm-caption">{{ row.trial.ly_do_huy }}</p>{% endif %}
+                        {% if row.trial.trang_thai == "dung_thu" %}
+                            <p class="pm-caption">{{ row.trial.nguoi_xac_nhan_dung|ho_ten }} · {{ row.trial.ket_thuc_luc|date:"d/m/Y H:i" }} · <a href="#resolution">Xem kết luận liên quan</a></p>
+                        {% endif %}
                         {% if row.result %}
                             <p>
                                 <span class="pm-badge {% if row.result.thanh_cong %}pm-green{% else %}pm-amber{% endif %}">

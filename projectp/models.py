@@ -1022,6 +1022,7 @@ class LanThuPhuongAn(TimeStamped):
             ('cho_ket_qua', 'Chờ kết quả thực tế'),
             ('dang_thuc_hien', 'Đang thực hiện'),
             ('da_co_ket_qua', 'Đã có kết quả'),
+            ('dung_thu', 'Dừng việc thử'),
             ('da_huy', 'Đã hủy'),
         ],
         default='cho_ket_qua',
@@ -1029,6 +1030,12 @@ class LanThuPhuongAn(TimeStamped):
     ngay_thu = models.DateTimeField(default=timezone.now, db_column="bat_dau_luc")
     ket_thuc_luc = models.DateTimeField(null=True, blank=True)
     ly_do_huy = models.TextField(blank=True)
+    nguoi_xac_nhan_dung = models.ForeignKey(
+        USER, null=True, blank=True, on_delete=models.PROTECT, related_name='+',
+    )
+    ket_luan_dung = models.ForeignKey(
+        'KetLuanXuLy', null=True, blank=True, on_delete=models.PROTECT, related_name='lan_thu_dung',
+    )
     # Mỗi lần thử có định danh; request gửi lại phải dùng lại khóa đã cấp.
     khoa_yeu_cau = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
 
@@ -1055,6 +1062,10 @@ class LanThuPhuongAn(TimeStamped):
                         )
                     )
                     | Q(trang_thai='da_huy', ket_thuc_luc__isnull=False) & ~Q(ly_do_huy='')
+                    | Q(
+                        trang_thai='dung_thu', ket_thuc_luc__isnull=False,
+                        nguoi_xac_nhan_dung__isnull=False, ket_luan_dung__isnull=False,
+                    ) & ~Q(ly_do_huy='')
                 ),
                 name='ck_trial_lifecycle',
             ),
@@ -1088,8 +1099,8 @@ class KetQuaThu(TimeStamped):
         trial = related(self, "lan_thu")
         if trial and not trial.nguoi_thuc_hien_id:
             raise ValidationError({"lan_thu": "Cần xác định người thực hiện trước khi ghi kết quả."})
-        if trial and trial.trang_thai == "da_huy":
-            raise ValidationError({"lan_thu": "Không ghi kết quả cho lần thử đã hủy."})
+        if trial and trial.trang_thai in ("da_huy", "dung_thu"):
+            raise ValidationError({"lan_thu": "Lần thử đã dừng hoặc hủy không được ghi kết quả."})
 
     def __str__(self):
         return f"Lần thử {self.lan_thu_id} — {'Thành công' if self.thanh_cong else 'Thất bại'}"

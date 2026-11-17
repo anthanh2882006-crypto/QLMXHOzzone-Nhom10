@@ -41,6 +41,23 @@ def project_history(request, pk):
     form = HistoryForm(request.GET, project=project)
     context = screen(project, membership, f"Lịch sử {project.ten_du_an}", "history")
     context.update(form=form, page_obj=None)
+    if not project.da_luu_tru:
+        from knowledge.uc04_views import _assignment_scoped_queue
+        sources = _assignment_scoped_queue(request.user).filter(
+            bai_viet_nguon__du_an=project,
+            trang_thai__in=("cho_danh_gia", "cho_danh_gia_lai", "khong_tao_bai_hoc"),
+        )
+        context["knowledge_sources"] = [
+            {
+                "title": source.bai_viet_nguon.tieu_de or source.bai_viet_nguon.noi_dung[:100],
+                "url": (
+                    reverse("knowledge:review_queue") + "?status=completed"
+                    if source.trang_thai == "khong_tao_bai_hoc"
+                    else reverse("knowledge:normalize_lesson", kwargs={"pk": source.pk})
+                ),
+            }
+            for source in sources
+        ]
     if form.is_valid():
         posts = readable_project_posts(request.user, project)
         post_ids = set(posts.values_list("pk", flat=True))
@@ -118,7 +135,7 @@ def project_history(request, pk):
             )
         for item in LanThuPhuongAn.objects.filter(
             phuong_an__bai_viet_id__in=post_ids
-        ).select_related("phuong_an", "nguoi_khoi_tao"):
+        ).select_related("phuong_an", "nguoi_khoi_tao", "nguoi_xac_nhan_dung"):
             add(
                 item.ngay_thu,
                 "trial",
@@ -127,6 +144,11 @@ def project_history(request, pk):
                 item.phuong_an.bai_viet_id,
                 f"Phương án {item.phuong_an_id}",
             )
+            if item.trang_thai == "dung_thu":
+                add(
+                    item.ket_thuc_luc, "trial", "Dừng việc thử", item.nguoi_xac_nhan_dung,
+                    item.phuong_an.bai_viet_id, item.ly_do_huy,
+                )
         for item in KetQuaThu.objects.filter(
             lan_thu__phuong_an__bai_viet_id__in=post_ids
         ).select_related("lan_thu__phuong_an", "nguoi_ghi_nhan"):

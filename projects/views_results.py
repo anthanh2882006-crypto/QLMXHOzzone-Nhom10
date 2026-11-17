@@ -1,4 +1,4 @@
-"""UC-PRJ-08, chỉ người thực hiện hợp lệ ghi kết quả của đúng lần thử."""
+"""UC-PRJ-08, tác giả bài nêu vấn đề ghi kết quả thực tế của đúng lần thử."""
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -25,9 +25,9 @@ def result_create(request, pk, target):
         pk=target,
         phuong_an__bai_viet__du_an=project,
     )
-    if trial.nguoi_thuc_hien_id != request.user.pk:
-        raise PermissionDenied("Bạn cần là người thực hiện đã được xác định cho lần thử này.")
     post = get_issue(request.user, project, trial.phuong_an.bai_viet_id)
+    if post.nguoi_dang_id != request.user.pk:
+        raise PermissionDenied("Chỉ người đăng bài nêu vấn đề được ghi kết quả thực hiện.")
     if request.method == "GET":
         if KetQuaThu.objects.filter(lan_thu=trial).exists():
             messages.info(request, "Lần thử đã có kết quả. Xem kết quả và minh chứng đã ghi nhận.")
@@ -47,5 +47,6 @@ def result_create(request, pk, target):
         target=target,
         submit_label="Lưu kết quả",
         trial=trial,
-        notice="Ghi nhận kết quả thực tế đã hoàn tất. Kết quả thành công được dùng để xem xét kết luận ở bước sau.",
+        notice="Người đăng bài nêu vấn đề trực tiếp thực hiện và ghi nhận kết quả của lần thử. "
+        "Kết quả thành công được dùng để xem xét kết luận ở bước sau.",
     )

@@ -51,6 +51,9 @@
                         </p>
                     </div>
                 {% endif %}
+                {% if trial_performer %}
+                    <p class="pm-info">Người thực hiện được xác định từ tác giả bài nêu vấn đề — {{ trial_performer|ho_ten }}.</p>
+                {% endif %}
                 {% if trial %}
                     <div class="pm-info">
                         <strong>
@@ -78,6 +81,17 @@
                 <form method="post"
                       enctype="multipart/form-data"{% if confirm_leave %} data-confirm-leave data-dirty="{{ form.is_bound|yesno:'true,false' }}"{% endif %}>
                     {% if evidence_required %}
+                        {% if pending_trials %}
+                            <div class="pm-info">
+                                <h3>Các lần thử sẽ dừng khi xác nhận kết luận</h3>
+                                <ul>
+                                    {% for pending in pending_trials %}
+                                        <li>Phương án {{ pending.phuong_an_id }} · Lần {{ pending.so_lan }} · {{ pending.get_trang_thai_display }} · {{ pending.nguoi_thuc_hien|ho_ten }}</li>
+                                    {% endfor %}
+                                </ul>
+                                <p>Các kết quả đã ghi được bảo toàn trong lịch sử.</p>
+                            </div>
+                        {% endif %}
                         {% csrf_token %}
                         {% for hidden in form.hidden_fields %}
                             {{ hidden }} {{ hidden.errors }}
@@ -132,7 +146,9 @@
                         <div class="pm-fields">
                             {% for field in form.visible_fields %}
                                 {% if field.name != "ket_qua" %}
+                                    {% if field.name != "xac_nhan_dung_thu" or pending_trials %}
                                     {% include "projects/_field.html" %}
+                                    {% endif %}
                                 {% endif %}
                             {% endfor %}
                         </div>
@@ -172,7 +188,7 @@
                 {% endif %}
                 {% if trial %}
                     <p>
-                        Kết quả chỉ ghi cho đúng lần thử và người thực hiện đã xác định. Thử thực tế diễn ra ngoài OZZONE.
+                        Người đăng bài nêu vấn đề thực hiện và ghi kết quả của đúng lần thử. Thử thực tế diễn ra ngoài OZZONE.
                     </p>
                 {% endif %}
                 {% if device %}

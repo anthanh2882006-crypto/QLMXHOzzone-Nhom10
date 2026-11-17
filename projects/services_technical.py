@@ -15,7 +15,6 @@ from projectp.models import (
     PhuongAnXuLy,
 )
 from .permissions import (
-    active_memberships,
     can_choose_trial,
     can_resolve,
     readable_project_posts,
@@ -83,26 +82,17 @@ def choose_trial(user, project, solution, data, trial=None):
                 raise ValidationError(
                     "Phương án đã ngừng dùng. Cần chọn một phương án còn hợp lệ."
                 )
-            performer = data["nguoi_thuc_hien"]
-            if (
-                performer
-                and not active_memberships(performer)
-                .filter(du_an=project, nguoi_dung__is_active=True)
-                .exists()
-            ):
-                raise ValidationError("Người thực hiện không còn tư cách hợp lệ trong dự án.")
+            performer = post.nguoi_dang
+            if not readable_project_posts(performer, task["project"]).filter(pk=post.pk).exists():
+                raise ValidationError("Người đăng bài không còn tư cách thực hiện lần thử trong dự án.")
             if trial:
                 trial = LanThuPhuongAn.objects.get(pk=trial.pk, phuong_an=solution)
-                if trial.nguoi_thuc_hien_id or trial.trang_thai not in (
+                if trial.trang_thai not in (
                     "cho_ket_qua",
                     "dang_thuc_hien",
                 ):
                     raise ValidationError(
-                        "Chỉ bổ sung người thực hiện cho lần thử đang chờ và chưa xác định."
-                    )
-                if performer is None:
-                    raise ValidationError(
-                        "Cần chọn người thực hiện để hoàn tất thông tin trách nhiệm."
+                        "Chỉ xác định người đăng bài thực hiện lần thử đang chờ kết quả."
                     )
                 trial.nguoi_thuc_hien = performer
                 save_model(trial)
@@ -128,15 +118,16 @@ def record_result(user, project, trial, data):
         if not task["replay"]:
             post = writable_issue(user, task["project"], trial.phuong_an.bai_viet_id)
             trial = LanThuPhuongAn.objects.get(pk=trial.pk, phuong_an__bai_viet=post)
-            if trial.nguoi_thuc_hien_id != user.pk:
+            if post.nguoi_dang_id != user.pk:
                 raise PermissionDenied(
-                    "Chỉ người thực hiện đã được xác định mới ghi kết quả lần thử này."
+                    "Chỉ người đăng bài nêu vấn đề được ghi kết quả thực hiện."
                 )
             if (
                 trial.trang_thai not in ("cho_ket_qua", "dang_thuc_hien")
                 or KetQuaThu.objects.filter(lan_thu=trial).exists()
             ):
                 raise ValidationError("Lần thử đã có kết quả hoặc không còn chờ kết quả.")
+            trial.nguoi_thuc_hien = user
             completed = data.get("hoan_tat_luc") or timezone.now()
             if completed < trial.ngay_thu or completed > timezone.now():
                 raise ValidationError(
@@ -166,7 +157,11 @@ def record_result(user, project, trial, data):
 
 
 def record_resolution(user, project, post, data):
-    with command(user, "UC-PRJ-09", data["request_token"], data, project.pk, post.pk) as task:
+    request_data = dict(data)
+    if not data.get("pending_trial_ids") and not data.get("xac_nhan_dung_thu"):
+        request_data.pop("pending_trial_ids", None)
+        request_data.pop("xac_nhan_dung_thu", None)
+    with command(user, "UC-PRJ-09", data["request_token"], request_data, project.pk, post.pk) as task:
         if not can_resolve(user, task["project"]):
             raise PermissionDenied("Bạn cần có tư cách thành viên hợp lệ trong dự án để đề nghị kết luận xử lý.")
         if not task["replay"]:
@@ -181,6 +176,16 @@ def record_resolution(user, project, post, data):
                 raise ValidationError(
                     "Căn cứ không phải kết quả thành công hợp lệ của vấn đề này."
                 )
+            pending_trials = LanThuPhuongAn.objects.filter(
+                phuong_an__bai_viet=post,
+                trang_thai__in=("cho_ket_qua", "dang_thuc_hien"),
+                ket_qua__isnull=True,
+            ).order_by("pk")
+            stopped_ids = list(pending_trials.values_list("pk", flat=True))
+            if data.get("pending_trial_ids", "") != ",".join(map(str, stopped_ids)):
+                raise ValidationError("Danh sách lần thử còn chờ đã thay đổi. Kiểm tra lại danh sách và xác nhận trước khi gửi.")
+            if stopped_ids and not data.get("xac_nhan_dung_thu"):
+                raise ValidationError("Cần xác nhận dừng các lần thử còn chờ khi ghi kết luận.")
             conclusion = save_model(
                 KetLuanXuLy(
                     bai_viet_nguon=post,
@@ -192,16 +197,12 @@ def record_resolution(user, project, post, data):
             post.trang_thai_xu_ly = BaiViet.TechnicalStatus.RESOLVED
             post.giai_quyet_boi, post.giai_quyet_luc = user, timezone.now()
             save_model(post)
-            pending_trials = LanThuPhuongAn.objects.filter(
-                phuong_an__bai_viet=post,
-                trang_thai__in=("cho_ket_qua", "dang_thuc_hien"),
-                ket_qua__isnull=True,
-            )
-            stopped_ids = list(pending_trials.values_list("pk", flat=True))
             pending_trials.update(
-                trang_thai="da_huy",
+                trang_thai="dung_thu",
                 ket_thuc_luc=post.giai_quyet_luc,
-                ly_do_huy="Dừng thử vì vấn đề đã được kết luận xử lý thành công.",
+                ly_do_huy="Đã có kết luận xử lý thành công",
+                nguoi_xac_nhan_dung=user,
+                ket_luan_dung=conclusion,
                 ngay_cap_nhat=post.giai_quyet_luc,
             )
             # Giữ hàng chờ kể cả chưa có người phụ trách, tránh làm mất nguồn cần đánh giá.

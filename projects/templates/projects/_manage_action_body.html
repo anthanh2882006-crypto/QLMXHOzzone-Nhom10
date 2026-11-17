@@ -13,6 +13,14 @@
     <p>
         Hoàn tất đánh giá từng nguồn trước khi lưu trữ. Sau lưu trữ, chỉ xem lịch sử và bài học theo quyền truy cập.
     </p>
+    {% if unresolved_issues %}
+        <h3>Vấn đề kỹ thuật chưa giải quyết</h3>
+        <ul>
+            {% for source in unresolved_issues %}
+                <li><a href="{% url 'projects:issue' project.pk source.pk %}">{{ source.tieu_de|default:source.noi_dung|truncatechars:100 }}</a></li>
+            {% endfor %}
+        </ul>
+    {% endif %}
     {% if pending_review_sources %}
         <h3>Nguồn cần hoàn tất đánh giá tri thức</h3>
         <ul>

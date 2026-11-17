@@ -282,6 +282,9 @@ def management_form(request, pk, action, target=None):
             ]
         elif action == "archive":
             ctx.update(work=outstanding(project), archive_reasons=archive_reasons(project))
+            ctx["unresolved_issues"] = readable_project_posts(request.user, project).filter(
+                che_do_xu_ly=True, trang_thai_xu_ly="chua_giai_quyet"
+            )
             ctx["pending_review_sources"] = pending_knowledge_sources(project).filter(
                 pk__in=readable_project_posts(request.user, project).values("pk")
             )

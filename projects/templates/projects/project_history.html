@@ -2,6 +2,12 @@
 {% load ozzone_names %}
 {% block project_content %}
     {% include "projects/_page_header.html" %}
+    {% if knowledge_sources %}
+        <section class="pm-panel">
+            <h2>Nguồn cần đánh giá tri thức</h2>
+            <ul>{% for source in knowledge_sources %}<li><a href="{{ source.url }}">{{ source.title }}</a></li>{% endfor %}</ul>
+        </section>
+    {% endif %}
     <section class="pm-panel pm-filter-panel">
         <form method="get" action="{% url 'projects:history' project.pk %}">
             <div class="pm-filter-grid">
