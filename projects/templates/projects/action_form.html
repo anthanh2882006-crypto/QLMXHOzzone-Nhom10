@@ -69,6 +69,15 @@
                             {% endif %}
                         </p>
                         <p>Bắt đầu {{ trial.ngay_thu|date:"d/m/Y H:i" }}</p>
+                        {% if result_blocked %}
+                            <div role="alert">
+                                <strong>Dừng việc thử · Không tiếp nhận kết quả mới</strong>
+                                <p>Lý do: {{ trial.ly_do_huy }}</p>
+                                <p>Thời điểm: {{ trial.ket_thuc_luc|date:"d/m/Y H:i" }}</p>
+                                <p>Người xác nhận: {{ trial.nguoi_xac_nhan_dung|ho_ten }}</p>
+                                <a href="{% url 'projects:issue' project.pk post.pk %}#resolution">Xem kết luận làm căn cứ dừng</a>
+                            </div>
+                        {% endif %}
                     </div>
                 {% endif %}
                 {% if asset_error %}
@@ -160,7 +169,7 @@
                     {% endif %}
                     <div class="pm-actions">
                         <button class="pm-button"
-                                type="submit"{% if asset_error or policy_warning or evidence_required and not evidence %} disabled{% endif %}>
+                                type="submit"{% if result_blocked or asset_error or policy_warning or evidence_required and not evidence %} disabled{% endif %}>
                             {{ submit_label }}
                         </button>
                         <a class="pm-button pm-secondary" href="{{ cancel_url }}">Hủy</a>

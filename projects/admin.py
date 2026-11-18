@@ -6,13 +6,13 @@ from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.shortcuts import redirect
-from django.urls import reverse
+from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from projectp.models import CommunityRole, DuAn, NhatKyNghiepVu, ThanhVienCongDong
-from .permissions import readable_projects
+from .permissions import readable_projects, readable_project_posts
 from .services_manage import revision, state
-from .policies import archive_reasons
+from .policies import archive_reasons, pending_knowledge_sources
 
 
 class ProjectAdminForm(forms.ModelForm):
@@ -71,6 +71,7 @@ class ProjectAdminForm(forms.ModelForm):
 @admin.register(DuAn)
 class ProjectAdmin(admin.ModelAdmin):
     form = ProjectAdminForm
+    change_form_template = "admin/projectp/duan/change_form.html"
     list_display = ("ma_du_an_nghiep_vu", "ten_du_an", "trang_thai", "history_link")
     search_fields = ("ma_du_an_nghiep_vu", "ten_du_an")
     list_filter = ("trang_thai",)
@@ -129,7 +130,25 @@ class ProjectAdmin(admin.ModelAdmin):
 
     @admin.display(description="Lịch sử theo quyền nguồn")
     def history_link(self, obj):
-        return format_html('<a href="{}">Xem lịch sử</a>', reverse("projects:history", kwargs={"pk": obj.pk}))
+        return format_html('<a href="{}">Xem lịch sử</a>', reverse(f"{self.admin_site.name}:projectp_duan_business_history", args=[obj.pk]))
+
+    def get_urls(self):
+        return [
+            path("<path:object_id>/business-history/",
+                 self.admin_site.admin_view(self.business_history),
+                 name="projectp_duan_business_history"),
+            path("<path:object_id>/business-history/<int:log_id>/",
+                 self.admin_site.admin_view(self.business_history_detail),
+                 name="projectp_duan_business_history_detail"),
+        ] + super().get_urls()
+
+    def business_history(self, request, object_id):
+        from .views_history import project_history
+        return project_history(request, object_id, admin_site=self.admin_site)
+
+    def business_history_detail(self, request, object_id, log_id):
+        from .views_history import history_detail
+        return history_detail(request, object_id, log_id, admin_site=self.admin_site)
 
     def save_model(self, request, obj, form, change):
         from projectp.admin_permissions import current_admin
@@ -161,6 +180,20 @@ class ProjectAdmin(admin.ModelAdmin):
         )
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        extra_context = dict(extra_context or {})
+        project = self.get_object(request, object_id) if object_id else None
+        if project is not None and self.has_view_or_change_permission(request, project):
+            visible = readable_project_posts(request.user, project)
+            extra_context.update(
+                archive_reasons=archive_reasons(project),
+                unresolved_issues=visible.filter(
+                    che_do_xu_ly=True, trang_thai_xu_ly="chua_giai_quyet"
+                ),
+                pending_review_sources=pending_knowledge_sources(project).filter(
+                    pk__in=visible.values("pk")
+                ),
+                project=project,
+            )
         try:
             return super().changeform_view(request, object_id, form_url, extra_context)
         except (DatabaseError, ValidationError):

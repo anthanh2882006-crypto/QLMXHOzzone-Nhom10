@@ -86,6 +86,8 @@
                     </td>
                     <td>
                         {% if item.is_archived_project %}
+                            <a class="knw04-action" href="{% url 'projects:detail' item.bai_viet_nguon.du_an_id %}">Xem dự án đã lưu trữ</a>
+                            <a class="knw04-action" href="{% url 'projects:issue' item.bai_viet_nguon.du_an_id item.bai_viet_nguon_id %}">Xem nguồn</a>
                             {% if item.bai_hoc_id %}<a class="knw04-action" href="{% url 'knowledge:lesson_detail' item.bai_hoc_id %}">Xem bài học</a>{% else %}<span class="knw04-muted">Xem lịch sử bên dưới</span>{% endif %}
                         {% elif item.trang_thai == 'cho_danh_gia' or item.trang_thai == 'cho_danh_gia_lai' %}
                             {% if item.has_existing_lesson %}

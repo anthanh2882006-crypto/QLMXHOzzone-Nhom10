@@ -1,0 +1,22 @@
+{% extends "admin/change_form.html" %}
+{% block after_field_sets %}
+{{ block.super }}
+{% if archive_reasons and not project.da_luu_tru %}
+<section class="module aligned" aria-label="Điều kiện lưu trữ dự án">
+    <h2>Công việc cần hoàn tất trước khi lưu trữ</h2>
+    <div class="form-row">
+        <ul>{% for reason in archive_reasons %}<li>{{ reason }}</li>{% endfor %}</ul>
+        <p>Điều kiện được kiểm tra trên toàn bộ dự án. Danh sách dưới đây chỉ gồm nguồn bạn được phép đọc.</p>
+        {% if unresolved_issues %}
+        <h3>Vấn đề kỹ thuật chưa giải quyết</h3>
+        <ul>{% for source in unresolved_issues %}<li><a href="{% url 'projects:issue' project.pk source.pk %}">{{ source.tieu_de|default:source.noi_dung|truncatechars:100 }}</a></li>{% endfor %}</ul>
+        {% endif %}
+        {% if pending_review_sources %}
+        <h3>Nguồn cần hoàn tất đánh giá tri thức</h3>
+        <ul>{% for source in pending_review_sources %}<li><a href="{% url 'projects:issue' project.pk source.pk %}">{{ source.tieu_de|default:source.noi_dung|truncatechars:100 }}</a></li>{% endfor %}</ul>
+        {% endif %}
+        {% if not unresolved_issues and not pending_review_sources %}<p>Không có nguồn cần xử lý thuộc phạm vi đọc hiện tại của bạn. Liên hệ người quản lý dự án để hoàn tất công việc.</p>{% endif %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

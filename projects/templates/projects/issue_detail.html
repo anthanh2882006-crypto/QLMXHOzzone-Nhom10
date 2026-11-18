@@ -140,6 +140,7 @@
             <section class="pm-panel pm-tab-panel" id="resolution" data-project-panel>
                 <h2>Kết luận xử lý</h2>
                 {% if conclusion %}
+                    <p class="pm-info">Tổng số lần thử đã dừng: <strong>{{ stopped_trial_count }}</strong></p>
                     <div>{{ conclusion.noi_dung_ket_luan|linebreaks }}</div>
                     <p>
                         Căn cứ PA-{{ conclusion.ket_qua.lan_thu.phuong_an_id }}

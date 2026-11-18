@@ -117,6 +117,13 @@ def issue_detail(request, pk, post_id):
         .first(),
         queue=getattr(post, "muc_cho_tri_thuc", None),
     )
+    conclusion = context["conclusion"]
+    context["stopped_trial_count"] = (
+        LanThuPhuongAn.objects.filter(
+            ket_luan_dung=conclusion, trang_thai="dung_thu",
+            phuong_an__bai_viet=post,
+        ).count() if conclusion else 0
+    )
     return render(request, "projects/issue_detail.html", context)
 
 
@@ -162,6 +169,14 @@ def technical_form(
                 + "#"
                 + fragment
             )
+    if action == "UC-PRJ-08" and form.errors and extra.get("trial"):
+        trial = extra["trial"]
+        trial.refresh_from_db()
+        extra["trial"] = trial
+        if trial.trang_thai == "dung_thu" and readable_project_posts(request.user, project).filter(pk=post.pk).exists():
+            extra["result_blocked"] = True
+            for field in form.fields.values():
+                field.disabled = True
     if action == "UC-PRJ-09":
         if form.errors:
             form.refresh_pending_confirmation()

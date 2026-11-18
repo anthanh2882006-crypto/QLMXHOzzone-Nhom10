@@ -2,7 +2,7 @@
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse
 from django.views.decorators.http import require_http_methods
@@ -35,7 +35,10 @@ def result_create(request, pk, target):
                 reverse("projects:issue", kwargs={"pk": pk, "post_id": post.pk}) + "#trials"
             )
         if trial.trang_thai not in ("cho_ket_qua", "dang_thuc_hien"):
-            raise ValidationError("Lần thử không còn chờ kết quả. Cần xem lại lịch sử.")
+            messages.info(request, "Lần thử đã kết thúc. Xem lý do, thời điểm và kết luận liên quan trong lịch sử.")
+            return redirect(
+                reverse("projects:issue", kwargs={"pk": pk, "post_id": post.pk}) + "#trials"
+            )
     return technical_form(
         request,
         pk,

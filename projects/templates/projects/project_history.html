@@ -1,4 +1,4 @@
-{% extends "projects/base.html" %}
+{% extends history_base|default:"projects/base.html" %}
 {% load ozzone_names %}
 {% block project_content %}
     {% include "projects/_page_header.html" %}
@@ -9,7 +9,7 @@
         </section>
     {% endif %}
     <section class="pm-panel pm-filter-panel">
-        <form method="get" action="{% url 'projects:history' project.pk %}">
+        <form method="get" action="{{ history_url }}">
             <div class="pm-filter-grid">
                 {% for field in form %}
                     {% include "projects/_field.html" %}
@@ -17,7 +17,7 @@
             </div>
             <div class="pm-actions">
                 <button class="pm-button" type="submit">Lọc lịch sử</button>
-                <a href="{% url 'projects:history' project.pk %}">Xóa bộ lọc</a>
+                <a href="{{ history_url }}">Xóa bộ lọc</a>
             </div>
         </form>
     </section>

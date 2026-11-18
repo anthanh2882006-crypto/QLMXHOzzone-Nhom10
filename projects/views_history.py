@@ -3,12 +3,16 @@
 from accounts.views._chung import ho_ten
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
+from django.contrib.auth import get_user_model
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 from projectp.models import (
     BinhLuan,
+    DuAn,
     KetLuanXuLy,
     KetQuaThu,
     LanThuPhuongAn,
@@ -16,7 +20,7 @@ from projectp.models import (
     PhuongAnXuLy,
 )
 from .forms_history import HistoryForm
-from .permissions import project_access, readable_project_posts
+from .permissions import active_memberships, project_access, readable_project_posts
 from .presentation import handled, screen
 from .history_details import snapshot_changes
 
@@ -32,14 +36,39 @@ MANAGEMENT_LABELS = {
 }
 
 
+def _history_access(request, pk, admin_site):
+    if admin_site is None:
+        return project_access(request.user, pk)
+    actor = get_user_model().objects.get(pk=request.user.pk)
+    request.user = actor
+    model_admin = admin_site._registry[DuAn]
+    project = model_admin.get_object(request, str(pk))
+    if not admin_site.has_permission(request) or project is None or not model_admin.has_view_or_change_permission(request, project):
+        raise PermissionDenied("Không có quyền xem lịch sử quản trị của dự án này.")
+    return project, active_memberships(actor).filter(du_an=project).first()
+
+
+def _history_context(request, project, membership, title, admin_site):
+    context = screen(project, membership, title, "history")
+    context["history_url"] = reverse("projects:history", kwargs={"pk": project.pk})
+    if admin_site is not None:
+        context.update(admin_site.each_context(request))
+        context.update(
+            history_base="admin/projectp/duan/history_base.html",
+            history_url=reverse(f"{admin_site.name}:projectp_duan_business_history", args=[project.pk]),
+            back_url=reverse(f"{admin_site.name}:projectp_duan_change", args=[project.pk]),
+        )
+    return context
+
+
 @login_required(login_url="projects:login")
 @require_GET
 @handled
-def project_history(request, pk):
+def project_history(request, pk, admin_site=None):
     """GD-063. Tra cứu diễn biến và nguồn lịch sử trong quyền đọc hiện hành."""
-    project, membership = project_access(request.user, pk)
+    project, membership = _history_access(request, pk, admin_site)
     form = HistoryForm(request.GET, project=project)
-    context = screen(project, membership, f"Lịch sử {project.ten_du_an}", "history")
+    context = _history_context(request, project, membership, f"Lịch sử {project.ten_du_an}", admin_site)
     context.update(form=form, page_obj=None)
     if not project.da_luu_tru:
         from knowledge.uc04_views import _assignment_scoped_queue
@@ -173,7 +202,8 @@ def project_history(request, pk):
             )
         # Nhật ký quản lý chỉ hiển thị tóm tắt hành động, không xuất toàn bộ snapshot dữ liệu.
         logs = NhatKyNghiepVu.objects.filter(
-            loai_tai_nguyen="DU_AN", ma_tai_nguyen=str(pk), hanh_dong__startswith="UC-PRJ-03:"
+            Q(hanh_dong__startswith="UC-PRJ-03:") | Q(hanh_dong__startswith="UC-PRJ-11:"),
+            loai_tai_nguyen="DU_AN", ma_tai_nguyen=str(pk)
         ).select_related("nguoi_dung")
         for log in logs:
             label = MANAGEMENT_LABELS.get(
@@ -184,8 +214,10 @@ def project_history(request, pk):
                 "management",
                 label,
                 log.nguoi_dung,
-                detail_url=reverse(
-                    "projects:history_detail", kwargs={"pk": pk, "log_id": log.pk}
+                detail_url=(
+                    reverse(f"{admin_site.name}:projectp_duan_business_history_detail", args=[pk, log.pk])
+                    if admin_site is not None else
+                    reverse("projects:history_detail", kwargs={"pk": pk, "log_id": log.pk})
                 ),
             )
         assignments = NhatKyNghiepVu.objects.filter(
@@ -231,17 +263,18 @@ def project_history(request, pk):
 @login_required(login_url="projects:login")
 @require_GET
 @handled
-def history_detail(request, pk, log_id):
+def history_detail(request, pk, log_id, admin_site=None):
     """GD-063 B3/B4a. Đọc thay đổi quản lý ở trạng thái lịch sử, không mở biểu mẫu sửa."""
-    project, membership = project_access(request.user, pk)
+    project, membership = _history_access(request, pk, admin_site)
     log = get_object_or_404(
-        NhatKyNghiepVu.objects.select_related("nguoi_dung"),
+        NhatKyNghiepVu.objects.filter(
+            Q(hanh_dong__startswith="UC-PRJ-03:") | Q(hanh_dong__startswith="UC-PRJ-11:")
+        ).select_related("nguoi_dung"),
         pk=log_id,
         loai_tai_nguyen="DU_AN",
         ma_tai_nguyen=str(pk),
-        hanh_dong__startswith="UC-PRJ-03:",
     )
     title = MANAGEMENT_LABELS.get(log.hanh_dong.split(":")[-1], "Chi tiết lịch sử dự án")
-    context = screen(project, membership, title, "history")
+    context = _history_context(request, project, membership, title, admin_site)
     context.update(log=log, changes=snapshot_changes(log, project))
     return render(request, "projects/history_detail.html", context)
