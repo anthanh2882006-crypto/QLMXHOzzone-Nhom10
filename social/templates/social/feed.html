@@ -154,7 +154,7 @@
                             </div>
                             {% if post.loai_bai_viet == 'cap_nhat_hien_truong' %}<span class="social-pill">Cập nhật hiện trường</span>{% endif %}
                         </div>
-                        <a class="social-post-link" href="{% url 'social:post_detail' post.pk %}">
+                        <a class="social-post-link" href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">
                             {% if post.tieu_de %}<h2>{{ post.tieu_de }}</h2>{% endif %}
                             <p class="social-post-excerpt">{{ post.noi_dung|truncatechars:420|linebreaksbr }}</p>
                         </a>
@@ -171,7 +171,7 @@
                                     <button class="social-action-button {% if post.liked_by_me %}is-selected{% endif %}" type="submit">♡ {% if post.liked_by_me %}Đã thích{% else %}Thích{% endif %}</button>
                                 </form>
                                 {% endif %}
-                                <a class="social-action-button" href="{% if post.che_do_xu_ly and post.du_an_id %}{% url 'projects:issue' post.du_an_id post.pk %}#analysis{% else %}{% url 'social:post_detail' post.pk %}#comments{% endif %}">Bình luận</a>
+                                <a class="social-action-button" href="{% if post.che_do_xu_ly and post.du_an_id %}{% url 'projects:issue' post.du_an_id post.pk %}#analysis{% else %}{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}#comments{% endif %}">Bình luận</a>
                                 <form method="post" action="{% url 'social:save_set' post.pk %}">
                                     {% csrf_token %}
                                     <input type="hidden" name="state" value="{% if post.saved_by_me %}off{% else %}on{% endif %}">

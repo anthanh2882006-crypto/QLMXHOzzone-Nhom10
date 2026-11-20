@@ -70,7 +70,7 @@ def handled(view):
                 "projects/error.html",
                 {
                     "error_message": "Chưa tải/lưu được dữ liệu. Vui lòng thử lại.",
-                    "retry_url": request.path,
+                    "retry_url": request.get_full_path(),
                 },
                 status=503,
             )

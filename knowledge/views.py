@@ -1120,7 +1120,18 @@ def support_profile(request, user_id):
 
     from django.contrib.auth import get_user_model
 
-    employee = get_object_or_404(get_user_model(), pk=user_id, is_active=True, ho_so_nhan_vien__isnull=False)
+    employee = get_user_model().objects.filter(
+        pk=user_id, is_active=True, ho_so_nhan_vien__isnull=False,
+    ).first()
+    if employee is None:
+        filters = request.GET.copy()
+        filters.pop("reason", None)
+        back = reverse("knowledge:support")
+        if filters:
+            back += "?" + filters.urlencode()
+        return render(request, "knowledge/unavailable.html", {
+            "support_return_url": back,
+        }, status=404)
     return redirect("accounts:employee", username=employee.username)
 
 

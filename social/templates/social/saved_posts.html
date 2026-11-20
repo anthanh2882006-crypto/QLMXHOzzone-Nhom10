@@ -9,9 +9,9 @@
     {% for post in posts %}
         <article class="social-card">
             <div class="social-card-header"><div class="social-author-avatar">{{ post.nguoi_dang.username|slice:':2'|upper }}</div><div class="social-author-meta"><strong>{{ post.nguoi_dang|ho_ten }}</strong><span>{{ post.ngay_tao|date:'d/m/Y H:i' }}</span></div></div>
-            <h2><a href="{% url 'social:post_detail' post.pk %}">{{ post.tieu_de|default:post.noi_dung|truncatechars:120 }}</a></h2>
+            <h2><a href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">{{ post.tieu_de|default:post.noi_dung|truncatechars:120 }}</a></h2>
             <p class="social-post-excerpt">{{ post.noi_dung|truncatechars:240 }}</p>
-            <div class="social-card-footer"><a class="social-text-link" href="{% url 'social:post_detail' post.pk %}">Mở nội dung</a></div>
+            <div class="social-card-footer"><a class="social-text-link" href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">Mở nội dung</a></div>
         </article>
     {% empty %}
         <div class="social-empty"><h2>Chưa có nội dung được lưu hoặc nội dung không còn khả dụng</h2><p>Liên kết đã lưu không cấp quyền đọc vĩnh viễn. Nội dung không còn quyền truy cập sẽ không hiển thị tại đây.</p><a class="social-button social-button-secondary" href="{% url 'social:feed' %}">Quay lại bảng tin</a></div>

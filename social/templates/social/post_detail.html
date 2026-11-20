@@ -10,7 +10,7 @@
 
 {% block content %}
 <div class="social-page social-detail-page">
-    <a href="{% url 'social:feed' %}" class="social-back-link">← Quay lại bảng tin</a>
+    <a href="{{ post_return_url }}" class="social-back-link">← Quay lại danh sách</a>
     <article class="social-card social-detail-card">
         <div class="social-card-header">
             <div class="social-author-avatar">{{ post.nguoi_dang.username|slice:':2'|upper }}</div>
@@ -28,6 +28,7 @@
             {% if can_interact %}
             <form method="post" action="{% url 'social:reaction_set' post.pk %}">
                 {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ post_return_url }}">
                 <input type="hidden" name="state" value="{% if liked_reaction %}off{% else %}on{% endif %}">
                 <input type="hidden" name="loai_cam_xuc" value="{% if liked_reaction %}{{ liked_reaction.loai_cam_xuc }}{% else %}thich{% endif %}">
                 <button class="social-action-button {% if liked_reaction %}is-selected{% endif %}" type="submit">♥ {% if liked_reaction %}{{ liked_reaction.get_loai_cam_xuc_display }}{% else %}Thích{% endif %}</button>
@@ -35,6 +36,7 @@
             {% endif %}
             <form method="post" action="{% url 'social:save_set' post.pk %}">
                 {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ post_return_url }}">
                 <input type="hidden" name="state" value="{% if is_saved %}off{% else %}on{% endif %}">
                 <button class="social-action-button {% if is_saved %}is-selected{% endif %}" type="submit">{% if is_saved %}✓ Đã lưu{% else %}☆ Lưu nội dung{% endif %}</button>
             </form>
@@ -49,6 +51,7 @@
         {% if can_interact %}
         <form method="post" action="{% url 'social:comment_create' post.pk %}" class="social-comment-form">
             {% csrf_token %}
+            <input type="hidden" name="return_to" value="{{ post_return_url }}">
             <input type="hidden" name="request_token" value="{{ comment_form.request_token.value }}">
             <textarea name="noi_dung" rows="3" maxlength="5000" required placeholder="Viết bình luận của bạn..."></textarea>
             <div class="social-form-actions"><button class="social-button social-button-primary" type="submit">Gửi bình luận</button></div>

@@ -12,7 +12,7 @@
         {% csrf_token %}
         <button type="submit" class="oz-btn oz-btn-danger">Xác nhận đăng xuất</button>
       </form>
-      <a class="oz-btn" href="{% url 'accounts:after_login' %}">Tiếp tục làm việc</a>
+      <a class="oz-btn" href="{{ cancel_url }}">Tiếp tục làm việc</a>
     </div>
   </div>
 </div>

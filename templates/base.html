@@ -6,7 +6,7 @@
 {% url 'communities:list' as communities_url %}
 {% url 'projects:list' as projects_url %}
 {% url 'knowledge:list' as knowledge_url %}
-{% url 'core:search' as search_url %}
+{% url 'knowledge:search' as search_url %}
 {% url 'notifications:list' as notices_url %}
 
 {% url 'accounts:profile' as profile_url %}
@@ -15,7 +15,6 @@
 
 {% url 'admin:index' as admin_url %}
 {% url 'admin:login' as admin_login_url %}
-{% url 'admin:logout' as admin_logout_url %}
 
 {% url 'social:create' as create_post_url %}
 {% url 'admin:projectp_congdong_add' as create_community_url %}
@@ -401,6 +400,7 @@
     </style>
 
     <link rel="stylesheet" href="{% static 'ozzone/post_attachments.css' %}?v=20261116-cleanup">
+    <link rel="stylesheet" href="{% static 'ozzone/confirmation.css' %}">
     {% block extra_css %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
@@ -553,8 +553,8 @@
             <input
                 type="search"
                 name="q"
-                placeholder="Tìm trong OZZONE..."
-                aria-label="Tìm trong OZZONE"
+                placeholder="Tìm tri thức, kinh nghiệm..."
+                aria-label="Tìm tri thức, kinh nghiệm"
                 {% if not search_url %}
                     disabled
                     title="Tìm kiếm toàn hệ thống đang được tích hợp"
@@ -634,15 +634,7 @@
                     {% endif %}
 
                     {% if logout_url %}
-                        <form method="post" action="{{ logout_url }}">
-                            {% csrf_token %}
-                            <button type="submit">Đăng xuất</button>
-                        </form>
-                    {% elif request.user.is_staff and admin_logout_url %}
-                        <form method="post" action="{{ admin_logout_url }}">
-                            {% csrf_token %}
-                            <button type="submit">Đăng xuất</button>
-                        </form>
+                        <a href="{{ logout_url }}?next={{ request.get_full_path|urlencode }}">Đăng xuất</a>
                     {% endif %}
                 </div>
             </details>
@@ -741,6 +733,8 @@
         });
     </script>
 
+    {% include 'includes/confirmation_dialog.html' %}
+    <script src="{% static 'ozzone/confirmation.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

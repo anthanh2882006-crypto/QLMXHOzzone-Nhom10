@@ -8,11 +8,16 @@ from django.contrib import messages
 from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_http_methods
+from urllib.parse import urlsplit
 
 from ..forms import DoiMatKhauForm
 from ._chung import can_doi_mat_khau
 
 
+@require_http_methods(["GET", "POST"])
 def logout_view(request):
     """Hiển thị xác nhận với GET và kết thúc phiên đăng nhập với POST."""
     if request.method == "POST":
@@ -20,7 +25,19 @@ def logout_view(request):
         return redirect("accounts:login")
     if not request.user.is_authenticated:      # B3e: phiên đã hết hạn
         return redirect("accounts:login")
-    return render(request, "accounts/logout_confirm.html", {"active_side": "settings"})
+    next_url = request.GET.get("next", "")
+    if (
+        not url_has_allowed_host_and_scheme(
+            next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+        )
+        or urlsplit(next_url).path in {
+            reverse("accounts:logout"), reverse("projects:logout"), reverse("admin:logout"),
+        }
+    ):
+        next_url = reverse("accounts:after_login")
+    return render(request, "accounts/logout_confirm.html", {
+        "active_side": "settings", "cancel_url": next_url,
+    })
 
 
 @login_required

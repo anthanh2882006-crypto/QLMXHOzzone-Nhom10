@@ -28,7 +28,7 @@
   <section class="oz-card">
     <h2 class="oz-card-title">Phiên đăng nhập</h2>
     <p class="oz-muted">Đăng xuất chỉ kết thúc phiên trên thiết bị này.</p>
-    <a class="oz-btn" href="{% url 'accounts:logout' %}">Đăng xuất</a>
+    <a class="oz-btn" href="{% url 'accounts:logout' %}?next={{ request.get_full_path|urlencode }}">Đăng xuất</a>
   </section>
 </div>
 {% endblock %}

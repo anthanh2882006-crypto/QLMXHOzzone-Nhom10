@@ -97,7 +97,7 @@
                         <button type="submit" name="action" value="save_draft" class="knw089-save-button">
                             {% if is_editing_draft %}Cập nhật bản nháp{% else %}Lưu bản chưa công bố{% endif %}
                         </button>
-                        {% if can_publish %}<button type="submit" name="action" value="publish" class="knw089-publish-button">Công bố bài viết</button>{% endif %}
+                        {% if can_publish %}<button type="submit" name="action" value="publish" class="knw089-publish-button" id="previewArticle">Xem trước và công bố</button>{% endif %}
                         <button type="button" id="cancelArticle" class="knw089-cancel-button">Hủy</button>
                     </div>
                 </section>
@@ -118,6 +118,46 @@
         </div>
     </form>
 
+    {% if can_publish %}
+    <dialog id="publishArticleDialog" class="knw089-dialog knw089-preview" aria-labelledby="publishArticleTitle">
+        <header>
+            <h2 id="publishArticleTitle">Kiểm tra trước khi công bố</h2>
+            <p id="previewArticleTitle"></p>
+        </header>
+        <dl class="knw089-preview-details">
+            <dt>Phiên bản sắp công bố</dt>
+            <dd>{% if version %}Phiên bản {{ version.so_phien_ban }}{% else %}Phiên bản 1{% endif %}</dd>
+            <dt>Phiên bản đang công bố</dt>
+            <dd>{% if article.phien_ban_dang_cong_bo_id %}Phiên bản {{ article.phien_ban_dang_cong_bo.so_phien_ban }}{% else %}Chưa có{% endif %}</dd>
+            <dt>Phạm vi chia sẻ</dt>
+            <dd id="previewArticleScope"></dd>
+            <dt>Chủ đề</dt>
+            <dd id="previewArticleTopics"></dd>
+            <dt>Nguồn tham khảo đang khai báo</dt>
+            <dd id="previewArticleReference"></dd>
+            <dt>Tệp đính kèm sau khi lưu</dt>
+            <dd>
+                <ul id="previewArticleFiles">
+                    {% for attachment in attachments %}
+                    <li data-attachment-id="{{ attachment.pk }}">{{ attachment.tep_tin.ten_tep }}</li>
+                    {% endfor %}
+                    <li data-no-attachments>Không có tệp</li>
+                </ul>
+            </dd>
+        </dl>
+        <section class="knw089-preview-summary">
+            <h3>Tóm tắt và phạm vi áp dụng</h3>
+            <p id="previewArticleSummary"></p>
+            <p id="previewArticleApplication"></p>
+        </section>
+        <p class="knw089-preview-note">Hệ thống kiểm tra quyền, nguồn, tệp và phiên bản khi bạn xác nhận công bố. {% if article.phien_ban_dang_cong_bo_id %}Bản đang công bố tiếp tục hiển thị cho đến khi bản mới được công bố thành công.{% endif %}</p>
+        <div class="knw089-dialog-actions">
+            <button type="button" class="knw089-save-button" id="backToArticle" autofocus>Quay lại biên tập</button>
+            <button type="button" id="publishReviewedArticle">Công bố bài viết</button>
+        </div>
+    </dialog>
+    {% endif %}
+
     <dialog id="leaveArticleDialog" class="knw089-dialog">
         <h3>Rời nội dung đang soạn?</h3>
         <p>Bạn đang có dữ liệu chưa lưu. Nếu rời trang, những thay đổi chưa được lưu sẽ không được giữ lại.</p>
@@ -132,14 +172,23 @@
 (function () {
     const form = document.getElementById("articleEditorForm");
     const dialog = document.getElementById("leaveArticleDialog");
-    const initialData = JSON.stringify(Array.from(new FormData(form).entries()));
+    // File objects need explicit metadata; JSON.stringify(File) would lose changes.
+    function snapshot() {
+        return JSON.stringify(Array.from(new FormData(form).entries(), ([key, value]) => [
+            key, value instanceof File
+                ? {name: value.name, size: value.size, type: value.type, modified: value.name ? value.lastModified : 0}
+                : value
+        ]));
+    }
+    const initialData = snapshot();
+    const returnedInput = {{ form.is_bound|yesno:"true,false" }};
     let submitting = false;
     let pendingUrl = "{% url 'knowledge:list' %}";
     const scope = document.getElementById("id_pham_vi_chia_se");
     const refType = document.getElementById("id_loai_tham_chieu");
 
     function dirty() {
-        return JSON.stringify(Array.from(new FormData(form).entries())) !== initialData;
+        return returnedInput || snapshot() !== initialData;
     }
     function updateScope() {
         const v = scope && scope.value;
@@ -166,12 +215,81 @@
     }
     if (scope) { scope.addEventListener("change", updateScope); updateScope(); }
     if (refType) { refType.addEventListener("change", updateRef); updateRef(); }
-    form.addEventListener("submit", () => { submitting = true; });
+    const publishDialog = document.getElementById("publishArticleDialog");
+    const publishButton = document.getElementById("previewArticle");
+    let publishConfirmed = false;
+
+    function selectedLabel(field) {
+        return field?.selectedOptions[0]?.textContent.trim() || "";
+    }
+    function formValue(name) {
+        return form.elements[name].value.trim();
+    }
+    function showPublishPreview() {
+        const scopeTarget = ["cong_dong", "du_an"].includes(scope.value) ? scope.value : "";
+        const target = scopeTarget && form.elements[scopeTarget];
+        const audience = target ? (target.value ? selectedLabel(target) : "Chưa chọn") : "";
+        const sharing = [selectedLabel(scope), audience].filter(Boolean).join(" · ");
+        document.getElementById("previewArticleTitle").textContent = formValue("tieu_de");
+        document.getElementById("previewArticleScope").textContent = sharing;
+        const topics = Array.from(form.elements["chu_de"].selectedOptions, option => option.textContent.trim());
+        document.getElementById("previewArticleTopics").textContent =
+            topics.join(", ") || "Chưa chọn. Cần ít nhất một chủ đề để công bố.";
+        document.getElementById("previewArticleReference").textContent =
+            formValue("tieu_de_nguon") || "Chưa khai báo nguồn trên biểu mẫu";
+        document.getElementById("previewArticleSummary").textContent = formValue("tom_tat");
+        document.getElementById("previewArticleApplication").textContent = formValue("pham_vi_ap_dung");
+
+        const fileList = document.getElementById("previewArticleFiles");
+        fileList.querySelectorAll("[data-new-file]").forEach(item => item.remove());
+        const removed = new Set(new FormData(form).getAll("remove_attachment_ids"));
+        const added = Array.from(form.elements["minh_chung"].files);
+        let kept = 0;
+        fileList.querySelectorAll("[data-attachment-id]").forEach(item => {
+            item.hidden = removed.has(item.dataset.attachmentId);
+            if (!item.hidden) kept += 1;
+        });
+        for (const file of added) {
+            const item = document.createElement("li");
+            item.dataset.newFile = "";
+            item.textContent = file.name + " · Tệp mới đã chọn";
+            fileList.append(item);
+        }
+        fileList.querySelector("[data-no-attachments]").hidden = kept + added.length > 0;
+        publishDialog.showModal();
+    }
+
+    form.addEventListener("submit", event => {
+        if (publishButton && event.submitter === publishButton && !publishConfirmed &&
+            typeof publishDialog?.showModal === "function") {
+            event.preventDefault();
+            showPublishPreview();
+            return;
+        }
+        submitting = true;
+    });
+    if (publishDialog) {
+        document.getElementById("backToArticle").addEventListener("click", () => publishDialog.close());
+        document.getElementById("publishReviewedArticle").addEventListener("click", () => {
+            publishDialog.close();
+            publishConfirmed = true;
+            try {
+                form.requestSubmit(publishButton);
+            } finally {
+                publishConfirmed = false;
+            }
+        });
+    }
     document.getElementById("cancelArticle").addEventListener("click", () => requestLeave("{% url 'knowledge:list' %}"));
     document.getElementById("stayArticle").addEventListener("click", () => dialog.close());
     document.getElementById("leaveArticle").addEventListener("click", () => { submitting = true; dialog.close(); window.location.href = pendingUrl; });
     document.querySelectorAll("a[href]").forEach(link => link.addEventListener("click", event => {
-        if (dirty() && link.href && !link.href.startsWith("#")) { event.preventDefault(); requestLeave(link.href); }
+        const href = link.getAttribute("href");
+        if (!event.defaultPrevented && !event.ctrlKey && !event.metaKey && !event.shiftKey &&
+            link.target !== "_blank" && href && !href.startsWith("#") && dirty() && !submitting) {
+            event.preventDefault();
+            requestLeave(link.href);
+        }
     }));
     window.addEventListener("beforeunload", event => {
         if (dirty() && !submitting) { event.preventDefault(); event.returnValue = ""; }

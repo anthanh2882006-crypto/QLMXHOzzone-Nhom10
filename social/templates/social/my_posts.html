@@ -8,13 +8,13 @@
     {% for post in posts %}
         <article class="social-card">
             <div class="social-card-topline"><span class="social-pill">{{ post.get_trang_thai_display|default:post.trang_thai }}</span><time>{{ post.ngay_tao|date:'d/m/Y H:i' }}</time></div>
-            <h2><a href="{% url 'social:post_detail' post.pk %}">{{ post.tieu_de|default:post.noi_dung|truncatechars:100 }}</a></h2>
+            <h2><a href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">{{ post.tieu_de|default:post.noi_dung|truncatechars:100 }}</a></h2>
             <p class="social-post-excerpt">{{ post.noi_dung|truncatechars:240 }}</p>
             <div class="social-card-footer">
-                <a class="social-text-link" href="{% url 'social:post_detail' post.pk %}">Xem bài</a>
+                <a class="social-text-link" href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">Xem bài</a>
                 {% if post.can_manage %}
                     <a class="social-text-link" href="{% url 'social:edit' post.pk %}">Chỉnh sửa</a>
-                    <form method="post" action="{% url 'social:delete' post.pk %}" onsubmit="return confirm('Bạn có chắc muốn xóa mềm bài viết này?');">
+                    <form method="post" action="{% url 'social:delete' post.pk %}" data-confirm-title="Xóa bài đăng?" data-confirm-message="Bài đăng sẽ được xóa mềm. Hệ thống vẫn kiểm tra quyền và bảo vệ nội dung đang được dùng làm nguồn." data-confirm-label="Xóa bài đăng">
                         {% csrf_token %}<button class="social-danger-link" type="submit">Xóa mềm</button>
                     </form>
                 {% else %}

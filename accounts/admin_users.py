@@ -15,6 +15,7 @@ from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.shortcuts import redirect
 from projectp.models import HoSoNhanVien, NhatKyNghiepVu
+from notifications.permissions import TRACK_GROUP_PREFIX
 
 
 def account_snapshot(user):
@@ -141,6 +142,11 @@ class OzzoneUserAdmin(UserAdmin):
         request.user = current_admin(request, "auth.change_user" if change else "auth.add_user")
         if not request.user.is_superuser and (obj.is_staff or obj.is_superuser):
             raise PermissionDenied("Chỉ quản trị viên phù hợp mới được quản lý tài khoản đặc quyền.")
+        if not request.user.is_superuser and "groups" in form.changed_data:
+            previous = set(obj.groups.filter(name__startswith=TRACK_GROUP_PREFIX).values_list("pk", flat=True)) if obj.pk else set()
+            chosen = {group.pk for group in form.cleaned_data["groups"] if group.name.startswith(TRACK_GROUP_PREFIX)}
+            if previous != chosen:
+                raise PermissionDenied("Chỉ quản trị viên cấp cao được phân phạm vi theo dõi tiếp nhận.")
         if self.privilege_fields.intersection(form.changed_data) and not self.can_manage_grants(request.user):
             raise PermissionDenied("Chưa có quyền quản lý nhóm/quyền của tài khoản.")
         return super().save_model(request, obj, form, change)
@@ -213,9 +219,26 @@ class OzzoneGroupAdmin(GroupAdmin):
         ) and super().has_add_permission(request)
 
     def has_change_permission(self, request, obj=None):
+        if obj and obj.name.startswith(TRACK_GROUP_PREFIX) and not request.user.is_superuser:
+            return False
         return (
             request.user.is_superuser or request.user.has_perm("auth.change_permission")
         ) and super().has_change_permission(request, obj)
+
+    def save_model(self, request, obj, form, change):
+        if obj.name.startswith(TRACK_GROUP_PREFIX) and not request.user.is_superuser:
+            raise PermissionDenied("Chỉ quản trị viên cấp cao được cấu hình nhóm phạm vi theo dõi tiếp nhận.")
+        super().save_model(request, obj, form, change)
+
+    def formfield_for_dbfield(self, db_field, request, **kwargs):
+        field = super().formfield_for_dbfield(db_field, request, **kwargs)
+        if db_field.name == "name" and field and request.user.is_superuser:
+            field.help_text = (
+                "Phạm vi theo dõi thông báo: OZZONE:SOC-09:toan_cong_ty hoặc "
+                "OZZONE:SOC-09:phong_ban:<ID>. Có thể thay phong_ban bằng cong_dong, du_an hoặc nguoi_dung. "
+                "Gắn quyền Được theo dõi tiếp nhận thông báo và thêm người được phân vào nhóm."
+            )
+        return field
 
     def has_delete_permission(self, request, obj=None):
         return request.user.is_superuser and super().has_delete_permission(request, obj)

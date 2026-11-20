@@ -14,6 +14,7 @@
                 <div class="oz-alert oz-alert-error" role="alert">{{ tracking_error }}</div>
                 <a class="oz-btn oz-btn-secondary" href="">Tải lại dữ liệu</a>
             {% else %}
+                <p>Dữ liệu lấy lúc {{ report_at|date:"d/m/Y H:i:s" }}</p>
                 <div class="oz-tracking-indicators">
                     <article><strong>{{ tracking.total|default:0 }}</strong><span>Tổng người nhận</span></article>
                     <article><strong>{{ tracking.acknowledged|default:0 }}</strong><span>Đã xác nhận</span></article>

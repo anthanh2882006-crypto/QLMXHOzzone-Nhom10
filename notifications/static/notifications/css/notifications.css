@@ -109,3 +109,22 @@
 .oz-notice-detail-card-actions{display:flex;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid var(--oz-border)}
 .oz-notice-author+.oz-notice-status-row{margin-top:16px}
 .oz-notice-detail .oz-notice-page-head{margin-bottom:0}
+
+.oz-notice-preview {
+    width: min(680px, calc(100vw - 32px));
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+}
+.oz-notice-preview [hidden] { display: none; }
+.oz-notice-preview dl {
+    display: grid;
+    grid-template-columns: minmax(120px, 1fr) 2fr;
+    gap: 8px 16px;
+}
+.oz-notice-preview dd { margin: 0; }
+.oz-notice-preview-body {
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}

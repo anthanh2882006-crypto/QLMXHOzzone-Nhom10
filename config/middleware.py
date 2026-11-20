@@ -13,7 +13,7 @@ class FirstPasswordRequiredMiddleware(MiddlewareMixin):
         if not request.user.is_authenticated or match.view_name in (
             "accounts:login", "accounts:logout", "accounts:first_password",
             "accounts:first_password_change", "legacy_account_login",
-            "legacy_account_logout", "legacy_first_password", "admin:logout",
+            "legacy_account_logout", "legacy_first_password", "admin:logout", "projects:logout",
         ):
             return None
         if not da_doi_mat_khau(request.user):

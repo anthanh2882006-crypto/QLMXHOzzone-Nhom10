@@ -1,5 +1,5 @@
 """Liên kết bài đăng giữ đúng phân hệ và đối tượng đang mở."""
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 
 from django.http import HttpResponseRedirect
 from django.urls import resolve, reverse, Resolver404
@@ -58,4 +58,44 @@ def interaction_redirect(request, post, *, community_id=None, project_id=None, c
             )
             if links["namespace"] == "social" or target_scope == links["scope_id"]:
                 return HttpResponseRedirect(target)
-    return HttpResponseRedirect(links["comments"] if comments else links["detail"])
+    return_to = _allowed_listing(request, request.POST.get("return_to", ""))
+    detail = with_listing_origin(links["detail"], return_to)
+    if comments:
+        detail += "#" + links["comments"].partition("#")[2]
+    return HttpResponseRedirect(detail)
+
+
+def _allowed_listing(request, candidate):
+    if not candidate or not url_has_allowed_host_and_scheme(
+        candidate, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return ""
+    try:
+        match = resolve(urlsplit(candidate).path)
+    except Resolver404:
+        return ""
+    if match.view_name in {
+        "social:feed", "social:saved", "social:my_posts", "core:home",
+        "knowledge:search", "knowledge:filter", "knowledge:saved",
+    }:
+        return candidate
+    return ""
+
+
+def listing_origin(request):
+    """Find the permitted listing that opened this post."""
+    for candidate in (request.GET.get("next", ""), request.META.get("HTTP_REFERER", "")):
+        return_to = _allowed_listing(request, candidate)
+        if return_to:
+            return return_to
+    return ""
+
+
+def with_listing_origin(detail, origin):
+    if origin:
+        return detail + "?" + urlencode({"next": origin})
+    return detail
+
+
+def post_return_url(request):
+    return listing_origin(request) or reverse("social:feed")

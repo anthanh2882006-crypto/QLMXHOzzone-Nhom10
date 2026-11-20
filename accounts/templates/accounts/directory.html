@@ -7,6 +7,13 @@
   <h1 class="oz-page-title">Danh bạ nhân viên</h1>
   <p class="oz-page-lead">Thông tin liên hệ được hiển thị theo phạm vi cho phép.</p>
 
+  {% if directory_error %}
+  <section class="oz-card" role="alert">
+    <p>{{ directory_error }}</p>
+    <a class="oz-btn oz-btn-primary" href="{{ request.get_full_path }}">Thử lại</a>
+    <a class="oz-btn" href="{% url 'accounts:directory' %}">Bỏ lọc</a>
+  </section>
+  {% else %}
   <form method="get" class="oz-card">
     <h2 class="oz-card-title">Tìm đồng nghiệp</h2>
     <div class="oz-form-grid">
@@ -50,5 +57,6 @@
       <p class="oz-empty">Không tìm thấy nhân viên phù hợp. Hãy điều chỉnh từ khóa hoặc bộ lọc.</p>
     {% endif %}
   </section>
+  {% endif %}
 </div>
 {% endblock %}

@@ -3,7 +3,11 @@
 {% block title %}{{ post.tieu_de|default:"Bài đăng" }} | OZZONE{% endblock %}
 {% block content %}
 <div class="oz-page">
-  {% include "includes/community_back.html" %}
+  {% if post_listing_origin %}
+    <a class="oz-btn" href="{{ post_listing_origin }}">← Quay lại danh sách nguồn</a>
+  {% else %}
+    {% include "includes/community_back.html" %}
+  {% endif %}
   <p class="oz-breadcrumb"><a href="{% url 'communities:list' %}">Cộng đồng</a> / <a href="{% url 'communities:detail' community.pk %}">{{ community.ten_cong_dong }}</a> / Bài đăng</p>
   <article class="oz-card cm-post oz-feed-post" id="post-{{ post.pk }}">
     {% if post.trang_thai == 'an' %}<div class="oz-alert oz-alert-warn"><p class="oz-alert-title">Bài đang bị ẩn</p><p>Chỉ người quản trị nội dung cộng đồng thấy bài này.</p></div>{% endif %}

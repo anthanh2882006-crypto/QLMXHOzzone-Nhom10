@@ -24,6 +24,18 @@ class OzzoneLoginView(auth_views.LoginView):
     authentication_form = LoginForm
     redirect_authenticated_user = True
 
+    def post(self, request, *args, **kwargs):
+        try:
+            return super().post(request, *args, **kwargs)
+        except DatabaseError:
+            # Keep the login page available without repeating authentication.
+            form = self.get_form_class()(
+                request=request, initial={"username": request.POST.get("username", "")}
+            )
+            return self.render_to_response(self.get_context_data(
+                form=form, authentication_error="Chưa kết nối được dịch vụ đăng nhập. Vui lòng thử lại."
+            ), status=503)
+
 
 @login_required
 def after_login(request):

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Tệp không khả dụng | OZZONE{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'social/css/social.css' %}">{% endblock %}
+{% block content %}
+<div class="social-page"><section class="social-empty" role="alert">
+  <h1>Tệp không khả dụng</h1>
+  <p>Chưa mở được tệp đính kèm. Bạn có thể thử lại hoặc quay về bài đăng.</p>
+  <a class="social-button social-button-primary" href="{{ retry_url }}">Thử lại</a>
+  <a class="social-button social-button-secondary" href="{% url 'social:post_detail' post_id %}">Quay về bài đăng</a>
+</section></div>
+{% endblock %}

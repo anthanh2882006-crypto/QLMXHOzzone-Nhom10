@@ -7,6 +7,7 @@ app_name = "notifications"
 urlpatterns = [
     path("", views.notice_list, name="list"),
     path("tao/", views.notice_create, name="create"),
+    path("xem-truoc/", views.notice_preview, name="preview"),
     path("tao/dinh-chinh/<int:reference_id>/", views.notice_create, name="correction"),
     path("ban-nhap/<int:pk>/sua/", views.notice_edit_draft, name="edit_draft"),
     path("ban-nhap/<int:pk>/huy/", views.notice_cancel_draft, name="cancel_draft"),

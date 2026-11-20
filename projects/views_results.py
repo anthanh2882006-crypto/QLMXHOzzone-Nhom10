@@ -39,6 +39,9 @@ def result_create(request, pk, target):
             return redirect(
                 reverse("projects:issue", kwargs={"pk": pk, "post_id": post.pk}) + "#trials"
             )
+        if trial.nguoi_thuc_hien_id != request.user.pk:
+            messages.error(request, "Người thực hiện của lần thử chưa khớp với người đăng bài. Hãy kiểm tra lại phân công.")
+            return redirect(reverse("projects:issue", kwargs={"pk": pk, "post_id": post.pk}) + "#trials")
     return technical_form(
         request,
         pk,

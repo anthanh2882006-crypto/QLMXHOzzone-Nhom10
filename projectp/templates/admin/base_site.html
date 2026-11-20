@@ -17,7 +17,7 @@
   <a href="{{ site_url }}">Về website</a>
   {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">Đổi mật khẩu</a>{% endif %}
   <span class="oz-user-name">{% firstof user.get_full_name user.get_username %}</span>
-  <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">Đăng xuất</button></form>
+  <a href="{% url 'accounts:logout' %}?next={{ request.get_full_path|urlencode }}">Đăng xuất</a>
 </div>
 {% endif %}
 {% endblock %}

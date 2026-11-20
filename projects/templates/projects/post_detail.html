@@ -1,6 +1,7 @@
 {% extends "projects/base.html" %}
 {% load ozzone_names %}
 {% block project_content %}
+    {% if post_listing_origin %}<p><a class="pm-button pm-secondary" href="{{ post_listing_origin }}">← Quay lại danh sách nguồn</a></p>{% endif %}
     <h1>
         {{ page_title }}
     </h1>

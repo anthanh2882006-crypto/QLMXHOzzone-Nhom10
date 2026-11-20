@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_GET
 from projectp.models import DinhKem, TepTin
+from social.navigation import listing_origin, with_listing_origin
 from social.views import _post_cards, post_discussion_context
 from .ui import with_issue_state
 from .permissions import project_access, readable_project_posts
@@ -71,13 +72,14 @@ def post_detail(request, pk, post_id):
         ),
         pk=post_id,
     )
+    origin = listing_origin(request)
     if post.che_do_xu_ly:
-        return redirect("projects:issue", pk=pk, post_id=post.pk)
+        return redirect(with_listing_origin(reverse("projects:issue", args=[pk, post.pk]), origin))
     context = screen(project, membership, post.tieu_de or "Chi tiết bài đăng", "feed")
     context.update(post_discussion_context(request, post))
     context.update(
         post=post,
-        back_url=reverse("projects:feed", kwargs={"pk": project.pk}),
+        back_url=origin or reverse("projects:feed", kwargs={"pk": project.pk}),
         attachments=attachments_for(bai_viet=post),
     )
     return render(request, "projects/post_detail.html", context)

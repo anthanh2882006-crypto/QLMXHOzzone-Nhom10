@@ -12,6 +12,7 @@
             <summary>Trả lời</summary>
             <form method="post" action="{% url 'social:comment_create' post.pk %}" class="social-reply-form">
                 {% csrf_token %}
+                <input type="hidden" name="return_to" value="{{ post_return_url }}">
                 <input type="hidden" name="request_token" value="{{ comment.reply_token }}">
                 <input type="hidden" name="binh_luan_cha" value="{{ comment.pk }}">
                 <textarea name="noi_dung" rows="2" maxlength="5000" required placeholder="Viết câu trả lời..."></textarea>

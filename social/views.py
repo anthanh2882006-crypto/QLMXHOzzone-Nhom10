@@ -29,7 +29,7 @@ from projectp.models import (
 )
 
 from .forms import CommentForm, PostForm
-from .navigation import interaction_redirect as _interaction_redirect
+from .navigation import interaction_redirect as _interaction_redirect, listing_origin, post_return_url, with_listing_origin
 from notifications.permissions import can_read_notice
 from projects.permissions import active_memberships, readable_projects
 from .permissions import (
@@ -283,12 +283,13 @@ def post_detail(request, pk):
     post = accessible_posts(request.user).filter(pk=pk).first()
     if post is None:
         return render(request, "social/unavailable.html", status=404)
+    origin = listing_origin(request)
     if post.du_an_id and post.che_do_xu_ly:
-        return redirect("projects:issue", pk=post.du_an_id, post_id=post.pk)
+        return redirect(with_listing_origin(reverse("projects:issue", args=[post.du_an_id, post.pk]), origin))
     if post.du_an_id:
-        return redirect("projects:post_detail", pk=post.du_an_id, post_id=post.pk)
+        return redirect(with_listing_origin(reverse("projects:post_detail", args=[post.du_an_id, post.pk]), origin))
     if post.cong_dong_id:
-        return redirect("communities:post", pk=post.cong_dong_id, post_id=post.pk)
+        return redirect(with_listing_origin(reverse("communities:post", args=[post.cong_dong_id, post.pk]), origin))
     return render(request, "social/post_detail.html", post_discussion_context(request, post))
 
 
@@ -325,6 +326,8 @@ def post_discussion_context(request, post):
 
     context = {
         "post": post,
+        "post_return_url": post_return_url(request),
+        "post_listing_origin": listing_origin(request),
         "comments": roots,
         "children": children,
         "attachments": attachments,
@@ -666,7 +669,10 @@ def attachment_download(request, attachment_id, community_id=None):
     try:
         file_handle = attachment.tep_tin.tep.open("rb")
     except (FileNotFoundError, OSError, ValueError):
-        raise Http404("Tệp không khả dụng.")
+        return render(request, "social/file_unavailable.html", {
+            "post_id": attachment.bai_viet_id,
+            "retry_url": request.get_full_path(),
+        }, status=404)
     file = attachment.tep_tin
     previewable = file.loai_tep in {
         "image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf",

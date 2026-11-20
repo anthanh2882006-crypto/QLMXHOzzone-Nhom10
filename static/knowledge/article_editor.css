@@ -249,3 +249,83 @@
         flex: 1 1 100%;
     }
 }
+
+.knw089-preview {
+    width: min(640px, calc(100% - 32px));
+    max-width: none;
+    max-height: calc(100dvh - 48px);
+    overflow: auto;
+    overflow-wrap: anywhere;
+}
+
+.knw089-preview header h2 {
+    margin: 0 0 8px;
+    font-size: 23px;
+}
+
+.knw089-preview header p {
+    margin: 0;
+    font-weight: 600;
+}
+
+.knw089-preview-details {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 10px 18px;
+    margin: 20px 0;
+}
+
+.knw089-preview-details dt {
+    color: #566271;
+}
+
+.knw089-preview-details dd {
+    margin: 0;
+}
+
+.knw089-preview-details ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.knw089-preview-summary {
+    padding: 14px 16px;
+    border: 1px solid #E2E7EA;
+    border-radius: 8px;
+}
+
+.knw089-preview-summary h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+}
+
+.knw089-preview-summary p {
+    margin: 6px 0 0;
+    white-space: pre-wrap;
+}
+
+.knw089-preview-note {
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 8px;
+    background: #E9F1FA;
+}
+
+.knw089-preview .knw089-dialog-actions {
+    justify-content: flex-end;
+}
+
+.knw089-preview .knw089-save-button {
+    background: #FFFFFF;
+    color: #3B7132;
+}
+
+@media (max-width: 480px) {
+    .knw089-preview-details {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 4px;
+    }
+    .knw089-preview-details dd {
+        margin-bottom: 8px;
+    }
+}

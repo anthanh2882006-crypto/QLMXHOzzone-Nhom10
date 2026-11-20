@@ -12,6 +12,7 @@
                 <summary>Trả lời</summary>
                 <form method="post" action="{{ post_links.comment_create }}" class="oz-discussion-form">
                     {% csrf_token %}
+                    {% if post_listing_origin %}<input type="hidden" name="return_to" value="{{ post_listing_origin }}">{% endif %}
                     <input type="hidden" name="request_token" value="{{ comment.reply_token }}">
                     <input type="hidden" name="binh_luan_cha" value="{{ comment.pk }}">
                     <label for="reply-{{ comment.pk }}">Trả lời {{ comment.nguoi_dung|ho_ten }}</label>

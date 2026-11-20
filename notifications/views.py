@@ -1,5 +1,7 @@
-from accounts.views._chung import ho_ten
 import uuid
+from functools import wraps
+
+from accounts.views._chung import ho_ten
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -7,9 +9,10 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from projectp.models import (
@@ -24,7 +27,21 @@ from .permissions import (
     can_manage_draft, can_publish_notices, can_read_notice, can_track_notice,
     resolve_scope_user_ids,
 )
-from .services import acknowledge_notice, cancel_notice_draft, publish_notice, save_notice_draft
+from .services import acknowledge_notice, cancel_notice_draft, preview_recipient_count, publish_notice, save_notice_draft
+
+
+def _notice_read_errors(view):
+    @wraps(view)
+    def wrapped(request, *args, **kwargs):
+        try:
+            return view(request, *args, **kwargs)
+        except Http404:
+            return render(request, "notifications/unavailable.html", status=404)
+        except DatabaseError:
+            return render(request, "notifications/unavailable.html", {
+                "load_failed": True, "retry_url": request.get_full_path(),
+            }, status=503)
+    return wrapped
 
 
 def _published_notices_for(user):
@@ -63,6 +80,7 @@ def _notice_form_context(request, form, *, notice=None, is_edit=False, correctio
 
 
 @login_required(login_url="accounts:login")
+@_notice_read_errors
 def notice_list(request):
     published = _published_notices_for(request.user)
     drafts = []
@@ -79,6 +97,29 @@ def notice_list(request):
         "draft_notices": drafts,
         "can_publish": can_publish_notices(request.user),
     })
+
+
+@login_required(login_url="accounts:login")
+@require_POST
+def notice_preview(request):
+    if not can_publish_notices(request.user):
+        return JsonResponse({"errors": ["Bạn chưa được cấp quyền phát hành thông báo."]}, status=403)
+    form = OfficialNoticeForm(request.POST)
+    try:
+        if not form.is_valid():
+            return JsonResponse({"errors": list(next(iter(form.errors.values())))}, status=400)
+        data = form.cleaned_data
+        if not data["tieu_de"]:
+            return JsonResponse({"errors": ["Nhập tiêu đề trước khi phát hành."]}, status=400)
+        reference = data["thong_bao_tham_chieu"]
+        if reference and not can_read_notice(request.user, reference):
+            return JsonResponse({"errors": ["Thông báo tham chiếu không khả dụng."]}, status=403)
+        count = preview_recipient_count(data)
+    except ValidationError as exc:
+        return JsonResponse({"errors": exc.messages}, status=400)
+    except DatabaseError:
+        return JsonResponse({"errors": ["Chưa kiểm tra được phạm vi người nhận. Vui lòng thử lại."]}, status=503)
+    return JsonResponse({"recipient_count": count})
 
 
 @login_required(login_url="accounts:login")
@@ -135,7 +176,7 @@ def notice_create(request, reference_id=None):
                     return redirect("notifications:detail", pk=published.pk)
                 messages.success(request, "Bản nháp thông báo đã được lưu.")
                 return redirect("notifications:edit_draft", pk=draft.pk)
-            except (ValidationError, IntegrityError) as exc:
+            except (ValidationError, DatabaseError) as exc:
                 if isinstance(exc, ValidationError):
                     error_messages = exc.messages
                 else:
@@ -196,7 +237,7 @@ def notice_edit_draft(request, pk):
                     return redirect("notifications:detail", pk=published.pk)
                 messages.success(request, "Bản nháp đã được cập nhật.")
                 return redirect("notifications:edit_draft", pk=draft.pk)
-            except (ValidationError, IntegrityError) as exc:
+            except (ValidationError, DatabaseError) as exc:
                 error_messages = exc.messages if isinstance(exc, ValidationError) else [
                     "Không thể lưu/phát hành do xung đột dữ liệu. Bản nháp hợp lệ được giữ nguyên; vui lòng tải lại và thử lại."
                 ]
@@ -228,6 +269,7 @@ def notice_cancel_draft(request, pk):
 
 
 @login_required(login_url="accounts:login")
+@_notice_read_errors
 def notice_detail(request, pk):
     notice = get_object_or_404(
         ThongBaoChinhThuc.objects.select_related(
@@ -239,7 +281,7 @@ def notice_detail(request, pk):
         if not can_manage_draft(request.user, notice):
             raise PermissionDenied("Bạn không được xem bản nháp này.")
     elif not can_read_notice(request.user, notice):
-        raise PermissionDenied("Bạn không còn quyền đọc thông báo này.")
+        return render(request, "notifications/unavailable.html", status=404)
 
     attachments = DinhKem.objects.filter(
         bai_viet=notice.bai_viet,
@@ -326,6 +368,7 @@ def notice_ack_confirm(request, pk):
 
 
 @login_required(login_url="accounts:login")
+@_notice_read_errors
 def notice_tracking(request, pk):
     notice = get_object_or_404(
         ThongBaoChinhThuc.objects.select_related("bai_viet", "nguoi_phu_trach", "nguoi_xuat_ban"),
@@ -334,14 +377,14 @@ def notice_tracking(request, pk):
     )
     if not can_track_notice(request.user, notice):
         raise PermissionDenied("Bạn không có quyền theo dõi tập người nhận của thông báo này.")
-    # A tracking role is independently authorized by the dedicated business permission;
-    # it does not need to be part of the reader/recipient audience.
+    # Quyền theo dõi và phạm vi được giao được kiểm tra tách khỏi quyền đọc nội dung.
     search_term = request.GET.get("q", "").strip()[:100]
     status_filter = request.GET.get("status", "all").strip()
     if status_filter not in {"all", "acknowledged", "pending", "lost_access"}:
         status_filter = "all"
 
     try:
+        report_at = timezone.now()
         all_recipients = NguoiNhanThongBao.objects.filter(
             thong_bao=notice,
             bat_buoc_xac_nhan=True,
@@ -400,6 +443,7 @@ def notice_tracking(request, pk):
     return render(request, "notifications/tracking.html", {
         "notice": notice,
         "tracking": stats,
+        "report_at": report_at,
         "recipient_rows": recipient_rows,
         "page_obj": page_obj,
         "search_term": search_term,
@@ -414,6 +458,7 @@ def notice_tracking(request, pk):
 
 
 @login_required(login_url="accounts:login")
+@_notice_read_errors
 def notice_attachment_download(request, attachment_id):
     attachment = get_object_or_404(
         DinhKem.objects.select_related("bai_viet", "tep_tin"),
@@ -428,11 +473,17 @@ def notice_attachment_download(request, attachment_id):
     else:
         allowed = can_read_notice(request.user, notice)
     if not allowed:
-        raise PermissionDenied("Bạn không có quyền tải tệp của thông báo này.")
-    if not attachment.tep_tin.tep:
-        raise Http404("Tệp không còn khả dụng.")
+        return render(request, "notifications/unavailable.html", status=404)
+    try:
+        file = attachment.tep_tin.tep.open("rb")
+    except (OSError, ValueError):
+        return render(request, "notifications/unavailable.html", {
+            "file_unavailable": True,
+            "notice_id": notice.pk,
+            "retry_url": request.get_full_path(),
+        }, status=404)
     response = FileResponse(
-        attachment.tep_tin.tep.open("rb"),
+        file,
         as_attachment=True,
         filename=attachment.tep_tin.ten_tep,
     )

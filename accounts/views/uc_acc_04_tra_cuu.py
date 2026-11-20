@@ -6,8 +6,9 @@ employee_detail : xem hồ sơ người khác; B3e: nhân viên không còn hồ
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.db import DatabaseError
 from django.db.models import Q
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 
 from projectp.models import HoSoNhanVien
 
@@ -21,6 +22,16 @@ User = get_user_model()
 @can_doi_mat_khau
 def directory(request):
     """GD-008 Danh bạ nhân viên."""
+    try:
+        return _render_directory(request)
+    except DatabaseError:
+        return render(request, "accounts/directory.html", {
+            "active_side": "directory",
+            "directory_error": "Chưa tải được danh bạ nhân viên. Vui lòng thử lại.",
+        }, status=503)
+
+
+def _render_directory(request):
     form = DirectorySearchForm(request.GET or None)
     people = HoSoNhanVien.objects.filter(nguoi_dung__is_active=True).order_by("nguoi_dung__first_name")
 
@@ -51,11 +62,13 @@ def directory(request):
 @can_doi_mat_khau
 def employee_detail(request, username):
     """GD-009 Hồ sơ nhân viên (chỉ đọc)."""
-    person = get_object_or_404(User, username=username, is_active=True)
+    person = User.objects.filter(username=username, is_active=True).first()
+    if person is None:
+        return render(request, "accounts/employee_unavailable.html", {"active_side": "directory"}, status=404)
     if person == request.user:
         return redirect("accounts:profile")
     context = thong_tin_ho_so(person, viewer=request.user)
     if context["profile"] is None:  # B3e: nhân viên không còn khả dụng
-        return render(request, "accounts/employee_unavailable.html", {"active_side": "directory"})
+        return render(request, "accounts/employee_unavailable.html", {"active_side": "directory"}, status=404)
     context.update({"is_me": False, "active_side": "directory"})
     return render(request, "accounts/profile.html", context)

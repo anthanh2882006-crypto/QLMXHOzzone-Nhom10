@@ -6,6 +6,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from social.navigation import listing_origin
 from django.views.decorators.http import require_GET, require_http_methods
 from projectp.models import BaiViet, KetLuanXuLy, LanThuPhuongAn, PhuongAnXuLy
 from .forms_collaboration import AnalysisForm, SolutionForm, TrialForm
@@ -82,6 +83,7 @@ def issue_detail(request, pk, post_id):
                 "attachments": attachments_for(ket_qua_thu=result) if result else [],
                 "can_record": open_issue
                 and post.nguoi_dang_id == request.user.pk
+                and trial.nguoi_thuc_hien_id == request.user.pk
                 and trial.trang_thai in ("cho_ket_qua", "dang_thuc_hien")
                 and result is None,
                 "can_assign": open_issue
@@ -95,6 +97,7 @@ def issue_detail(request, pk, post_id):
         post=post,
         attachments=attachments_for(bai_viet=post),
         open_issue=open_issue,
+        post_listing_origin=listing_origin(request),
         comments=[
             {"comment": comment, "attachments": attachments_for(binh_luan=comment)}
             for comment in post.binhluan_set.filter(da_xoa_mem=False)

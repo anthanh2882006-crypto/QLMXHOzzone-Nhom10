@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}{% if is_edit %}Biên tập bản nháp{% else %}Soạn thông báo chính thức{% endif %} | OZZONE{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261111-soc08-09-ui2">{% endblock %}
-{% block extra_js %}<script src="{% static 'notifications/js/notice-form.js' %}?v=20261111-soc08-09-ui2" defer></script>{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261120-preview">{% endblock %}
+{% block extra_js %}<script src="{% static 'notifications/js/notice-form.js' %}?v=20261120-preview" defer></script>{% endblock %}
 {% block content %}
 <div class="oz-notice-workspace">
     {% include "notifications/_context_nav.html" with notice_nav_active="notices" %}
@@ -22,7 +22,7 @@
     <div class="oz-info-box"><strong>Đính chính thông báo đã phát hành</strong><p>Thông báo mới này tham chiếu đến “{{ correction.bai_viet.tieu_de }}”. Bản đã phát hành sẽ được giữ nguyên, không sửa đè.</p></div>
     {% endif %}
 
-    <form method="post" enctype="multipart/form-data" class="oz-notice-form" novalidate>
+    <form method="post" enctype="multipart/form-data" class="oz-notice-form" data-preview-url="{% url 'notifications:preview' %}" novalidate>
         {% csrf_token %}
         {{ form.publish_key }}
         {{ form.thong_bao_tham_chieu }}
@@ -81,20 +81,39 @@
 
         {% if is_edit %}
         <div class="oz-form-footer">
-            <button class="oz-btn oz-btn-danger-outline" type="submit" formaction="{% url 'notifications:cancel_draft' notice.pk %}" formmethod="post" formnovalidate onclick="return confirm('Hủy bản nháp này? Nội dung sẽ được xóa mềm để giữ lịch sử.');">Hủy bản nháp</button>
+            <button class="oz-btn oz-btn-danger-outline" type="submit" formaction="{% url 'notifications:cancel_draft' notice.pk %}" formmethod="post" formnovalidate data-confirm-title="Hủy bản nháp?" data-confirm-message="Nội dung sẽ được xóa mềm để giữ lịch sử. Bản nháp đã hủy sẽ không được phát hành." data-confirm-label="Hủy bản nháp">Hủy bản nháp</button>
             <span class="oz-form-footer-spacer"></span>
             <button class="oz-btn oz-btn-secondary" type="submit" name="action" value="save_draft">Lưu bản nháp</button>
-            <button class="oz-btn oz-btn-primary" type="submit" name="action" value="publish">Phát hành thông báo</button>
+            <button class="oz-btn oz-btn-primary" type="submit" name="action" value="publish">Xem trước và phát hành</button>
         </div>
         {% else %}
         <div class="oz-form-footer">
             <a class="oz-btn oz-btn-quiet" href="{% url 'notifications:list' %}">Hủy</a>
             <span class="oz-form-footer-spacer"></span>
             <button class="oz-btn oz-btn-secondary" type="submit" name="action" value="save_draft">Lưu bản nháp</button>
-            <button class="oz-btn oz-btn-primary" type="submit" name="action" value="publish">Phát hành thông báo</button>
+            <button class="oz-btn oz-btn-primary" type="submit" name="action" value="publish">Xem trước và phát hành</button>
         </div>
         {% endif %}
     </form>
+    <dialog class="oz-confirm-dialog oz-notice-preview" id="oz-notice-preview" aria-labelledby="oz-notice-preview-title">
+        <h2 id="oz-notice-preview-title">Kiểm tra trước khi phát hành</h2>
+        <p data-preview-status role="status"></p>
+        <div class="oz-form-panel" data-preview-content hidden>
+            <h3 data-preview-title></h3>
+            <dl>
+                <dt>Phạm vi quyền xem</dt><dd data-preview-read></dd>
+                <dt>Phân phối</dt><dd data-preview-distribution></dd>
+                <dt>Người nhận dự kiến</dt><dd data-preview-count></dd>
+                <dt>Yêu cầu xác nhận</dt><dd data-preview-ack></dd>
+            </dl>
+            <div class="oz-notice-preview-body" data-preview-body></div>
+        </div>
+        <div class="oz-info-box" data-preview-warning hidden><strong>Nội dung cố định sau phát hành</strong><p>Nếu cần sửa thông tin đã công bố, hãy phát hành thông báo đính chính. Tập nhận được kiểm tra lại khi phát hành.</p></div>
+        <div class="oz-confirm-actions">
+            <button type="button" data-preview-back autofocus>Quay lại chỉnh sửa</button>
+            <button type="button" data-confirm-accept data-preview-publish disabled>Phát hành</button>
+        </div>
+    </dialog>
 </section>
     </main>
 </div>

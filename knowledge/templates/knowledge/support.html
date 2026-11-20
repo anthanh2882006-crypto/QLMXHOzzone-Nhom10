@@ -104,7 +104,7 @@
                                 {% endif %}
                             </div>
                             <div class="knw-support-actions">
-                                <a href="{% url 'knowledge:support_profile' candidate.user_id %}">Xem hồ sơ</a>
+                                <a href="{% url 'knowledge:support_profile' candidate.user_id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Xem hồ sơ</a>
                                 <a href="{% url 'knowledge:support' %}?context={{ context_query|urlencode }}&amp;reason={{ candidate.user_id }}{% if selected_skill %}&amp;skill={{ selected_skill }}{% endif %}{% if selected_department %}&amp;department={{ selected_department }}{% endif %}{% if selected_project %}&amp;project={{ selected_project }}{% endif %}">Xem lý do</a>
                             </div>
                         </div>
@@ -162,7 +162,7 @@
             </div>
         {% endif %}
         <p class="knw-reason-note">Các thông tin trên là căn cứ hiển thị theo dữ liệu được phép; hệ thống chưa tính điểm hoặc xếp hạng trọng số.</p>
-        <a class="knw-button" href="{% url 'knowledge:support_profile' reason_candidate.user_id %}">Xem hồ sơ</a>
+        <a class="knw-button" href="{% url 'knowledge:support_profile' reason_candidate.user_id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}">Xem hồ sơ</a>
     </section>
 </div>
 {% endif %}

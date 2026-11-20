@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Thông báo chính thức | OZZONE{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'social/css/social.css' %}">{% endblock %}
+{% block content %}
+<div class="social-page">
+  <section class="social-empty" role="alert">
+    {% if load_failed %}
+      <h1>Không tải được nội dung</h1>
+      <p>Chưa tải được dữ liệu thông báo. Vui lòng thử lại.</p>
+    {% elif file_unavailable %}
+      <h1>Tệp không khả dụng</h1>
+      <p>Bạn có thể thử lại hoặc quay về nội dung thông báo.</p>
+    {% else %}
+      <h1>Nội dung không khả dụng</h1>
+      <p>Thông báo có thể đã được ẩn hoặc quyền truy cập đã thay đổi.</p>
+    {% endif %}
+    {% if retry_url %}<a class="social-button social-button-primary" href="{{ retry_url }}">Thử lại</a>{% endif %}
+    {% if notice_id %}
+      <a class="social-button social-button-secondary" href="{% url 'notifications:detail' notice_id %}">Quay về thông báo</a>
+    {% else %}
+      <a class="social-button social-button-secondary" href="{% url 'notifications:list' %}">Về danh sách thông báo</a>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

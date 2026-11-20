@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Không tải được nội dung | OZZONE{% endblock %}
+{% block extra_css %}{{ block.super }}<link rel="stylesheet" href="{% static 'social/css/social.css' %}">{% endblock %}
+{% block content %}
+<div class="social-page"><section class="social-empty" role="alert">
+  <h1>Không tải được nội dung</h1>
+  {% if is_write %}<p>Chưa xác nhận được kết quả thao tác. Hãy mở lại trang và kiểm tra trạng thái trước khi gửi lại; thao tác vừa gửi không tự động lặp lại.</p>
+  {% else %}<p>Chưa tải được dữ liệu. Bạn có thể thử lại hoặc quay về bảng tin.</p>{% endif %}
+  <a class="social-button social-button-primary" href="{{ retry_url }}">Thử lại</a>
+  <a class="social-button social-button-secondary" href="{% url 'social:feed' %}">Quay lại bảng tin</a>
+</section></div>
+{% endblock %}

@@ -213,19 +213,9 @@ def save_notice_draft(*, user, cleaned, files=(), notice=None, request=None):
         raise
 
 
-def _notice_audiences(notice):
-    doc_criteria = list(notice.tieu_chi.filter(muc_dich="doc").select_related(
-        "phong_ban", "cong_dong", "du_an", "nguoi_dung"
-    ))
-    distribution_criteria = list(notice.tieu_chi.filter(muc_dich="phan_phoi").select_related(
-        "phong_ban", "cong_dong", "du_an", "nguoi_dung"
-    ))
-    readable = resolve_scope_user_ids(
-        scope=notice.che_do_doc, criteria=doc_criteria, purpose="doc"
-    )
-    recipients = resolve_scope_user_ids(
-        scope=notice.che_do_phan_phoi, criteria=distribution_criteria, purpose="phan_phoi"
-    )
+def _resolve_audiences(read_scope, distribution_scope, read_criteria, distribution_criteria):
+    readable = resolve_scope_user_ids(scope=read_scope, criteria=read_criteria, purpose="doc")
+    recipients = resolve_scope_user_ids(scope=distribution_scope, criteria=distribution_criteria, purpose="phan_phoi")
     outside = recipients - readable
     if outside:
         raise ValidationError(
@@ -233,6 +223,34 @@ def _notice_audiences(notice):
             "Hãy điều chỉnh phạm vi đọc hoặc người nhận."
         )
     return readable, recipients
+
+
+def preview_recipient_count(cleaned):
+    """Dự kiến số người nhận từ lựa chọn hiện tại; chỉ truy vấn, chưa phát hành."""
+    payload = _criteria_payload(cleaned)
+    criteria = {
+        purpose: [TieuChiThongBao(loai_tieu_chi=kind, **{kind: target})
+                  for kind, targets in groups.items() for target in targets]
+        for purpose, groups in payload.items()
+    }
+    _, recipients = _resolve_audiences(
+        cleaned["che_do_doc"], cleaned["che_do_phan_phoi"], criteria["doc"], criteria["phan_phoi"],
+    )
+    if not recipients:
+        raise ValidationError("Tập người nhận không có tài khoản nhân viên đang hoạt động.")
+    return len(recipients)
+
+
+def _notice_audiences(notice):
+    doc_criteria = list(notice.tieu_chi.filter(muc_dich="doc").select_related(
+        "phong_ban", "cong_dong", "du_an", "nguoi_dung"
+    ))
+    distribution_criteria = list(notice.tieu_chi.filter(muc_dich="phan_phoi").select_related(
+        "phong_ban", "cong_dong", "du_an", "nguoi_dung"
+    ))
+    return _resolve_audiences(
+        notice.che_do_doc, notice.che_do_phan_phoi, doc_criteria, distribution_criteria,
+    )
 
 
 def _validate_notice_audience(notice, *, require_recipients):

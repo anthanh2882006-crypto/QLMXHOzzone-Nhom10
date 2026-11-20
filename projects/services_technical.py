@@ -127,7 +127,8 @@ def record_result(user, project, trial, data):
                 or KetQuaThu.objects.filter(lan_thu=trial).exists()
             ):
                 raise ValidationError("Lần thử đã có kết quả hoặc không còn chờ kết quả.")
-            trial.nguoi_thuc_hien = user
+            if trial.nguoi_thuc_hien_id != user.pk:
+                raise ValidationError("Người thực hiện của lần thử chưa khớp với người đăng bài. Hãy kiểm tra lại phân công trước khi ghi kết quả.")
             completed = data.get("hoan_tat_luc") or timezone.now()
             if completed < trial.ngay_thu or completed > timezone.now():
                 raise ValidationError(

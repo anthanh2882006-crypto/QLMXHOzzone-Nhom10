@@ -18,10 +18,19 @@
     <section class="knw-unavailable-card">
         <div class="knw-unavailable-icon">▤</div>
         <div class="knw-unavailable-title-row">
+            {% if support_return_url %}
+            <a class="knw-back-button" href="{{ support_return_url }}">← Về danh sách hỗ trợ</a>
+            <h1>Nhân viên không còn khả dụng</h1>
+            {% else %}
             <a class="knw-back-button" href="{% url 'knowledge:search' %}">← Quay lại</a>
             <h1>Bạn hiện không thể mở nội dung này</h1>
+            {% endif %}
         </div>
+        {% if support_return_url %}
+        <p>Quay lại danh sách để tìm đồng nghiệp khác.</p>
+        {% else %}
         <p>Nội dung có thể đã thay đổi trạng thái hoặc quyền truy cập. Quay lại để chọn nội dung khác.</p>
+        {% endif %}
     </section>
 </div>
 {% endblock %}

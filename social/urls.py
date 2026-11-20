@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from .handling import database_errors
 
 app_name = "social"
 
@@ -18,3 +19,7 @@ urlpatterns = [
     path("tep/<int:attachment_id>/tai-xuong/", views.attachment_download, name="attachment_download"),
     path("thong-bao-chinh-thuc/<int:pk>/", views.notice_detail, name="notice_detail"),
 ]
+
+# Retry opens the page again; it does not repeat a potentially completed POST.
+for pattern in urlpatterns:
+    pattern.callback = database_errors(pattern.callback)

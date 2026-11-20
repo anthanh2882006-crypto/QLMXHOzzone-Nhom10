@@ -5,6 +5,7 @@
     {% if can_comment %}
         <form method="post" action="{{ post_links.comment_create }}" class="oz-discussion-form">
             {% csrf_token %}
+            {% if post_listing_origin %}<input type="hidden" name="return_to" value="{{ post_listing_origin }}">{% endif %}
             <input type="hidden" name="request_token" value="{{ comment_form.request_token.value }}">
             <label for="comment-content">Bình luận của bạn</label>
             <textarea id="comment-content" name="noi_dung" rows="3" maxlength="5000" required placeholder="Viết bình luận của bạn..."></textarea>
