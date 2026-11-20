@@ -3,6 +3,7 @@
 from copy import deepcopy
 import hashlib
 import json
+import logging
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.auth import get_user_model
@@ -16,6 +17,43 @@ from django.db.models import F
 from django.shortcuts import redirect
 from projectp.models import HoSoNhanVien, NhatKyNghiepVu
 from notifications.permissions import TRACK_GROUP_PREFIX
+
+
+logger = logging.getLogger(__name__)
+
+
+def audit_denied_grant(request, resource, object_id):
+    if request.method != "POST":
+        return
+    identifier = str(object_id or "")
+    if not (identifier.isascii() and identifier.isdecimal() and len(identifier) <= 19):
+        identifier = ""
+    try:
+        NhatKyNghiepVu.objects.create(
+            nguoi_dung=request.user,
+            hanh_dong="UC-ACC-05:grant_denied",
+            loai_tai_nguyen=resource,
+            ma_tai_nguyen=identifier,
+            ly_do="Yêu cầu quản trị quyền vượt quyền hoặc phạm vi được cấp.",
+            du_lieu_sau={"ket_qua": "tu_choi"},
+        )
+    except DatabaseError:
+        logger.exception("Chưa ghi được nhật ký yêu cầu bị từ chối của UC-ACC-05.")
+
+
+def has_invalid_grant_choices(request, response, fields):
+    if request.method != "POST" or not fields.intersection(request.POST):
+        return False
+    admin_form = (getattr(response, "context_data", None) or {}).get("adminform")
+    if admin_form is None:
+        return False
+    errors = admin_form.form.errors.as_data()
+    invalid_choices = {"invalid_choice", "invalid_pk_value", "invalid_list"}
+    return any(
+        error.code in invalid_choices
+        for name in fields
+        for error in errors.get(name, [])
+    )
 
 
 def account_snapshot(user):
@@ -155,17 +193,24 @@ class OzzoneUserAdmin(UserAdmin):
         restricted = (
             {"is_staff", "is_superuser"} if self.can_manage_grants(request.user) else self.privilege_fields
         )
-        if (
-            request.method == "POST"
-            and not request.user.is_superuser
-            and restricted.intersection(request.POST)
-        ):
-            raise PermissionDenied("Quyền sửa tài khoản không bao gồm cấp nhóm, quyền hoặc cờ Admin.")
         try:
-            return super().changeform_view(request, object_id, form_url, extra_context)
+            if (
+                request.method == "POST"
+                and not request.user.is_superuser
+                and restricted.intersection(request.POST)
+            ):
+                raise PermissionDenied("Quyền sửa tài khoản không bao gồm cấp nhóm, quyền hoặc cờ Admin.")
+            response = super().changeform_view(request, object_id, form_url, extra_context)
+        except PermissionDenied:
+            # Django đã hoàn tác giao dịch biểu mẫu trước khi ghi sự kiện bị từ chối.
+            audit_denied_grant(request, "NGUOI_DUNG", object_id)
+            raise
         except DatabaseError:
             messages.error(request, "Chưa lưu được tài khoản. Dữ liệu cũ được giữ, vui lòng thử lại.")
             return redirect(request.path)
+        if has_invalid_grant_choices(request, response, {"groups", "user_permissions"}):
+            audit_denied_grant(request, "NGUOI_DUNG", object_id)
+        return response
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
         if not request.user.is_superuser:
@@ -188,19 +233,29 @@ class OzzoneUserAdmin(UserAdmin):
                 kwargs["queryset"] = Group.objects.filter(pk__in=ids)
         return super().formfield_for_manytomany(db_field, request, **kwargs)
 
+    def log_change(self, request, obj, message):
+        result = super().log_change(request, obj, message)
+        if request.resolver_match and request.resolver_match.url_name == "auth_user_password_change":
+            requires_change = HoSoNhanVien.objects.filter(
+                nguoi_dung=obj, bat_buoc_doi_mat_khau=True,
+            ).exists()
+            NhatKyNghiepVu.objects.create(
+                nguoi_dung=request.user,
+                hanh_dong=(
+                    "UC-ACC-05:temporary_password"
+                    if obj.has_usable_password()
+                    else "UC-ACC-05:disable_password"
+                ),
+                loai_tai_nguyen="NGUOI_DUNG",
+                ma_tai_nguyen=str(obj.pk),
+                du_lieu_sau={"bat_buoc_doi_mat_khau": requires_change},
+            )
+        return result
+
     def user_change_password(self, request, id, form_url=""):
         try:
             with transaction.atomic():
-                response = super().user_change_password(request, id, form_url)
-                if request.method == "POST" and response.status_code == 302:
-                    NhatKyNghiepVu.objects.create(
-                        nguoi_dung=request.user,
-                        hanh_dong="UC-ACC-05:temporary_password",
-                        loai_tai_nguyen="NGUOI_DUNG",
-                        ma_tai_nguyen=str(id),
-                        du_lieu_sau={"bat_buoc_doi_mat_khau": True},
-                    )
-                return response
+                return super().user_change_password(request, id, form_url)
         except DatabaseError:
             messages.error(request, "Chưa đặt lại được mật khẩu. Mật khẩu cũ được giữ.")
             return redirect(request.path)
@@ -213,6 +268,16 @@ admin.site.register(User, OzzoneUserAdmin)
 
 
 class OzzoneGroupAdmin(GroupAdmin):
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        try:
+            response = super().changeform_view(request, object_id, form_url, extra_context)
+        except PermissionDenied:
+            audit_denied_grant(request, "NHOM_QUYEN", object_id)
+            raise
+        if has_invalid_grant_choices(request, response, {"permissions"}):
+            audit_denied_grant(request, "NHOM_QUYEN", object_id)
+        return response
+
     def has_add_permission(self, request):
         return (
             request.user.is_superuser or request.user.has_perm("auth.change_permission")
