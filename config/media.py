@@ -8,6 +8,7 @@ from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_GET
 
+from accounts.views._chung import can_use_employee_directory
 from communities.views import la_quan_tri_noi_dung, tu_cach
 from projectp.models import DinhKem, HoSoNhanVien, TepTin
 from social.permissions import accessible_posts
@@ -17,6 +18,8 @@ from social.permissions import accessible_posts
 @require_GET
 def media_file(request, path):
     if HoSoNhanVien.objects.filter(anh_dai_dien=path, nguoi_dung__is_active=True).exists():
+        if not can_use_employee_directory(request.user):
+            raise Http404("Ảnh hồ sơ không khả dụng trong phạm vi được phép đọc.")
         storage, filename, download_name = default_storage, path, None
     else:
         file = get_object_or_404(TepTin, tep=path, trang_thai="san_sang", da_xoa_mem=False)
