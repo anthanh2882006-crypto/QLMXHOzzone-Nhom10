@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
 from projectp.models import (
+    BaiViet,
     BinhLuan,
     DuAn,
     KetLuanXuLy,
@@ -88,16 +89,23 @@ def project_history(request, pk, admin_site=None):
             for source in sources
         ]
     if form.is_valid():
-        posts = readable_project_posts(request.user, project)
+        readable = readable_project_posts(request.user, project)
+        readable_ids = set(readable.values_list("pk", flat=True))
+        posts = BaiViet.objects.filter(
+            Q(du_an=project, cong_dong__isnull=True) | Q(cong_dong=project.cong_dong, du_an=project)
+            | Q(cong_dong=project.cong_dong, du_an__isnull=True)
+        ).exclude(loai_bai_viet=BaiViet.Kind.ANNOUNCEMENT)
         post_ids = set(posts.values_list("pk", flat=True))
-        post_devices = dict(posts.values_list("pk", "ma_the_thiet_bi_id"))
-        technical_ids = set(posts.filter(che_do_xu_ly=True).values_list("pk", flat=True))
+        post_devices = dict(readable.values_list("pk", "ma_the_thiet_bi_id"))
+        technical_ids = set(readable.filter(che_do_xu_ly=True).values_list("pk", flat=True))
         rows = []
 
         def add(date, kind, label, actor, post_id=None, detail="", detail_url=None):
+            if date is None:
+                return
             href = (
                 reverse("projects:post_detail", kwargs={"pk": pk, "post_id": post_id})
-                if post_id
+                if post_id in readable_ids
                 else None
             )
             if post_id in technical_ids:
@@ -113,6 +121,10 @@ def project_history(request, pk, admin_site=None):
                     + "#"
                     + fragment
                 )
+            if post_id is not None and post_id not in readable_ids:
+                detail = "Không có quyền mở nội dung nguồn."
+                if kind == "result":
+                    label = "Ghi nhận kết quả thực hiện"
             rows.append(
                 {
                     "time": date,
@@ -133,7 +145,8 @@ def project_history(request, pk, admin_site=None):
             add(
                 post.ngay_tao,
                 "post",
-                post.tieu_de or post.get_loai_bai_viet_display(),
+                (post.tieu_de or post.get_loai_bai_viet_display())
+                if post.pk in readable_ids else "Đăng nội dung dự án",
                 post.nguoi_dang,
                 post.pk,
                 f"{device} · {asset}",

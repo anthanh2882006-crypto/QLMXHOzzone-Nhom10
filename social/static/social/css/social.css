@@ -774,37 +774,6 @@
     resize: vertical;
 }
 .social-modal-form textarea::placeholder { color: #8A959D; }
-.social-modal-attachment-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-height: 72px;
-    padding: 12px 15px;
-    border-radius: 10px;
-    background: #F4F6F8;
-}
-.social-modal-file-icon { display: grid; flex: 0 0 24px; width: 24px; height: 24px; place-items: center; color: #4D70FF; }
-.social-modal-file-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.social-modal-file-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: 4px; }
-.social-modal-file-copy strong { color: #3E4B52; font-size: 13px; }
-.social-modal-file-copy small { overflow: hidden; color: var(--oz-muted, #697582); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-.social-modal-file-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 112px;
-    min-height: 42px;
-    padding: 0 13px;
-    border-radius: 8px;
-    color: var(--oz-brand, #3B7132);
-    background: #FFFFFF;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: pointer;
-}
-.social-modal-file-button:hover { background: var(--oz-brand-soft, #EAF1E7); }
-.social-modal-form input[type="file"] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-.social-modal-form input[type="file"]:focus + .social-modal-file-button { outline: 2px solid var(--oz-brand, #3B7132); outline-offset: 2px; }
 .social-modal-form-footer { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-top: 4px; padding-top: 18px; border-top: 1px solid #E8ECEB; }
 .social-modal-change-type { border: 0; color: var(--oz-brand, #3B7132); background: transparent; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
 .social-modal-submit { min-width: 190px; }

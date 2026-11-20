@@ -10,7 +10,7 @@ from django.urls import path, reverse
 from django.utils import timezone
 from django.utils.html import format_html
 from projectp.models import CommunityRole, DuAn, NhatKyNghiepVu, ThanhVienCongDong
-from .permissions import readable_projects, readable_project_posts
+from .permissions import administrable_projects, readable_projects, readable_project_posts
 from .services_manage import revision, state
 from .policies import archive_reasons, pending_knowledge_sources
 
@@ -105,7 +105,7 @@ class ProjectAdmin(admin.ModelAdmin):
         return (
             queryset
             if request.user.is_superuser
-            else queryset.filter(pk__in=readable_projects(request.user).values("pk"))
+            else queryset.filter(pk__in=administrable_projects(request.user).values("pk"))
         )
 
     def get_fields(self, request, obj=None):
@@ -125,7 +125,7 @@ class ProjectAdmin(admin.ModelAdmin):
         return obj is None or (
             not obj.da_luu_tru
             and not obj.cong_dong.da_xoa_mem
-            and (request.user.is_superuser or readable_projects(request.user).filter(pk=obj.pk).exists())
+            and (request.user.is_superuser or administrable_projects(request.user).filter(pk=obj.pk).exists())
         )
 
     @admin.display(description="Lịch sử theo quyền nguồn")

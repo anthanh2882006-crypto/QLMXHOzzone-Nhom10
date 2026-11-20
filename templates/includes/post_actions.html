@@ -3,7 +3,7 @@
 <footer class="oz-post-footer">
     <p class="oz-post-counts">{{ post.reaction_count }} đồng nghiệp đã bày tỏ cảm xúc <span>{{ post.comment_count }} bình luận</span></p>
     <div class="oz-post-actions">
-        {% if not post.du_an.da_luu_tru %}
+        {% if post.interaction_permitted %}
             <form method="post" action="{{ post_links.reaction_set }}">
                 {% csrf_token %}
                 <input type="hidden" name="state" value="{% if post.liked_by_me %}off{% else %}on{% endif %}">
@@ -12,7 +12,7 @@
                 <button type="submit"{% if post.liked_by_me %} class="is-selected"{% endif %}>♡ {% if post.liked_by_me %}Đã thích{% else %}Thích{% endif %}</button>
             </form>
         {% endif %}
-        <a href="{{ post_links.comments }}">{% if post.du_an.da_luu_tru or post.che_do_xu_ly %}Xem trao đổi{% else %}Bình luận{% endif %}</a>
+        <a href="{{ post_links.comments }}">{% if not post.interaction_permitted or post.che_do_xu_ly %}Xem trao đổi{% else %}Bình luận{% endif %}</a>
         <form method="post" action="{{ post_links.save_set }}">
             {% csrf_token %}
             <input type="hidden" name="state" value="{% if post.saved_by_me %}off{% else %}on{% endif %}">

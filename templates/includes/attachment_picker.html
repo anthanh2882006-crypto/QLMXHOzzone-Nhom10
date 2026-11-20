@@ -1,0 +1,25 @@
+<div class="oz-attachment-picker" data-attachment-picker>
+    <button class="oz-attachment-button" type="button" data-attachment-open hidden>Thêm tệp đính kèm</button>
+    <p class="oz-attachment-summary" data-attachment-summary aria-live="polite" hidden></p>
+    <div data-attachment-input>
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="oz-attachment-summary">{{ field.help_text }}</p>{% endif %}
+    </div>
+    {{ field.errors }}
+    {% if field.errors %}<p class="oz-attachment-summary">Chọn lại tệp trước khi gửi.</p>{% endif %}
+    <dialog class="oz-attachment-dialog" aria-label="Thêm tệp đính kèm">
+        <h2>Thêm tệp đính kèm</h2>
+        <div class="oz-attachment-drop" data-attachment-drop>
+            <p>Kéo tệp vào đây hoặc chọn từ thiết bị.</p>
+            <button class="oz-attachment-button" type="button" data-attachment-browse>Chọn tệp từ thiết bị</button>
+        </div>
+        <div class="oz-attachment-error" data-attachment-error role="alert" hidden></div>
+        <p class="oz-attachment-summary" data-attachment-empty>Chưa chọn tệp.</p>
+        <ul class="oz-attachment-selection" data-attachment-selection aria-label="Tệp đã chọn"></ul>
+        <div class="oz-attachment-actions">
+            <button class="oz-attachment-button" type="button" data-attachment-clear disabled>Bỏ chọn tệp</button>
+            <button class="oz-attachment-button oz-attachment-primary" type="button" data-attachment-done>Trở lại biểu mẫu</button>
+        </div>
+    </dialog>
+</div>

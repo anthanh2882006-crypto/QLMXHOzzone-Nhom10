@@ -23,6 +23,12 @@
       <button class="oz-btn" type="submit">Lọc</button>
     </form>
 
+    {% if invalid_filters %}
+    <div class="oz-alert oz-alert-warn" role="alert">
+      <p>Tiêu chí lọc không hợp lệ. Kiểm tra rồi thử lại.</p>
+      {{ form.errors }}
+    </div>
+    {% else %}
     <section class="oz-card">
       <h2 class="oz-card-title">{{ rows|length }} thành viên</h2>
       {% if rows %}
@@ -60,6 +66,7 @@
         <p class="oz-empty">Không có thành viên phù hợp.</p>
       {% endif %}
     </section>
+    {% endif %}
     {% if is_project %}<p class="oz-muted oz-small">Tư cách và vai trò dự án được quản lý tại Dự án. Chủ sở hữu cộng đồng bàn giao trách nhiệm tại đây.</p>{% endif %}
   {% endif %}
 </div>

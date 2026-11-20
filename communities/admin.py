@@ -13,7 +13,8 @@ from django.shortcuts import redirect
 from django.utils import timezone
 from projectp.models import CongDong, CommunityRole, DuAn, NhatKyNghiepVu, ThanhVienCongDong, YeuCauThamGia
 from projectp.admin import WorkflowReadOnlyAdmin
-from projects.permissions import readable_projects
+from projects.permissions import administrable_projects, readable_projects
+from projectp.admin_scopes import COMMUNITY_ADMIN_PREFIX, assigned_scopes, scope_ids
 from .services import handover_roles, lock_community
 
 
@@ -51,7 +52,7 @@ class CommunityAdminForm(forms.ModelForm):
 
     class Meta:
         model = CongDong
-        fields = ("ten_cong_dong", "mo_ta", "quy_tac_tham_gia", "pham_vi_truy_cap", "da_xoa_mem")
+        fields = ("ten_cong_dong", "chu_de", "mo_ta", "quy_tac_tham_gia", "pham_vi_truy_cap", "da_xoa_mem")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -124,7 +125,7 @@ class CongDongAdmin(admin.ModelAdmin):
         "ngay_tao",
     )
     list_filter = ("loai_cong_dong", "quy_tac_tham_gia", "pham_vi_truy_cap", "da_xoa_mem")
-    search_fields = ("ten_cong_dong", "mo_ta")
+    search_fields = ("ten_cong_dong", "chu_de", "mo_ta")
     date_hierarchy = "ngay_tao"
 
     def get_form(self, request, obj=None, **kwargs):
@@ -141,12 +142,26 @@ class CongDongAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
+        scopes = assigned_scopes(request.user, COMMUNITY_ADMIN_PREFIX)
+        general = Q(loai_cong_dong=CongDong.Type.GENERAL)
+        if "toan_cong_ty" not in scopes:
+            general &= Q(pk__in=scope_ids(scopes, "cong_dong"))
+        project_access = readable_projects(request.user) | administrable_projects(request.user)
         return queryset.filter(
-            Q(loai_cong_dong=CongDong.Type.GENERAL) | Q(du_an_lien_ket__in=readable_projects(request.user))
+            general | Q(
+                loai_cong_dong=CongDong.Type.PROJECT,
+                pk__in=scope_ids(scopes, "cong_dong"),
+                du_an_lien_ket__in=project_access,
+            )
+        )
+
+    def has_view_permission(self, request, obj=None):
+        return super().has_view_permission(request, obj) and (
+            obj is None or self.get_queryset(request).filter(pk=obj.pk).exists()
         )
 
     def get_fields(self, request, obj=None):
-        fields = ["ten_cong_dong", "mo_ta", "quy_tac_tham_gia", "pham_vi_truy_cap"]
+        fields = ["ten_cong_dong", "chu_de", "mo_ta", "quy_tac_tham_gia", "pham_vi_truy_cap"]
         if obj is None:
             return fields + ["owner_ban_dau"]
         fields += ["loai_cong_dong", "nguoi_tao", "da_xoa_mem", "ngay_xoa", "nguoi_xoa"]
@@ -164,12 +179,12 @@ class CongDongAdmin(admin.ModelAdmin):
         return False
 
     def has_change_permission(self, request, obj=None):
-        if not super().has_change_permission(request, obj):
+        if not super().has_change_permission(request, obj) or not self.has_view_permission(request, obj):
             return False
         project = DuAn.objects.filter(cong_dong=obj).first() if obj else None
         return not project or (
             not project.da_luu_tru
-            and (request.user.is_superuser or readable_projects(request.user).filter(pk=project.pk).exists())
+            and (request.user.is_superuser or (readable_projects(request.user) | administrable_projects(request.user)).filter(pk=project.pk).exists())
         )
 
     def save_model(self, request, obj, form, change):
@@ -204,6 +219,7 @@ class CongDongAdmin(admin.ModelAdmin):
                 current.da_xoa_mem = form.cleaned_data.get("da_xoa_mem", current.da_xoa_mem)
                 current.ngay_xoa = (current.ngay_xoa or timezone.now()) if current.da_xoa_mem else None
                 current.nguoi_xoa = request.user if current.da_xoa_mem else None
+            current.chu_de = form.cleaned_data["chu_de"]
             current.full_clean()
             current.save()
             old, new = form.cleaned_data.get("ban_giao_tu"), form.cleaned_data.get("ban_giao_cho")

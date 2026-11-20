@@ -5,8 +5,13 @@
   <p class="oz-breadcrumb">Tài khoản / <a href="{% url 'accounts:directory' %}">Danh bạ nhân viên</a></p>
   <h1 class="oz-page-title">Không thể mở hồ sơ</h1>
   <div class="oz-alert oz-alert-warn">
+    {% if load_error %}
+    <p class="oz-alert-title">Chưa tải được hồ sơ nhân viên</p>
+    <a class="oz-btn" href="{{ request.get_full_path }}">Thử lại</a>
+    {% else %}
     <p class="oz-alert-title">Nhân viên không còn khả dụng</p>
     <p>Tài khoản đã ngừng hoạt động hoặc chưa có hồ sơ nhân viên.</p>
+    {% endif %}
   </div>
   <a class="oz-btn" href="{% url 'accounts:directory' %}">Quay lại danh bạ</a>
 </div>

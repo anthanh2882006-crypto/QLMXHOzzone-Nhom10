@@ -77,3 +77,103 @@
         gap: 8px;
     }
 }
+.oz-attachment-picker {
+    margin: 10px 0;
+    min-width: 0;
+}
+
+.oz-attachment-picker [hidden],
+.oz-attachment-filters[hidden],
+[data-attachment-no-match][hidden],
+[data-attachment-row][hidden] {
+    display: none !important;
+}
+
+.oz-attachment-button {
+    padding: 9px 13px;
+    border: 1px solid var(--oz-border, #dce5dc);
+    border-radius: 8px;
+    background: var(--oz-surface, #fff);
+    color: var(--oz-brand, #3b7132);
+    font: inherit;
+    cursor: pointer;
+}
+
+.oz-attachment-button:disabled { opacity: 0.6; cursor: default; }
+
+.oz-attachment-primary {
+    background: var(--oz-brand, #3b7132);
+    border-color: var(--oz-brand, #3b7132);
+    color: #fff;
+}
+
+.oz-attachment-dialog {
+    width: min(490px, calc(100vw - 32px));
+    max-height: calc(100dvh - 36px);
+    padding: 22px;
+    border: 1px solid var(--oz-border, #dce5dc);
+    border-radius: 14px;
+    background: var(--oz-surface, #fff);
+    color: var(--oz-text, #202d34);
+    overflow: auto;
+}
+
+.oz-attachment-dialog::backdrop { background: rgb(20 35 27 / 48%); }
+
+.oz-attachment-dialog h2,
+.oz-post-attachments h2 {
+    margin: 0;
+    font-size: 1.125rem;
+}
+
+.oz-attachment-drop {
+    margin: 16px 0;
+    padding: 15px;
+    border: 1px dashed var(--oz-brand, #3b7132);
+    border-radius: 8px;
+    background: var(--oz-canvas, #f2f4f0);
+}
+
+.oz-attachment-drop input[type="file"] {
+    display: block;
+    width: 100%;
+}
+
+.oz-attachment-summary {
+    margin: 5px 0;
+    font-size: 0.875rem;
+    color: var(--oz-muted, #697582);
+    overflow-wrap: anywhere;
+}
+
+.oz-attachment-selection { padding-left: 1.25rem; overflow-wrap: anywhere; }
+.oz-attachment-selection:empty { display: none; }
+.oz-attachment-error { margin-bottom: 10px; color: #a23b32; }
+
+.oz-attachment-actions,
+.oz-attachment-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+}
+
+.oz-attachment-actions { justify-content: flex-end; margin-top: 14px; }
+.oz-attachment-filters { margin: 8px 0; align-items: end; }
+.oz-attachment-filters label { display: grid; gap: 4px; font-size: 0.875rem; }
+
+.oz-attachment-filters input,
+.oz-attachment-filters select {
+    border: 1px solid var(--oz-border, #dce5dc);
+    border-radius: 6px;
+    background: var(--oz-surface, #fff);
+    color: var(--oz-text, #202d34);
+    padding: 7px 9px;
+    font: inherit;
+}
+
+.oz-attachment-filters [role="status"] { width: 100%; margin: 0; }
+[data-attachment-list] summary {
+    color: var(--oz-brand, #3b7132);
+    font-weight: 700;
+    cursor: pointer;
+}

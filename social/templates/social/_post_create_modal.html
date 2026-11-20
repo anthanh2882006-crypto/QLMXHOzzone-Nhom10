@@ -85,15 +85,7 @@
                 <label class="social-sr-only" for="id_noi_dung">Nội dung bài viết</label>
                 <textarea id="id_noi_dung" name="noi_dung" rows="7" maxlength="20000" required placeholder="Bạn muốn chia sẻ điều gì với đồng nghiệp?">{{ post_form.noi_dung.value|default_if_none:"" }}</textarea>
 
-                <div class="social-modal-attachment-row">
-                    <span class="social-modal-file-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>
-                    </span>
-                    <span class="social-modal-file-copy"><strong>Thêm ảnh hoặc tài liệu</strong><small data-file-names>Đính kèm tối đa 5 tệp, 10 MB/tệp.</small></span>
-                    <input id="id_tep_dinh_kem" type="file" name="tep_dinh_kem" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.zip">
-                    <label class="social-modal-file-button" for="id_tep_dinh_kem">Chọn tệp</label>
-                </div>
-                {{ post_form.tep_dinh_kem.errors }}
+                {% include "includes/attachment_picker.html" with field=post_form.tep_dinh_kem %}
 
                 <div class="social-modal-form-footer">
                     <button class="social-modal-change-type" type="button" data-post-modal-back>Đổi loại nội dung</button>
@@ -103,5 +95,5 @@
         </section>
     </section>
 </div>
-<script src="{% static 'social/js/post-modal.js' %}?v=20261111-social-ui1" defer></script>
+<script src="{% static 'social/js/post-modal.js' %}?v=attachment-controls" defer></script>
 {% endif %}

@@ -13,27 +13,26 @@ from projectp.models import (
 
 PUBLISH_PERMISSION = "projectp.cong_bo_thong_bao"
 TRACK_PERMISSION = "projectp.theo_doi_tiep_nhan"
+PUBLISH_GROUP_PREFIX = "OZZONE:SOC-06:"
 TRACK_GROUP_PREFIX = "OZZONE:SOC-09:"
+NOTICE_SCOPE_PREFIXES = (PUBLISH_GROUP_PREFIX, TRACK_GROUP_PREFIX)
 TRACK_COMPANY_GROUP = f"{TRACK_GROUP_PREFIX}toan_cong_ty"
 TRACK_TARGETS = ("phong_ban", "cong_dong", "du_an", "nguoi_dung")
 
 
-def _has_tracking_scope(user, notice):
-    scopes = set(user.groups.filter(name__startswith=TRACK_GROUP_PREFIX).values_list("name", flat=True))
-    if TRACK_COMPANY_GROUP in scopes:
+def has_distribution_scope(user, prefix, scope, criteria):
+    scopes = set(user.groups.filter(name__startswith=prefix).values_list("name", flat=True))
+    if f"{prefix}toan_cong_ty" in scopes:
         return True
-    if notice.che_do_phan_phoi == "toan_cong_ty" or not scopes:
+    if scope == "toan_cong_ty" or not scopes:
         return False
-    criteria = notice.tieu_chi.filter(muc_dich="phan_phoi").only(
-        "loai_tieu_chi", *TRACK_TARGETS,
-    )
     required = set()
     for item in criteria:
         kind = item.loai_tieu_chi
         target_id = getattr(item, f"{kind}_id", None) if kind in TRACK_TARGETS else None
         if target_id is None:
             return False
-        required.add(f"{TRACK_GROUP_PREFIX}{kind}:{target_id}")
+        required.add(f"{prefix}{kind}:{target_id}")
     return bool(required) and required.issubset(scopes)
 
 
@@ -52,7 +51,10 @@ def can_track_notice(user, notice):
         return False
     if not notice or notice.trang_thai != "da_cong_bo" or not notice.yeu_cau_xac_nhan:
         return False
-    if not _has_tracking_scope(user, notice):
+    if not has_distribution_scope(
+        user, TRACK_GROUP_PREFIX, notice.che_do_phan_phoi,
+        notice.tieu_chi.filter(muc_dich="phan_phoi").only("loai_tieu_chi", *TRACK_TARGETS),
+    ):
         return False
     return BaiViet.objects.filter(
         pk=notice.bai_viet_id,

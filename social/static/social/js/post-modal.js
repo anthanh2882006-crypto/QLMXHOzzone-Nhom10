@@ -63,27 +63,12 @@
         });
 
         document.addEventListener("keydown", function (event) {
-            if (modal.hidden) return;
+            if (modal.hidden || modal.querySelector("[data-attachment-picker] dialog[open]")) return;
             if (event.key === "Escape") {
                 event.preventDefault();
                 closeModal();
             }
         });
-
-        const fileInput = modal.querySelector("#id_tep_dinh_kem");
-        const fileNames = modal.querySelector("[data-file-names]");
-        if (fileInput && fileNames) {
-            fileInput.addEventListener("change", function () {
-                const files = Array.from(fileInput.files || []);
-                if (!files.length) {
-                    fileNames.textContent = "Đính kèm tối đa 5 tệp, 10 MB/tệp.";
-                } else if (files.length <= 2) {
-                    fileNames.textContent = files.map((file) => file.name).join(", ");
-                } else {
-                    fileNames.textContent = files.length + " tệp đã chọn";
-                }
-            });
-        }
 
         const form = modal.querySelector("[data-post-modal-form]");
         if (form) {

@@ -12,6 +12,14 @@ ALLOWED_EXTENSIONS = {
 }
 
 
+def attachment_input_attributes(extensions, max_size, max_files=1):
+    return {
+        "accept": ",".join(sorted(extensions)),
+        "data-max-bytes": max_size,
+        "data-max-files": max_files,
+    }
+
+
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
@@ -45,6 +53,7 @@ class PostForm(forms.Form):
     tep_dinh_kem = MultipleFileField(
         label="Tệp đính kèm (tối đa 5 tệp, 10 MB/tệp)",
         required=False,
+        widget=MultipleFileInput(attrs=attachment_input_attributes(ALLOWED_EXTENSIONS, MAX_ATTACHMENT_SIZE, MAX_ATTACHMENTS)),
     )
     remove_attachment_ids = forms.MultipleChoiceField(
         required=False,

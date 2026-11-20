@@ -16,7 +16,15 @@ from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.shortcuts import redirect
 from projectp.models import HoSoNhanVien, NhatKyNghiepVu
-from notifications.permissions import TRACK_GROUP_PREFIX
+from notifications.permissions import NOTICE_SCOPE_PREFIXES
+from projects.permissions import PROJECT_ADMIN_GROUP_PREFIX
+
+
+from projectp.admin_scopes import OBJECT_SCOPE_PREFIXES
+from .services import check_deactivation
+
+
+SCOPED_GROUP_PREFIXES = (*NOTICE_SCOPE_PREFIXES, PROJECT_ADMIN_GROUP_PREFIX, *OBJECT_SCOPE_PREFIXES)
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +66,11 @@ def has_invalid_grant_choices(request, response, fields):
 
 def account_snapshot(user):
     current = get_user_model().objects.get(pk=user.pk)
+    profile = HoSoNhanVien.objects.filter(nguoi_dung=current).values(
+        "ma_nhan_vien", "phong_ban_id", "vi_tri_id",
+    ).first()
     return {
+        "employee_profile": profile,
         "username": current.username,
         "first_name": current.first_name,
         "last_name": current.last_name,
@@ -102,6 +114,11 @@ class AccountChangeForm(UserChangeForm):
             if expected != signing.loads(account_revision(self.instance), salt="accounts.admin.revision"):
                 raise ValidationError("Tài khoản hoặc quyền vừa thay đổi. Tải lại trước khi lưu.")
             self.before = account_snapshot(self.instance)
+            if self.before["is_active"] and "is_active" in data and not data["is_active"]:
+                try:
+                    check_deactivation(self.instance.pk)
+                except ValidationError as exc:
+                    self.add_error("is_active", exc)
         if {"is_staff", "is_superuser", "groups", "user_permissions"}.intersection(
             self.changed_data
         ) and not data.get("ly_do_quyen"):
@@ -120,9 +137,26 @@ class TemporaryPasswordForm(AdminPasswordChangeForm):
             return user
 
 
+class EmployeeProfileInline(admin.StackedInline):
+    model = HoSoNhanVien
+    fk_name = "nguoi_dung"
+    fields = ("ma_nhan_vien", "phong_ban", "vi_tri")
+    extra = 0
+    max_num = 1
+    can_delete = False
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return int(obj is None or not HoSoNhanVien.objects.filter(nguoi_dung=obj).exists())
+
+
 class OzzoneUserAdmin(UserAdmin):
     """change_user chỉ sửa tài khoản thường; đặc quyền do superuser quản lý."""
 
+    readonly_fields = ("employee_profile",)
+    inlines = (EmployeeProfileInline,)
+    add_fieldsets = (*UserAdmin.add_fieldsets, (
+        "Thông tin tài khoản", {"fields": ("first_name", "last_name", "email", "is_active")},
+    ))
     change_password_form = TemporaryPasswordForm
     form = AccountChangeForm
     privilege_fields = {"is_staff", "is_superuser", "groups", "user_permissions"}
@@ -145,8 +179,27 @@ class OzzoneUserAdmin(UserAdmin):
         # Vô hiệu hóa giữ liên kết và lịch sử; không xóa tài khoản vật lý tại đây.
         return False
 
+    @admin.display(description="Hồ sơ nhân viên và thông tin tổ chức")
+    def employee_profile(self, obj):
+        profile = HoSoNhanVien.objects.filter(nguoi_dung=obj).select_related("phong_ban", "vi_tri").first()
+        if not profile:
+            return "Chưa liên kết hồ sơ nhân viên."
+        from django.urls import reverse
+        from django.utils.html import format_html
+
+        return format_html(
+            '{} · {} · {} · <a href="{}">Mở hồ sơ nhân viên</a>',
+            profile.ma_nhan_vien, profile.phong_ban, profile.vi_tri,
+            reverse("admin:projectp_hosonhanvien_change", args=[profile.pk]),
+        )
+
     def get_fieldsets(self, request, obj=None):
-        fieldsets = deepcopy(super().get_fieldsets(request, obj))
+        fieldsets = list(deepcopy(super().get_fieldsets(request, obj)))
+        if obj and (
+            request.user.has_perm("projectp.view_hosonhanvien")
+            or request.user.has_perm("projectp.change_hosonhanvien")
+        ):
+            fieldsets.append(("Thông tin tổ chức", {"fields": ("employee_profile",)}))
         if request.user.is_superuser:
             return list(fieldsets) + (
                 [("Đối chiếu thay đổi", {"fields": ("revision_token", "ly_do_quyen")})] if obj else []
@@ -164,6 +217,15 @@ class OzzoneUserAdmin(UserAdmin):
         return result
 
     def save_related(self, request, form, formsets, change):
+        from projectp.admin_permissions import current_admin
+
+        for formset in formsets:
+            if formset.model is not HoSoNhanVien:
+                continue
+            for inline in formset.forms:
+                if inline.has_changed() and inline.cleaned_data:
+                    permission = "change_hosonhanvien" if inline.instance.pk else "add_hosonhanvien"
+                    current_admin(request, f"projectp.{permission}")
         super().save_related(request, form, formsets, change)
         NhatKyNghiepVu.objects.create(
             nguoi_dung=request.user,
@@ -181,10 +243,10 @@ class OzzoneUserAdmin(UserAdmin):
         if not request.user.is_superuser and (obj.is_staff or obj.is_superuser):
             raise PermissionDenied("Chỉ quản trị viên phù hợp mới được quản lý tài khoản đặc quyền.")
         if not request.user.is_superuser and "groups" in form.changed_data:
-            previous = set(obj.groups.filter(name__startswith=TRACK_GROUP_PREFIX).values_list("pk", flat=True)) if obj.pk else set()
-            chosen = {group.pk for group in form.cleaned_data["groups"] if group.name.startswith(TRACK_GROUP_PREFIX)}
+            previous = set((group.pk for group in obj.groups.all() if group.name.startswith(SCOPED_GROUP_PREFIXES))) if obj.pk else set()
+            chosen = {group.pk for group in form.cleaned_data["groups"] if group.name.startswith(SCOPED_GROUP_PREFIXES)}
             if previous != chosen:
-                raise PermissionDenied("Chỉ quản trị viên cấp cao được phân phạm vi theo dõi tiếp nhận.")
+                raise PermissionDenied("Chỉ quản trị viên cấp cao được phân phạm vi nghiệp vụ.")
         if self.privilege_fields.intersection(form.changed_data) and not self.can_manage_grants(request.user):
             raise PermissionDenied("Chưa có quyền quản lý nhóm/quyền của tài khoản.")
         return super().save_model(request, obj, form, change)
@@ -267,13 +329,50 @@ if admin.site.is_registered(User):
 admin.site.register(User, OzzoneUserAdmin)
 
 
+def group_snapshot(group):
+    return {"name": group.name, "permissions": list(group.permissions.order_by("pk").values_list("pk", flat=True))}
+
+
+def group_revision(group):
+    return signing.dumps({"pk": group.pk, **group_snapshot(group)}, salt="accounts.admin.group")
+
+
+class GroupChangeForm(forms.ModelForm):
+    revision_token = forms.CharField(required=False, widget=forms.HiddenInput)
+    ly_do_quyen = forms.CharField(
+        required=False, max_length=1000, label="Lý do thay đổi nhóm/quyền",
+        widget=forms.Textarea(attrs={"rows": 2}),
+    )
+
+    class Meta:
+        model = Group
+        fields = ("name", "permissions")
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and "revision_token" in self.fields:
+            self.fields["revision_token"].initial = group_revision(self.instance)
+
+    def clean(self):
+        data = super().clean()
+        if (not self.instance.pk or {"name", "permissions"}.intersection(self.changed_data)) and not data.get("ly_do_quyen"):
+            self.add_error("ly_do_quyen", "Nhập lý do thay đổi nhóm/quyền.")
+        return data
+
+
 class OzzoneGroupAdmin(GroupAdmin):
+    form = GroupChangeForm
+    fields = ("name", "permissions", "revision_token", "ly_do_quyen")
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         try:
             response = super().changeform_view(request, object_id, form_url, extra_context)
         except PermissionDenied:
             audit_denied_grant(request, "NHOM_QUYEN", object_id)
             raise
+        except (ValidationError, DatabaseError) as exc:
+            messages.error(request, " ".join(exc.messages) if isinstance(exc, ValidationError)
+                           else "Chưa lưu nhóm quyền. Tải lại để đối chiếu.")
+            return redirect(request.path)
         if has_invalid_grant_choices(request, response, {"permissions"}):
             audit_denied_grant(request, "NHOM_QUYEN", object_id)
         return response
@@ -284,16 +383,50 @@ class OzzoneGroupAdmin(GroupAdmin):
         ) and super().has_add_permission(request)
 
     def has_change_permission(self, request, obj=None):
-        if obj and obj.name.startswith(TRACK_GROUP_PREFIX) and not request.user.is_superuser:
+        if obj and obj.name.startswith(SCOPED_GROUP_PREFIXES) and not request.user.is_superuser:
             return False
         return (
             request.user.is_superuser or request.user.has_perm("auth.change_permission")
         ) and super().has_change_permission(request, obj)
 
     def save_model(self, request, obj, form, change):
-        if obj.name.startswith(TRACK_GROUP_PREFIX) and not request.user.is_superuser:
-            raise PermissionDenied("Chỉ quản trị viên cấp cao được cấu hình nhóm phạm vi theo dõi tiếp nhận.")
+        from projectp.admin_permissions import current_admin
+
+        request.user = current_admin(request, "auth.change_group" if change else "auth.add_group")
+        old = None
+        if change:
+            # Force a write lock on SQLite as well as databases supporting SELECT FOR UPDATE.
+            Group.objects.filter(pk=obj.pk).update(name=F("name"))
+            old = Group.objects.get(pk=obj.pk)
+            try:
+                submitted = signing.loads(
+                    form.cleaned_data.get("revision_token", ""), salt="accounts.admin.group", max_age=8 * 60 * 60
+                )
+            except signing.BadSignature:
+                raise ValidationError("Biểu mẫu nhóm quyền hết hiệu lực. Tải lại để đối chiếu.") from None
+            if submitted != {"pk": old.pk, **group_snapshot(old)}:
+                raise ValidationError("Nhóm hoặc quyền vừa thay đổi. Tải lại trước khi lưu.")
+        may_save = self.has_change_permission(request, old) if old else self.has_add_permission(request)
+        if not may_save or (obj.name.startswith(SCOPED_GROUP_PREFIXES) and not request.user.is_superuser):
+            raise PermissionDenied("Bạn không có quyền cập nhật nhóm này.")
+        permission_set = form.cleaned_data["permissions"]
+        if not request.user.is_superuser:
+            allowed = request.user.get_all_permissions()
+            if any(f"{p.content_type.app_label}.{p.codename}" not in allowed for p in permission_set):
+                raise PermissionDenied("Bạn không thể cấp quyền ngoài phạm vi được giao.")
+        form.before = group_snapshot(old) if old else None
         super().save_model(request, obj, form, change)
+
+    def save_related(self, request, form, formsets, change):
+        super().save_related(request, form, formsets, change)
+        after = group_snapshot(form.instance)
+        if form.before != after:
+            NhatKyNghiepVu.objects.create(
+                nguoi_dung=request.user, hanh_dong="UC-ACC-05:group_permissions",
+                loai_tai_nguyen="NHOM_QUYEN", ma_tai_nguyen=str(form.instance.pk),
+                du_lieu_truoc=form.before, du_lieu_sau=after,
+                ly_do=form.cleaned_data["ly_do_quyen"],
+            )
 
     def formfield_for_dbfield(self, db_field, request, **kwargs):
         field = super().formfield_for_dbfield(db_field, request, **kwargs)
@@ -301,7 +434,12 @@ class OzzoneGroupAdmin(GroupAdmin):
             field.help_text = (
                 "Phạm vi theo dõi thông báo: OZZONE:SOC-09:toan_cong_ty hoặc "
                 "OZZONE:SOC-09:phong_ban:<ID>. Có thể thay phong_ban bằng cong_dong, du_an hoặc nguoi_dung. "
-                "Gắn quyền Được theo dõi tiếp nhận thông báo và thêm người được phân vào nhóm."
+                "Dùng tiền tố OZZONE:SOC-06: cho quyền phát hành, OZZONE:SOC-09: cho quyền theo dõi. "
+                "Gắn quyền chức năng tương ứng và thêm người được phân vào nhóm. "
+                "Phạm vi quản trị dự án: OZZONE:PRJ-11:du_an:<ID>. "
+                "Kiểm duyệt: OZZONE:SOC-10:du_an:<ID>, cong_dong:<ID> hoặc toan_cong_ty. "
+                "Cộng đồng: OZZONE:COM-08:cong_dong:<ID> hoặc toan_cong_ty. "
+                "Tri thức: OZZONE:KNW-06:bai_hoc:<ID>, bai_viet:<ID>, du_an:<ID>, cong_dong:<ID> hoặc toan_cong_ty."
             )
         return field
 

@@ -5,6 +5,7 @@ from accounts.views._chung import ho_ten
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, IntegrityError
 from django.db.models import Count, Q
@@ -17,6 +18,7 @@ from django.views.decorators.http import require_POST
 
 from projectp.models import (
     BaiViet,
+    BaiVietDaLuu,
     DinhKem,
     NguoiNhanThongBao,
     ThongBaoChinhThuc,
@@ -27,7 +29,10 @@ from .permissions import (
     can_manage_draft, can_publish_notices, can_read_notice, can_track_notice,
     resolve_scope_user_ids,
 )
-from .services import acknowledge_notice, cancel_notice_draft, preview_recipient_count, publish_notice, save_notice_draft
+from .services import (
+    PREVIEW_SALT, acknowledge_notice, cancel_notice_draft, publication_preview,
+    save_and_publish_notice, save_notice_draft,
+)
 
 
 def _notice_read_errors(view):
@@ -104,22 +109,74 @@ def notice_list(request):
 def notice_preview(request):
     if not can_publish_notices(request.user):
         return JsonResponse({"errors": ["Bạn chưa được cấp quyền phát hành thông báo."]}, status=403)
-    form = OfficialNoticeForm(request.POST)
     try:
+        notice = None
+        draft_id = request.POST.get("draft_id", "")
+        if draft_id:
+            if not draft_id.isascii() or not draft_id.isdecimal() or len(draft_id) > 18:
+                raise Http404
+            notice = get_object_or_404(
+                ThongBaoChinhThuc.objects.select_related("bai_viet"), pk=int(draft_id),
+            )
+            if not can_manage_draft(request.user, notice):
+                raise PermissionDenied("Bản nháp không còn khả dụng.")
+        form = OfficialNoticeForm(request.POST, request.FILES, notice=notice)
         if not form.is_valid():
             return JsonResponse({"errors": list(next(iter(form.errors.values())))}, status=400)
         data = form.cleaned_data
         if not data["tieu_de"]:
-            return JsonResponse({"errors": ["Nhập tiêu đề trước khi phát hành."]}, status=400)
+            raise ValidationError("Nhập tiêu đề trước khi phát hành.")
         reference = data["thong_bao_tham_chieu"]
         if reference and not can_read_notice(request.user, reference):
-            return JsonResponse({"errors": ["Thông báo tham chiếu không khả dụng."]}, status=403)
-        count = preview_recipient_count(data)
+            raise PermissionDenied("Thông báo tham chiếu không khả dụng.")
+        recipients, fingerprint, filenames = publication_preview(request.user, data, notice)
     except ValidationError as exc:
         return JsonResponse({"errors": exc.messages}, status=400)
+    except PermissionDenied as exc:
+        return JsonResponse({"errors": [str(exc)]}, status=403)
+    except Http404:
+        return JsonResponse({"errors": ["Bản nháp không còn khả dụng."]}, status=404)
     except DatabaseError:
         return JsonResponse({"errors": ["Chưa kiểm tra được phạm vi người nhận. Vui lòng thử lại."]}, status=503)
-    return JsonResponse({"recipient_count": count})
+    return JsonResponse({
+        "recipient_count": len(recipients), "attachments": filenames,
+        "preview_token": signing.dumps(fingerprint, salt=PREVIEW_SALT),
+    })
+
+
+def _submit_notice(request, form, *, notice=None, correction=None):
+    status = 400
+    if form.is_valid():
+        data = form.cleaned_data
+        action = request.POST.get("action", "save_draft")
+        try:
+            if correction and getattr(data["thong_bao_tham_chieu"], "pk", None) != correction.pk:
+                raise ValidationError("Thông báo đính chính phải giữ tham chiếu đến thông báo đã chọn.")
+            if action == "publish":
+                published = save_and_publish_notice(
+                    user=request.user, cleaned=data, notice=notice,
+                    preview_token=request.POST.get("preview_token", ""), request=request,
+                )
+                messages.success(request, "Thông báo chính thức đã được phát hành.")
+                return redirect("notifications:detail", pk=published.pk)
+            if action != "save_draft":
+                raise ValidationError("Thao tác không hợp lệ.")
+            draft = save_notice_draft(
+                user=request.user, cleaned=data, files=data["tep_dinh_kem"], notice=notice, request=request,
+            )
+            messages.success(request, "Bản nháp thông báo đã được lưu.")
+            return redirect("notifications:edit_draft", pk=draft.pk)
+        except ValidationError as exc:
+            form.add_error(None, exc.messages)
+        except PermissionDenied as exc:
+            form.add_error(None, str(exc))
+            status = 403
+        except (DatabaseError, OSError):
+            form.add_error(None, "Chưa lưu được thông báo. Bản nháp đã lưu vẫn được giữ. Vui lòng thử lại.")
+            status = 503
+    return render(request, "notifications/form.html", _notice_form_context(
+        request, form, notice=notice, is_edit=notice is not None, correction=correction,
+    ), status=status)
 
 
 @login_required(login_url="accounts:login")
@@ -128,72 +185,20 @@ def notice_create(request, reference_id=None):
         raise PermissionDenied("Bạn chưa được cấp quyền phát hành thông báo chính thức.")
 
     correction = None
+    initial = {"publish_key": uuid.uuid4()}
     if reference_id is not None:
-        correction = get_object_or_404(ThongBaoChinhThuc.objects.select_related("bai_viet"), pk=reference_id, trang_thai="da_cong_bo")
+        correction = get_object_or_404(
+            ThongBaoChinhThuc.objects.select_related("bai_viet"), pk=reference_id, trang_thai="da_cong_bo",
+        )
         if not can_read_notice(request.user, correction):
             raise PermissionDenied("Bạn không có quyền xem thông báo được chọn để đính chính.")
-
-    publish_key = uuid.uuid4()
-    initial = {"publish_key": publish_key}
-    if correction:
-        # Carry forward the original read/distribution scope by default.
-        # A correction must not accidentally broaden the audience to the whole company.
-        initial.update(initial_from_notice(correction, publish_key))
-        initial.update({
-            "tieu_de": f"Đính chính: {correction.bai_viet.tieu_de}"[:250],
-            "thong_bao_tham_chieu": correction.pk,
-        })
+        initial.update(initial_from_notice(correction, initial["publish_key"]))
+        initial.update(tieu_de=f"Đính chính: {correction.bai_viet.tieu_de}"[:250], thong_bao_tham_chieu=correction.pk)
 
     if request.method == "POST":
-        form = OfficialNoticeForm(request.POST, request.FILES)
-        if form.is_valid():
-            if correction and getattr(form.cleaned_data.get("thong_bao_tham_chieu"), "pk", None) != correction.pk:
-                form.add_error(None, "Thông báo đính chính phải giữ tham chiếu đến thông báo đã chọn.")
-                return render(request, "notifications/form.html", _notice_form_context(
-                    request, form, correction=correction
-                ), status=400)
-            key = form.cleaned_data["publish_key"]
-            already = ThongBaoChinhThuc.objects.filter(khoa_yeu_cau_xuat_ban=key, trang_thai="da_cong_bo").first()
-            if already:
-                messages.success(request, "Thông báo đã được phát hành trước đó; không tạo phân phối trùng.")
-                return redirect("notifications:detail", pk=already.pk)
-            try:
-                draft = save_notice_draft(
-                    user=request.user,
-                    cleaned=form.cleaned_data,
-                    files=request.FILES.getlist("tep_dinh_kem"),
-                    request=request,
-                )
-                action = request.POST.get("action", "save_draft")
-                if action == "publish":
-                    published, created = publish_notice(
-                        notice_id=draft.pk,
-                        user=request.user,
-                        request_key=key,
-                        request=request,
-                    )
-                    messages.success(request, "Thông báo chính thức đã được phát hành và phân phối đến tập người nhận hợp lệ.")
-                    return redirect("notifications:detail", pk=published.pk)
-                messages.success(request, "Bản nháp thông báo đã được lưu.")
-                return redirect("notifications:edit_draft", pk=draft.pk)
-            except (ValidationError, DatabaseError) as exc:
-                if isinstance(exc, ValidationError):
-                    error_messages = exc.messages
-                else:
-                    error_messages = ["Không thể lưu/phát hành do xung đột dữ liệu. Bản nháp hợp lệ (nếu đã lưu) được giữ nguyên; vui lòng tải lại và thử lại."]
-                for message in error_messages:
-                    form.add_error(None, message)
-                notice = locals().get("draft")
-                if notice:
-                    form.fields["remove_attachment_ids"].queryset = DinhKem.objects.filter(bai_viet=notice.bai_viet)
-                return render(request, "notifications/form.html", _notice_form_context(
-                    request, form, notice=notice, is_edit=bool(notice), correction=correction
-                ), status=400)
-    else:
-        form = OfficialNoticeForm(initial=initial)
-
+        return _submit_notice(request, OfficialNoticeForm(request.POST, request.FILES), correction=correction)
     return render(request, "notifications/form.html", _notice_form_context(
-        request, form, correction=correction
+        request, OfficialNoticeForm(initial=initial), correction=correction,
     ))
 
 
@@ -201,62 +206,19 @@ def notice_create(request, reference_id=None):
 def notice_edit_draft(request, pk):
     notice = get_object_or_404(
         ThongBaoChinhThuc.objects.select_related("bai_viet", "thong_bao_tham_chieu"),
-        pk=pk,
-        bai_viet__da_xoa_mem=False,
+        pk=pk, bai_viet__da_xoa_mem=False,
     )
-    if notice.trang_thai != "ban_nhap":
-        raise PermissionDenied("Thông báo đã công bố là bất biến; hãy tạo thông báo đính chính mới.")
+    if notice.trang_thai == "da_cong_bo" and request.method == "POST" and request.POST.get("action") == "publish":
+        if (notice.nguoi_xuat_ban_id == request.user.pk and can_publish_notices(request.user)
+                and str(notice.khoa_yeu_cau_xuat_ban) == request.POST.get("publish_key")):
+            return redirect("notifications:detail", pk=notice.pk)
     if not can_manage_draft(request.user, notice):
-        raise PermissionDenied("Bạn không được biên tập bản nháp này.")
-
+        raise PermissionDenied("Bạn không được biên tập thông báo này.")
     if request.method == "POST":
-        form = OfficialNoticeForm(request.POST, request.FILES, notice=notice)
-        if form.is_valid():
-            key = form.cleaned_data["publish_key"]
-            already = ThongBaoChinhThuc.objects.filter(khoa_yeu_cau_xuat_ban=key, trang_thai="da_cong_bo").first()
-            if already:
-                messages.success(request, "Yêu cầu phát hành đã được xử lý trước đó.")
-                return redirect("notifications:detail", pk=already.pk)
-            try:
-                draft = save_notice_draft(
-                    user=request.user,
-                    cleaned=form.cleaned_data,
-                    files=request.FILES.getlist("tep_dinh_kem"),
-                    notice=notice,
-                    request=request,
-                )
-                notice = draft
-                if request.POST.get("action") == "publish":
-                    published, created = publish_notice(
-                        notice_id=draft.pk,
-                        user=request.user,
-                        request_key=key,
-                        request=request,
-                    )
-                    messages.success(request, "Thông báo chính thức đã được phát hành.")
-                    return redirect("notifications:detail", pk=published.pk)
-                messages.success(request, "Bản nháp đã được cập nhật.")
-                return redirect("notifications:edit_draft", pk=draft.pk)
-            except (ValidationError, DatabaseError) as exc:
-                error_messages = exc.messages if isinstance(exc, ValidationError) else [
-                    "Không thể lưu/phát hành do xung đột dữ liệu. Bản nháp hợp lệ được giữ nguyên; vui lòng tải lại và thử lại."
-                ]
-                for message in error_messages:
-                    form.add_error(None, message)
-                current_notice = locals().get("draft", notice)
-                form.fields["remove_attachment_ids"].queryset = DinhKem.objects.filter(bai_viet=current_notice.bai_viet)
-                return render(request, "notifications/form.html", _notice_form_context(
-                    request, form, notice=current_notice, is_edit=True
-                ), status=400)
-    else:
-        form = OfficialNoticeForm(
-            initial=initial_from_notice(notice, uuid.uuid4()),
-            notice=notice,
-        )
+        return _submit_notice(request, OfficialNoticeForm(request.POST, request.FILES, notice=notice), notice=notice)
 
-    return render(request, "notifications/form.html", _notice_form_context(
-        request, form, notice=notice, is_edit=True
-    ))
+    form = OfficialNoticeForm(initial=initial_from_notice(notice, uuid.uuid4()), notice=notice)
+    return render(request, "notifications/form.html", _notice_form_context(request, form, notice=notice, is_edit=True))
 
 
 @login_required(login_url="accounts:login")
@@ -287,7 +249,7 @@ def notice_detail(request, pk):
         bai_viet=notice.bai_viet,
         tep_tin__trang_thai="san_sang",
         tep_tin__da_xoa_mem=False,
-    ).select_related("tep_tin").order_by("thu_tu", "pk")
+    ).select_related("tep_tin", "nguoi_dinh_kem").order_by("thu_tu", "pk")
     recipient = None
     if not is_draft:
         recipient = NguoiNhanThongBao.objects.filter(
@@ -323,12 +285,34 @@ def notice_detail(request, pk):
         "can_track_notice": tracker_access,
         "ack_done": ack_done,
         "is_draft": is_draft,
+        "is_saved": not is_draft and BaiVietDaLuu.objects.filter(
+            nguoi_dung=request.user, bai_viet=notice.bai_viet,
+        ).exists(),
         "can_publish": can_publish_notices(request.user),
         "can_correct": (not is_draft and can_publish_notices(request.user)),
     })
 
 
 @login_required(login_url="accounts:login")
+@require_POST
+@_notice_read_errors
+def notice_save(request, pk):
+    notice = get_object_or_404(ThongBaoChinhThuc.objects.select_related("bai_viet"), pk=pk)
+    if not can_read_notice(request.user, notice):
+        raise Http404
+    saved = BaiVietDaLuu.objects.filter(nguoi_dung=request.user, bai_viet=notice.bai_viet)
+    if request.POST.get("state") == "on":
+        saved.get_or_create(nguoi_dung=request.user, bai_viet=notice.bai_viet)
+    else:
+        saved.delete()
+    return redirect("notifications:detail", pk=pk)
+
+
+ACK_SALT = "ozzone.notice.acknowledgement"
+
+
+@login_required(login_url="accounts:login")
+@_notice_read_errors
 def notice_ack_confirm(request, pk):
     notice = get_object_or_404(
         ThongBaoChinhThuc.objects.select_related("bai_viet", "nguoi_xuat_ban"),
@@ -336,7 +320,7 @@ def notice_ack_confirm(request, pk):
         trang_thai="da_cong_bo",
     )
     if not can_read_notice(request.user, notice):
-        raise PermissionDenied("Bạn không còn quyền đọc thông báo này.")
+        return render(request, "notifications/unavailable.html", status=404)
     recipient = NguoiNhanThongBao.objects.filter(
         thong_bao=notice, nguoi_dung=request.user, bat_buoc_xac_nhan=True
     ).first()
@@ -345,11 +329,20 @@ def notice_ack_confirm(request, pk):
     if recipient.trang_thai_tiep_nhan == "da_xac_nhan" and recipient.ngay_xac_nhan:
         return redirect(f"{reverse('notifications:detail', kwargs={'pk': notice.pk})}?ack=done")
 
+    confirmation = [request.user.pk, notice.pk, recipient.pk]
     if request.method == "POST":
         try:
+            try:
+                confirmed = signing.loads(request.POST.get("confirmation", ""), salt=ACK_SALT, max_age=900)
+            except signing.BadSignature:
+                confirmed = None
+            if confirmed != confirmation:
+                raise ValidationError("Hãy xem lại cảnh báo trước khi xác nhận tiếp nhận.")
             recipient, created = acknowledge_notice(
                 notice_id=notice.pk, user=request.user, request=request
             )
+        except PermissionDenied:
+            return render(request, "notifications/unavailable.html", status=404)
         except (ValidationError, IntegrityError, DatabaseError) as exc:
             if isinstance(exc, ValidationError):
                 error = " ".join(exc.messages)
@@ -357,6 +350,7 @@ def notice_ack_confirm(request, pk):
                 error = "Chưa lưu được xác nhận do lỗi dữ liệu. Trạng thái vẫn được giữ là Chưa xác nhận; vui lòng tải lại và thử lại."
             return render(request, "notifications/ack_confirm.html", {
                 "notice": notice, "recipient": recipient, "error": error,
+                "confirmation": signing.dumps(confirmation, salt=ACK_SALT),
             }, status=503 if isinstance(exc, DatabaseError) else 400)
         return redirect(f"{reverse('notifications:detail', kwargs={'pk': notice.pk})}?ack=done")
 
@@ -364,6 +358,7 @@ def notice_ack_confirm(request, pk):
         "notice": notice,
         "publisher_profile": getattr(notice.nguoi_xuat_ban, "ho_so_nhan_vien", None),
         "recipient": recipient,
+        "confirmation": signing.dumps(confirmation, salt=ACK_SALT),
     })
 
 
@@ -444,6 +439,7 @@ def notice_tracking(request, pk):
         "notice": notice,
         "tracking": stats,
         "report_at": report_at,
+        "can_read_report_notice": request.user.pk in currently_readable_ids,
         "recipient_rows": recipient_rows,
         "page_obj": page_obj,
         "search_term": search_term,
@@ -460,13 +456,18 @@ def notice_tracking(request, pk):
 @login_required(login_url="accounts:login")
 @_notice_read_errors
 def notice_attachment_download(request, attachment_id):
-    attachment = get_object_or_404(
-        DinhKem.objects.select_related("bai_viet", "tep_tin"),
-        pk=attachment_id,
-        bai_viet__loai_bai_viet=BaiViet.Kind.ANNOUNCEMENT,
-        tep_tin__trang_thai="san_sang",
-        tep_tin__da_xoa_mem=False,
-    )
+    attachment = DinhKem.objects.select_related("bai_viet", "tep_tin").filter(
+        pk=attachment_id, bai_viet__loai_bai_viet=BaiViet.Kind.ANNOUNCEMENT,
+    ).first()
+    if attachment is None:
+        notice_id = request.GET.get("notice", "")
+        notice = None
+        if notice_id.isascii() and notice_id.isdecimal() and len(notice_id) <= 18:
+            notice = ThongBaoChinhThuc.objects.select_related("bai_viet").filter(pk=int(notice_id)).first()
+        return render(request, "notifications/unavailable.html", {
+            "file_unavailable": True,
+            "notice_id": notice.pk if can_read_notice(request.user, notice) else None,
+        }, status=404)
     notice = get_object_or_404(ThongBaoChinhThuc, bai_viet=attachment.bai_viet)
     if notice.trang_thai == "ban_nhap":
         allowed = can_manage_draft(request.user, notice)
@@ -475,6 +476,8 @@ def notice_attachment_download(request, attachment_id):
     if not allowed:
         return render(request, "notifications/unavailable.html", status=404)
     try:
+        if attachment.tep_tin.da_xoa_mem or attachment.tep_tin.trang_thai != "san_sang":
+            raise FileNotFoundError
         file = attachment.tep_tin.tep.open("rb")
     except (OSError, ValueError):
         return render(request, "notifications/unavailable.html", {
@@ -482,10 +485,13 @@ def notice_attachment_download(request, attachment_id):
             "notice_id": notice.pk,
             "retry_url": request.get_full_path(),
         }, status=404)
+    mime = attachment.tep_tin.loai_tep
+    preview = mime in {"image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"}
     response = FileResponse(
         file,
-        as_attachment=True,
+        as_attachment=not (request.GET.get("preview") == "1" and preview),
         filename=attachment.tep_tin.ten_tep,
+        content_type=mime or "application/octet-stream",
     )
     response["X-Content-Type-Options"] = "nosniff"
     return response

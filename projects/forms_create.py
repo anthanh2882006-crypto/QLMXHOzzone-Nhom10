@@ -21,7 +21,7 @@ class ProjectCreateForm(RequestForm):
     pham_vi_truy_cap = forms.ChoiceField(
         label="Phạm vi hiển thị cộng đồng liên kết",
         choices=[("thanh_vien", "Chỉ thành viên"), ("noi_bo", "Toàn công ty")],
-        help_text="Phạm vi hiển thị cộng đồng không tự cấp quyền quản lý hoặc ghi dữ liệu dự án.",
+        help_text="Toàn công ty cho phép nhân viên tìm và đọc giới thiệu cộng đồng. Bảng tin, thành viên và dữ liệu dự án chỉ mở theo tư cách và quyền tương ứng.",
     )
     ngay_bat_dau = forms.DateField(
         label="Ngày bắt đầu",

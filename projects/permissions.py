@@ -11,6 +11,23 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 
+PROJECT_ADMIN_GROUP_PREFIX = "OZZONE:PRJ-11:du_an:"
+
+
+def administrable_projects(user):
+    if not user.is_authenticated or not user.is_active or not user.is_staff:
+        return DuAn.objects.none()
+    if user.is_superuser:
+        return DuAn.objects.all()
+    names = user.groups.filter(name__startswith=PROJECT_ADMIN_GROUP_PREFIX).values_list("name", flat=True)
+    ids = []
+    for name in names:
+        suffix = name.removeprefix(PROJECT_ADMIN_GROUP_PREFIX)
+        if suffix.isascii() and suffix.isdecimal() and len(suffix) <= 18:
+            ids.append(int(suffix))
+    return DuAn.objects.filter(pk__in=ids)
+
+
 def active_memberships(user):
     """Lấy tư cách thành viên dự án đang có hiệu lực."""
 
@@ -55,11 +72,14 @@ def readable_project_posts(user, project):
 
     return (
         BaiViet.objects.filter(
-            du_an=project,
             trang_thai="hien",
             da_xoa_mem=False,
         )
-        .filter(Q(cong_dong__isnull=True) | Q(cong_dong_id=project.cong_dong_id))
+        .filter(
+            Q(du_an=project, cong_dong__isnull=True)
+            | Q(du_an=project, cong_dong_id=project.cong_dong_id)
+            | Q(du_an__isnull=True, cong_dong_id=project.cong_dong_id)
+        )
         .order_by(
             "-ngay_tao",
             "-ma_bai_viet",

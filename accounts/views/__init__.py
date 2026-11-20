@@ -12,14 +12,14 @@ Xuất các view dùng trong urls.py và phân hệ Cộng đồng.
 
 from ._chung import can_doi_mat_khau, da_doi_mat_khau, ho_ten, thong_tin_ho_so
 from .uc_acc_01_dang_nhap import OzzoneLoginView, after_login, first_password
-from .uc_acc_02_dang_xuat import account_settings, logout_view
+from .uc_acc_02_dang_xuat import account_settings, legacy_logout, logout_view
 from .uc_acc_03_ho_so import profile, profile_edit
 from .uc_acc_04_tra_cuu import directory, employee_detail
 
 __all__ = [
     "can_doi_mat_khau", "da_doi_mat_khau", "ho_ten", "thong_tin_ho_so",
     "OzzoneLoginView", "after_login", "first_password",
-    "account_settings", "logout_view",
+    "account_settings", "legacy_logout", "logout_view",
     "profile", "profile_edit",
     "directory", "employee_detail",
 ]

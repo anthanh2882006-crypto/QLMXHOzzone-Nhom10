@@ -47,9 +47,9 @@ def accessible_posts(user, include_hidden=False):
         cong_dong__da_xoa_mem=False,
         cong_dong__pham_vi_truy_cap="noi_bo",
     ) | Q(du_an__isnull=True, cong_dong_id__in=community_ids)
-    project_scope = Q(du_an_id__in=project_ids) & (
-        Q(cong_dong__isnull=True) | Q(cong_dong_id=F("du_an__cong_dong_id"))
-    )
+    project_scope = (
+        Q(du_an_id__in=project_ids) & (Q(cong_dong__isnull=True) | Q(cong_dong_id=F("du_an__cong_dong_id")))
+    ) | Q(du_an__isnull=True, cong_dong__loai_cong_dong=CongDong.Type.PROJECT, cong_dong__du_an_lien_ket__in=project_ids)
 
     qs = BaiViet.objects.filter(company_scope | community_scope | project_scope)
     qs = qs.filter(
@@ -58,7 +58,7 @@ def accessible_posts(user, include_hidden=False):
     )
     if not include_hidden:
         qs = qs.filter(trang_thai="hien")
-    return qs.select_related("nguoi_dang", "cong_dong", "du_an")
+    return qs.select_related("nguoi_dang", "cong_dong", "du_an", "cong_dong__du_an_lien_ket")
 
 
 def can_create_company_post(user):
@@ -121,6 +121,12 @@ def protected_source_reason(post):
     return ""
 
 
+def moderation_block_reason(post, action):
+    if action == "hide" and post.che_do_xu_ly and post.trang_thai_xu_ly == BaiViet.TechnicalStatus.OPEN:
+        return "Vấn đề kỹ thuật đang mở. Cần hoàn tất xử lý trước khi xem xét ẩn nội dung."
+    return protected_source_reason(post)
+
+
 def can_manage_own_post(user, post):
     if not _is_active_user(user):
         return False, "Bạn cần đăng nhập bằng tài khoản đang hoạt động."
@@ -130,8 +136,6 @@ def can_manage_own_post(user, post):
         return False, "Bài viết đã được xóa mềm."
     if post.loai_bai_viet not in {BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE}:
         return False, "Loại nội dung này được quản lý qua quy trình riêng."
-    if post.che_do_xu_ly:
-        return False, "Vấn đề kỹ thuật được xử lý trong đúng không gian dự án."
     if post.du_an_id:
         if not readable_projects(user).filter(pk=post.du_an_id).exists():
             return False, "Bạn không còn tư cách thành viên trong dự án này."
@@ -142,7 +146,11 @@ def can_manage_own_post(user, post):
             return False, "Bạn không còn quyền đăng hoặc sửa bài trong cộng đồng này."
     elif not can_create_company_post(user):
         return False, "Bạn không còn quyền đăng bài tại bảng tin công ty."
+    if post.che_do_xu_ly and post.trang_thai_xu_ly == BaiViet.TechnicalStatus.RESOLVED:
+        return False, "Bài viết đã tham gia kết luận xử lý kỹ thuật."
     reason = protected_source_reason(post)
     if reason:
         return False, reason
+    if post.che_do_xu_ly:
+        return False, "Vấn đề kỹ thuật được xử lý trong đúng không gian dự án."
     return True, ""

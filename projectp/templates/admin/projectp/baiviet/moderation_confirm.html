@@ -51,6 +51,7 @@
     <form id="moderation-form" method="post" style="margin-top:20px">
         {% csrf_token %}
         <input type="hidden" name="action" value="{{ action }}">
+        <input type="hidden" name="revision_token" value="{{ revision_token }}">
         {% if requires_reason %}
             <div class="form-row">
                 <label for="id_reason"><strong>Lý do kiểm duyệt <span style="color:#ba2121">*</span></strong></label>

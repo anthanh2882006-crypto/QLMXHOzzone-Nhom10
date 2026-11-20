@@ -23,7 +23,8 @@ from projectp.models import (
 )
 from projects.permissions import readable_projects
 from projects.services_common import attach_files, payload_hash
-from communities.views._chung import cong_dong_xem_duoc
+from communities.views._chung import active_community_memberships
+from projectp.models import CongDong, DuAn
 
 SALT = "knowledge.editor.request.v1"
 REVISION_SALT = "knowledge.editor.revision.v1"
@@ -41,10 +42,16 @@ def can_edit(user, article=None):
     )
 
 
+def article_communities(user):
+    return CongDong.objects.filter(
+        pk__in=active_community_memberships(user).values("cong_dong_id"),
+    ).exclude(du_an_lien_ket__trang_thai=DuAn.Status.ARCHIVED)
+
+
 def check_scope(user, version):
     if version.du_an_id and not readable_projects(user).filter(pk=version.du_an_id).exists():
         raise PermissionDenied("Không còn quyền sử dụng phạm vi dự án này.")
-    if version.cong_dong_id and not cong_dong_xem_duoc(user).filter(pk=version.cong_dong_id).exists():
+    if version.cong_dong_id and not article_communities(user).filter(pk=version.cong_dong_id).exists():
         raise PermissionDenied("Không còn quyền sử dụng phạm vi cộng đồng này.")
 
 
@@ -91,7 +98,7 @@ def request_key(user, token, article_id, version_id):
     return key
 
 
-def audit(user, article, version, action, key, fingerprint):
+def audit(user, article, version, action, key, fingerprint, **details):
     NhatKyNghiepVu.objects.create(
         nguoi_dung=user,
         hanh_dong=action,
@@ -102,6 +109,7 @@ def audit(user, article, version, action, key, fingerprint):
             "version_id": version.pk,
             "so_phien_ban": version.so_phien_ban,
             "request_hash": fingerprint,
+            **details,
         },
     )
 
@@ -173,7 +181,7 @@ def save_draft(user, data, article_id=None, version_id=None):
                 if not can_edit(user, version.bai_viet_tri_thuc):
                     raise PermissionDenied("Quyền biên tập đã thay đổi.")
                 check_scope(user, version)
-                return version
+                return version, previous.du_lieu_sau.get("saved_revision")
             if article_id is None:
                 if not can_edit(user):
                     raise PermissionDenied("Chưa có quyền tạo bài viết tri thức.")
@@ -244,8 +252,9 @@ def save_draft(user, data, article_id=None, version_id=None):
                 GanChuDePhienBan.objects.get_or_create(phien_ban=version, chu_de_id=pk)
             attach_files(user, data.get("minh_chung", []), {"phien_ban_tri_thuc": version}, files)
             check_references(user, version)
-            audit(user, article, version, "UC-KNW-05:save", key, fingerprint)
-            return version
+            saved_revision = revision(article, version)
+            audit(user, article, version, "UC-KNW-05:save", key, fingerprint, saved_revision=saved_revision)
+            return version, saved_revision
     except Exception:
         for storage, name in files:
             try:
@@ -300,9 +309,16 @@ def clone_draft(user, article_id, token, revision_token):
     return draft
 
 
+def publication_audit(user, token, article_id, version_id):
+    key = request_key(user, token, article_id, version_id)
+    return NhatKyNghiepVu.objects.filter(
+        nguoi_dung=user, ma_yeu_cau=key, hanh_dong="UC-KNW-05:publish"
+    ).first()
+
+
 @transaction.atomic
 def publish_version(
-    user, version, token, article_id, original_version_id, expected_current_id, revision_token
+    user, version, token, article_id, original_version_id, expected_current_id, saved_revision, submitted_hash
 ):
     key = request_key(user, token, article_id, original_version_id)
     BaiVietTriThuc.objects.filter(pk=version.bai_viet_tri_thuc_id).update(ngay_cap_nhat=F("ngay_cap_nhat"))
@@ -315,9 +331,14 @@ def publish_version(
     previous = NhatKyNghiepVu.objects.filter(
         nguoi_dung=user, ma_yeu_cau=key, hanh_dong="UC-KNW-05:publish"
     ).first()
-    if previous and previous.du_lieu_sau.get("version_id") == version.pk:
+    if previous:
+        previous_hash = previous.du_lieu_sau.get("request_hash")
+        if previous.du_lieu_sau.get("version_id") != version.pk or previous_hash and previous_hash != submitted_hash:
+            raise ValidationError("Mã yêu cầu đã được dùng để công bố nội dung khác.")
         return version
-    check_revision(article, version, revision_token)
+    if not saved_revision:
+        raise ValidationError("Yêu cầu cũ thiếu thông tin đối chiếu. Tải lại bản nháp và xem trước.")
+    check_revision(article, version, saved_revision)
     if article.phien_ban_dang_cong_bo_id != expected_current_id or version.trang_thai != "ban_nhap":
         raise ValidationError("Bản hiện hành đã thay đổi. Tải lại để đối chiếu trước khi công bố.")
     check_references(user, version)
@@ -344,5 +365,5 @@ def publish_version(
     article.phien_ban_dang_cong_bo = version
     article.full_clean()
     article.save()
-    audit(user, article, version, "UC-KNW-05:publish", key, "")
+    audit(user, article, version, "UC-KNW-05:publish", key, submitted_hash)
     return version

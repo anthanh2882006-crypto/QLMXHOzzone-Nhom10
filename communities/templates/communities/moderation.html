@@ -43,7 +43,11 @@
               {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
               {% if p.trang_thai == 'hien' %}
                 {% if p.da_ghim %}<button class="oz-link" name="action" value="unpin">Bỏ ghim</button>{% else %}<button class="oz-link" name="action" value="pin">Ghim</button>{% endif %}
+                {% if p.che_do_xu_ly and p.trang_thai_xu_ly == 'chua_giai_quyet' %}
+                <span class="oz-muted">Vấn đề kỹ thuật đang mở</span>
+                {% else %}
                 <button class="oz-link oz-link-danger" name="action" value="hide" data-confirm-title="Ẩn bài đăng?" data-confirm-message="Bài đăng sẽ không còn hiển thị trên bảng tin cộng đồng. Nội dung và lịch sử vẫn được lưu." data-confirm-label="Ẩn bài đăng">Ẩn</button>
+                {% endif %}
               {% else %}
                 <button class="oz-link" name="action" value="show">Hiển thị lại</button>
               {% endif %}

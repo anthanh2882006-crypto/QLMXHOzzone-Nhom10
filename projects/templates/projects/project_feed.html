@@ -32,12 +32,18 @@
                     <a href="{% url 'projects:feed' project.pk %}">Xóa bộ lọc</a>
                 {% endif %}
             </form>
+            {% if feed_load_failed %}
+                <section class="pm-panel" role="alert">
+                    <p>Chưa tải được bảng tin dự án.</p>
+                    <a class="pm-button" href="{{ retry_url }}">Tải lại</a>
+                </section>
+            {% else %}
             {% for row in feed_rows %}
                 {% with post=row.post %}
                     <article class="pm-panel oz-feed-post" id="post-{{ post.pk }}">
                         {% include "includes/post_header.html" with post_scope=project.ten_du_an %}
                         <h2 class="pm-post-title">
-                            <a href="{% url 'projects:post_detail' project.pk post.pk %}">
+                            <a href="{% url 'projects:post_detail' project.pk post.pk %}?next={{ request.get_full_path|urlencode:"" }}">
                                 {{ post.tieu_de|default:"Bài đăng dự án" }}
                             </a>
                         </h2>
@@ -52,7 +58,7 @@
                             {% include "projects/_issue_state.html" %}
                         {% endif %}
                         {% if post.che_do_xu_ly %}
-                            <a class="pm-button pm-fit" href="{% url 'projects:issue' project.pk post.pk %}">Mở vấn đề</a>
+                            <a class="pm-button pm-fit" href="{% url 'projects:issue' project.pk post.pk %}?next={{ request.get_full_path|urlencode:"" }}">Mở vấn đề</a>
                         {% endif %}
                         {% include "includes/post_actions.html" %}
                     </article>
@@ -63,6 +69,7 @@
                 </section>
             {% endfor %}
             {% include "projects/_pagination.html" %}
+            {% endif %}
         </div>
         <aside class="pm-context" aria-label="Ngữ cảnh bảng tin">
             <section class="pm-panel">

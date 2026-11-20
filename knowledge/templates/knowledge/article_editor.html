@@ -34,8 +34,10 @@
 
     {% if form.non_field_errors %}<div class="knw089-errors">{{ form.non_field_errors }}</div>{% endif %}
 
+    {% if reload_draft_url %}<p><a href="{{ reload_draft_url }}">Tải lại bản nháp để đối chiếu</a></p>{% endif %}
     <form method="post" enctype="multipart/form-data" action="{% url 'knowledge:create' %}" id="articleEditorForm">
         {% csrf_token %}
+        <input type="hidden" name="preview_token">
         {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
         {% if article and version %}
             <input type="hidden" name="article_id" value="{{ article.pk }}">
@@ -150,6 +152,7 @@
             <p id="previewArticleSummary"></p>
             <p id="previewArticleApplication"></p>
         </section>
+        <p id="articlePreviewStatus" role="status"></p>
         <p class="knw089-preview-note">Hệ thống kiểm tra quyền, nguồn, tệp và phiên bản khi bạn xác nhận công bố. {% if article.phien_ban_dang_cong_bo_id %}Bản đang công bố tiếp tục hiển thị cho đến khi bản mới được công bố thành công.{% endif %}</p>
         <div class="knw089-dialog-actions">
             <button type="button" class="knw089-save-button" id="backToArticle" autofocus>Quay lại biên tập</button>
@@ -174,7 +177,9 @@
     const dialog = document.getElementById("leaveArticleDialog");
     // File objects need explicit metadata; JSON.stringify(File) would lose changes.
     function snapshot() {
-        return JSON.stringify(Array.from(new FormData(form).entries(), ([key, value]) => [
+        const data = new FormData(form);
+        data.delete("preview_token");
+        return JSON.stringify(Array.from(data.entries(), ([key, value]) => [
             key, value instanceof File
                 ? {name: value.name, size: value.size, type: value.type, modified: value.name ? value.lastModified : 0}
                 : value
@@ -218,6 +223,9 @@
     const publishDialog = document.getElementById("publishArticleDialog");
     const publishButton = document.getElementById("previewArticle");
     let publishConfirmed = false;
+    let previewRequest;
+    const previewStatus = document.getElementById("articlePreviewStatus");
+    const publishReviewed = document.getElementById("publishReviewedArticle");
 
     function selectedLabel(field) {
         return field?.selectedOptions[0]?.textContent.trim() || "";
@@ -225,7 +233,8 @@
     function formValue(name) {
         return form.elements[name].value.trim();
     }
-    function showPublishPreview() {
+    async function showPublishPreview() {
+        if (publishDialog.open) return;
         const scopeTarget = ["cong_dong", "du_an"].includes(scope.value) ? scope.value : "";
         const target = scopeTarget && form.elements[scopeTarget];
         const audience = target ? (target.value ? selectedLabel(target) : "Chưa chọn") : "";
@@ -256,7 +265,29 @@
             fileList.append(item);
         }
         fileList.querySelector("[data-no-attachments]").hidden = kept + added.length > 0;
+        publishReviewed.disabled = true;
+        form.elements.preview_token.value = "";
+        previewStatus.textContent = "Đang kiểm tra bản xem trước…";
         publishDialog.showModal();
+        const data = new FormData(form);
+        data.set("action", "preview");
+        previewRequest?.abort();
+        previewRequest = new AbortController();
+        const signal = previewRequest.signal;
+        try {
+            const response = await fetch(form.getAttribute("action"), {method: "POST", body: data, signal});
+            const result = await response.json();
+            if (signal.aborted) return;
+            if (!response.ok || !result.token) {
+                previewStatus.textContent = result.error || "Chưa kiểm tra được bản xem trước. Hãy quay lại và thử lại.";
+                return;
+            }
+            form.elements.preview_token.value = result.token;
+            previewStatus.textContent = "";
+            publishReviewed.disabled = false;
+        } catch {
+            if (!signal.aborted) previewStatus.textContent = "Chưa kiểm tra được bản xem trước. Hãy quay lại và thử lại.";
+        }
     }
 
     form.addEventListener("submit", event => {
@@ -269,8 +300,12 @@
         submitting = true;
     });
     if (publishDialog) {
+        publishDialog.addEventListener("close", () => {
+            if (!publishDialog.open) previewRequest?.abort();
+        });
         document.getElementById("backToArticle").addEventListener("click", () => publishDialog.close());
         document.getElementById("publishReviewedArticle").addEventListener("click", () => {
+            if (publishReviewed.disabled || !form.elements.preview_token.value) return;
             publishDialog.close();
             publishConfirmed = true;
             try {

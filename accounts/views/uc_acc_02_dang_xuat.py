@@ -4,6 +4,8 @@ logout_view      : GET hỏi xác nhận, POST đăng xuất thật (B3e: phiên
 account_settings : đổi mật khẩu (nhánh B1b) + nút đăng xuất.
 """
 
+from urllib.parse import urlencode, urlsplit
+
 from django.contrib import messages
 from django.contrib.auth import logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -11,10 +13,16 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_http_methods
-from urllib.parse import urlsplit
 
 from ..forms import DoiMatKhauForm
 from ._chung import can_doi_mat_khau
+
+
+@require_http_methods(["GET", "POST"])
+def legacy_logout(request):
+    next_url = request.GET.get("next") or request.META.get("HTTP_REFERER", "")
+    url = reverse("accounts:logout")
+    return redirect(f"{url}?{urlencode({'next': next_url})}" if next_url else url)
 
 
 @require_http_methods(["GET", "POST"])
@@ -32,6 +40,7 @@ def logout_view(request):
         )
         or urlsplit(next_url).path in {
             reverse("accounts:logout"), reverse("projects:logout"), reverse("admin:logout"),
+            reverse("legacy_account_logout"),
         }
     ):
         next_url = reverse("accounts:after_login")

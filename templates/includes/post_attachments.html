@@ -1,27 +1,39 @@
 {% if post_files %}
-<section class="oz-post-attachments" aria-label="Tệp đính kèm">
+<section class="oz-post-attachments" aria-label="Tệp đính kèm"{% if show_file_tools %} data-attachment-list{% endif %}>
+    {% if show_file_tools %}
+    <details>
+        <summary>Tệp đính kèm</summary>
+        {% include "includes/attachment_filters.html" %}
+    {% endif %}
     {% for attachment in post_files %}
     {% if community %}{% url 'communities:attachment_download' community.pk attachment.pk as file_url %}{% else %}{% url 'social:attachment_download' attachment.pk as file_url %}{% endif %}
-    <div class="oz-post-attachment">
+    <div class="oz-post-attachment"{% if show_file_tools %} data-attachment-row="{{ attachment.tep_tin.loai_tep }}"{% endif %}>
         {% if attachment.tep_tin.loai_tep == 'image/jpeg' or attachment.tep_tin.loai_tep == 'image/png' or attachment.tep_tin.loai_tep == 'image/gif' or attachment.tep_tin.loai_tep == 'image/webp' %}
-        <a class="oz-post-image" href="{{ file_url }}?preview=1" target="_blank" rel="noopener" aria-label="Xem ảnh {{ attachment.tep_tin.ten_tep }}">
-            <img src="{{ file_url }}?preview=1" alt="{{ attachment.tep_tin.ten_tep }}" loading="lazy" decoding="async">
+        <a class="oz-post-image" href="{{ file_url }}?preview=1&amp;post={{ attachment.bai_viet_id }}" target="_blank" rel="noopener" aria-label="Xem ảnh {{ attachment.tep_tin.ten_tep }}">
+            <img src="{{ file_url }}?preview=1&amp;post={{ attachment.bai_viet_id }}" alt="{{ attachment.tep_tin.ten_tep }}" loading="lazy" decoding="async">
         </a>
         {% endif %}
         <div class="oz-post-file">
             <div class="oz-post-file-info">
-                <a href="{{ file_url }}">{{ attachment.tep_tin.ten_tep }}</a>
+                <a href="{{ file_url }}?post={{ attachment.bai_viet_id }}">{{ attachment.tep_tin.ten_tep }}</a>
                 <small>{% if attachment.tep_tin.loai_tep == 'application/pdf' %}PDF{% elif attachment.tep_tin.loai_tep|slice:':6' == 'image/' %}Ảnh{% else %}Tài liệu{% endif %} · {{ attachment.tep_tin.kich_thuoc|filesizeformat }}</small>
+                {% if show_file_tools %}
+                    <small>{% if post.du_an_id %}Dự án {{ post.du_an.ten_du_an }}{% elif community %}Cộng đồng {{ community.ten_cong_dong }}{% else %}Bảng tin công ty{% endif %}</small>
+                    {% include "includes/attachment_attribution.html" with link=attachment %}
+                {% endif %}
             </div>
             <div class="oz-post-file-actions">
                 {% if attachment.tep_tin.loai_tep == 'application/pdf' or attachment.tep_tin.loai_tep == 'image/jpeg' or attachment.tep_tin.loai_tep == 'image/png' or attachment.tep_tin.loai_tep == 'image/gif' or attachment.tep_tin.loai_tep == 'image/webp' %}
-                <a href="{{ file_url }}?preview=1" target="_blank" rel="noopener">Xem</a>
+                <a href="{{ file_url }}?preview=1&amp;post={{ attachment.bai_viet_id }}" target="_blank" rel="noopener">Xem</a>
                 {% else %}<small>Định dạng này chưa hỗ trợ xem trước. Vui lòng tải xuống để mở.</small>
                 {% endif %}
-                <a href="{{ file_url }}">Tải xuống</a>
+                <a href="{{ file_url }}?post={{ attachment.bai_viet_id }}">Tải xuống</a>
             </div>
         </div>
     </div>
     {% endfor %}
+    {% if show_file_tools %}</details>{% endif %}
 </section>
+{% elif show_file_tools %}
+<section class="oz-post-attachments" aria-label="Tệp đính kèm"><h2>Tệp đính kèm</h2><p>Không có tệp đính kèm.</p></section>
 {% endif %}

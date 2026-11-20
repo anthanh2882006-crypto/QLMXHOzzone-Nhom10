@@ -195,6 +195,7 @@ class CongDong(SoftDeleted):
 
     ma_cong_dong = models.BigAutoField(primary_key=True)
     ten_cong_dong = models.CharField(max_length=200)
+    chu_de = models.CharField("Chủ đề", max_length=150, blank=True)
     mo_ta = models.TextField(blank=True)
     loai_cong_dong = models.CharField(max_length=30, choices=Type.choices, default=Type.GENERAL)
     pham_vi_truy_cap = models.CharField(

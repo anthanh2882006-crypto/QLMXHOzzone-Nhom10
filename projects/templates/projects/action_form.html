@@ -23,14 +23,17 @@
                         <div class="pm-field">
                             <span>Thiết bị</span>
                             <span class="pm-readonly">
-                                {{ device.ten_thiet_bi }}
+                                {{ device.ma_thiet_bi }} · {{ device.ten_thiet_bi }}
                             </span>
                         </div>
                         <div class="pm-field">
                             <span>Tài sản được xác định</span>
                             <span class="pm-readonly">
                                 {% if current_asset %}
-                                    Đã xác định tài sản đang sử dụng
+                                    {{ current_asset.ma_tai_san_noi_bo }}
+                                    {% if current_asset.so_serial %}· Serial {{ current_asset.so_serial }}{% endif %}
+                                {% elif asset_error %}
+                                    Chưa xác định được tài sản
                                 {% else %}
                                     Chưa có tài sản
                                 {% endif %}
@@ -80,10 +83,7 @@
                         {% endif %}
                     </div>
                 {% endif %}
-                {% if asset_error %}
-                    <div class="pm-error" role="alert">{{ asset_error }}</div>
-                    <a href="{% url 'projects:equipment' project.pk %}">Về thiết bị dự án để đối chiếu ngữ cảnh</a>
-                {% endif %}
+                {% block asset_error %}{% endblock %}
                 {% if policy_warning %}
                     <div class="pm-info pm-warning" role="status">{{ policy_warning }}</div>
                 {% endif %}
@@ -184,6 +184,16 @@
             </section>
         </div>
         <aside class="pm-context" aria-label="Thông tin liên quan">
+            {% if show_related_knowledge %}
+            <section class="pm-panel">
+                <h2>Tri thức liên quan</h2>
+                <ul>
+                    {% for item in related_knowledge %}
+                    <li><a href="{{ item.open_url }}" target="_blank" rel="noopener">{{ item.title }}</a></li>
+                    {% empty %}<li>Chưa có tri thức liên quan để hiển thị.</li>{% endfor %}
+                </ul>
+            </section>
+            {% endif %}
             <section class="pm-panel">
                 <h2>Thông tin liên quan</h2>
                 {% if project %}
@@ -193,7 +203,7 @@
                     <h3>Trách nhiệm ban đầu</h3>
                     <p>Người tạo là Quản lý dự án và Chủ sở hữu (OWNER) của cộng đồng liên kết ban đầu.</p>
                     <h3>Phạm vi truy cập</h3>
-                    <p>Phạm vi hiển thị cộng đồng không tự cấp tư cách thành viên hoặc quyền quản lý dự án.</p>
+                    <p>Phạm vi hiển thị áp dụng cho phần giới thiệu của cộng đồng liên kết. Các chức năng của dự án vẫn xét theo tư cách và quyền hiện hành.</p>
                 {% endif %}
                 {% if trial %}
                     <p>

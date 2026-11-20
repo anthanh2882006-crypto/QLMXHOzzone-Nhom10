@@ -105,6 +105,15 @@ def _queue_for_user(user):
     return _assignment_scoped_queue(user)
 
 
+class ArchivedReview(PermissionDenied):
+    """The current curator can only read the archived review."""
+
+
+def _archived_review(request):
+    messages.info(request, "Dự án đã lưu trữ. Xem lịch sử đánh giá và bài học đã hoàn tất.")
+    return redirect(f"{reverse('knowledge:review_queue')}?status=completed")
+
+
 def _get_assigned_queue_item(user, pk, *, lock=False, write=False):
     if lock:
         # Khóa dự án trước các bản ghi con, cùng thứ tự với quản lý phân công.
@@ -118,7 +127,7 @@ def _get_assigned_queue_item(user, pk, *, lock=False, write=False):
     item = qs.filter(pk=pk).first()
     if item is not None:
         if write and item.bai_viet_nguon.du_an.da_luu_tru:
-            raise PermissionDenied("Dự án đã lưu trữ. Chỉ được xem lịch sử đánh giá và bài học theo quyền.")
+            raise ArchivedReview
         assignment = PhanCongTriThuc.objects.filter(
             du_an_id=item.bai_viet_nguon.du_an_id,
             nguoi_phu_trach=user,
@@ -127,7 +136,8 @@ def _get_assigned_queue_item(user, pk, *, lock=False, write=False):
         ).first()
         if assignment is None:
             raise Http404("Phân công tri thức không còn hiệu lực.")
-        item.phan_cong = assignment
+        if item.trang_thai in OPEN_STATES:
+            item.phan_cong = assignment
         return item
 
     # Hide both missing and out-of-scope queue records.
@@ -164,6 +174,7 @@ def _review_snapshot(item):
     if review_status in OPEN_STATES:
         review_status = "khong_tao_bai_hoc"
     return {
+        "assignment_id": item.phan_cong_id,
         "actor_id": item.nguoi_danh_gia_id,
         "actor": _user_name(item.nguoi_danh_gia) if item.nguoi_danh_gia_id else "Không rõ",
         "time_iso": item.danh_gia_luc.isoformat() if item.danh_gia_luc else "",
@@ -343,11 +354,9 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
     if not request.user.is_authenticated:
         return _login_redirect(request)
 
-    item = _get_assigned_queue_item(request.user, pk, write=request.method == "POST")
-
+    item = _get_assigned_queue_item(request.user, pk)
     if item.bai_viet_nguon.du_an.da_luu_tru:
-        messages.info(request, "Dự án đã lưu trữ. Xem lịch sử đánh giá và bài học đã hoàn tất.")
-        return redirect(f"{reverse('knowledge:review_queue')}?status=completed")
+        return _archived_review(request)
 
     if item.trang_thai == "khong_tao_bai_hoc":
         messages.info(
@@ -550,6 +559,8 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
                 )
                 messages.success(request, "Đã chuẩn hóa bài học kinh nghiệm và ghi nhận lịch sử đánh giá.")
 
+    except ArchivedReview:
+        return _archived_review(request)
     except ValidationError as exc:
         detail = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
         messages.error(request, detail)
@@ -604,14 +615,15 @@ def reopen_review(request: HttpRequest, pk: int) -> HttpResponse:
                 raise ValidationError(
                     "Nguồn đã có bài học logic, kể cả khi bài học đã xóa mềm. Không thể tạo bài học thứ hai."
                 )
-            assignment = item.phan_cong
-            if assignment.ket_thuc_luc is not None or assignment.ngay_phan_cong > timezone.now():
-                raise ValidationError("Phân công tri thức không còn hiệu lực.")
-            if assignment.nguoi_phu_trach_id != request.user.pk:
-                raise ValidationError("Bạn không phải người phụ trách tri thức của nguồn này.")
-
             now = timezone.now()
             previous_snapshot = _review_snapshot(item)
+            assignment = PhanCongTriThuc.objects.get(
+                du_an_id=item.bai_viet_nguon.du_an_id,
+                nguoi_phu_trach=request.user,
+                ket_thuc_luc__isnull=True,
+                ngay_phan_cong__lte=now,
+            )
+            item.phan_cong = assignment
             before_status = item.trang_thai
             item.trang_thai = "cho_danh_gia_lai"
             item.full_clean()
@@ -633,6 +645,8 @@ def reopen_review(request: HttpRequest, pk: int) -> HttpResponse:
                 },
             )
             messages.success(request, "Đã mở lại lượt đánh giá. Quyết định trước được giữ trong lịch sử.")
+    except ArchivedReview:
+        return _archived_review(request)
     except ValidationError as exc:
         detail = "; ".join(exc.messages) if hasattr(exc, "messages") else str(exc)
         messages.error(request, detail)

@@ -54,7 +54,11 @@
     </table>
     </div>
     {% else %}
-      <p class="oz-empty">Không tìm thấy nhân viên phù hợp. Hãy điều chỉnh từ khóa hoặc bộ lọc.</p>
+      {% if invalid_filters %}
+        <p class="oz-empty" role="alert">Kiểm tra các bộ lọc rồi tìm lại.</p>
+      {% else %}
+        <p class="oz-empty">Không tìm thấy nhân viên phù hợp. Hãy điều chỉnh từ khóa hoặc bộ lọc.</p>
+      {% endif %}
     {% endif %}
   </section>
   {% endif %}

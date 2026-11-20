@@ -15,6 +15,16 @@ def da_doi_mat_khau(user):
 can_doi_mat_khau = user_passes_test(da_doi_mat_khau, login_url="accounts:first_password")
 
 
+def can_use_employee_directory(user):
+    """Danh bạ nội bộ dành cho nhân viên và quản trị được quyền xem hồ sơ."""
+    if not user.is_authenticated or not user.is_active:
+        return False
+    return (
+        HoSoNhanVien.objects.filter(nguoi_dung=user).exists()
+        or (user.is_staff and user.has_perm("projectp.view_hosonhanvien"))
+    )
+
+
 def ho_ten(user):
     """Họ tên kiểu Việt: 'Trần Thị Bình' (họ trước, tên sau)."""
     return f"{user.last_name} {user.first_name}".strip() or user.username

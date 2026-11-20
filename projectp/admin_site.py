@@ -1,12 +1,14 @@
 """Giao diện Admin chung, phân nhóm theo năm UC quản trị của OZZONE."""
 
 from functools import wraps
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.admin import AdminSite
 from django.core.exceptions import PermissionDenied
 from django.db import DatabaseError
 from django.template.response import TemplateResponse
+from django.shortcuts import redirect
 from django.urls import path, reverse
 from django.utils.translation import override
 
@@ -124,6 +126,10 @@ class OzzoneAdminSite(AdminSite):
             if hasattr(response, "render"):
                 response.render()
             return response
+
+    def logout(self, request, extra_context=None):
+        target = request.GET.get("next") or reverse(f"{self.name}:index")
+        return redirect(reverse("accounts:logout") + "?" + urlencode({"next": target}))
 
     def get_urls(self):
         return [

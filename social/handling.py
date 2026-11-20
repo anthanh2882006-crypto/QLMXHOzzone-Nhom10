@@ -19,7 +19,10 @@ def database_errors(view):
             if request.method != "GET" and request.resolver_match:
                 name = request.resolver_match.url_name
                 if name in {"comment_create", "reaction_set", "save_set"}:
-                    retry_url = reverse("social:post_detail", args=[kwargs["pk"]])
+                    if "community_id" in kwargs:
+                        retry_url = reverse("communities:post", args=[kwargs["community_id"], kwargs["pk"]])
+                    else:
+                        retry_url = reverse("social:post_detail", args=[kwargs["pk"]])
                 elif name == "delete":
                     retry_url = reverse("social:my_posts")
             return render(request, "social/load_error.html", {

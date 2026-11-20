@@ -31,7 +31,7 @@
         </section>
     {% else %}
         <div class="knw-page-title-row">
-            <a class="knw-back-button" href="{% url 'knowledge:search' %}?q={{ current.q|urlencode }}">← Quay lại</a>
+            <a class="knw-back-button" href="{% url 'knowledge:search' %}{% if return_query %}?{{ return_query }}{% endif %}">← Quay lại</a>
             <div><h1>Bộ lọc tra cứu</h1></div>
         </div>
 
@@ -87,7 +87,7 @@
 
                 <div class="knw-form-actions">
                     <button type="submit" class="knw-button">Áp dụng bộ lọc</button>
-                    <a href="{% url 'knowledge:search' %}?q={{ current.q|urlencode }}" class="knw-text-button">Hủy</a>
+                    <a href="{% url 'knowledge:search' %}{% if return_query %}?{{ return_query }}{% endif %}" class="knw-text-button">Hủy</a>
                 </div>
             </form>
 

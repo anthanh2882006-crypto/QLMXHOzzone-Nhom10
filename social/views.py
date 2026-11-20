@@ -3,11 +3,12 @@ import uuid
 from collections import defaultdict
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
-from django.db.models import Count, Exists, F, OuterRef, Q
+from django.db import DatabaseError, transaction
+from django.db.models import BooleanField, Case, Count, Exists, F, OuterRef, Q, When
 from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -46,7 +47,19 @@ REACTION_CHOICES = {value for value, _label in CamXuc._meta.get_field("loai_cam_
 def _post_cards(queryset, user):
     liked = CamXuc.objects.filter(bai_viet_id=OuterRef("pk"), nguoi_dung=user)
     saved = BaiVietDaLuu.objects.filter(bai_viet_id=OuterRef("pk"), nguoi_dung=user)
+    from communities.views._chung import active_community_memberships
+
+    member = active_community_memberships(user).filter(cong_dong_id=OuterRef("cong_dong_id"))
+    current_scope = (
+        Q(du_an__isnull=False) | Q(cong_dong__isnull=True) | Q(Exists(member))
+    ) & ~Q(du_an__trang_thai=DuAn.Status.ARCHIVED) & ~Q(
+        du_an__isnull=True, cong_dong__du_an_lien_ket__trang_thai=DuAn.Status.ARCHIVED,
+    )
     return with_post_attachments(queryset.annotate(
+        interaction_permitted=Case(
+            When(Q(trang_thai="hien", da_xoa_mem=False) & current_scope, then=True),
+            default=False, output_field=BooleanField(),
+        ),
         comment_count=Count("binhluan", filter=Q(binhluan__da_xoa_mem=False), distinct=True),
         reaction_count=Count("camxuc", distinct=True),
         liked_by_me=Exists(liked),
@@ -74,8 +87,30 @@ def _interaction_post(request, pk, *, community_id=None, project_id=None):
         from projects.permissions import project_access, readable_project_posts
 
         project, _ = project_access(request.user, project_id)
-        return get_object_or_404(readable_project_posts(request.user, project), pk=pk)
-    return get_object_or_404(accessible_posts(request.user), pk=pk)
+        post = get_object_or_404(readable_project_posts(request.user, project), pk=pk)
+        post.du_an = project
+        return post
+    post = get_object_or_404(accessible_posts(request.user), pk=pk)
+    if not post.du_an_id and post.cong_dong_id and post.cong_dong.loai_cong_dong == CongDong.Type.PROJECT:
+        post.du_an = post.cong_dong.du_an_lien_ket
+    return post
+
+
+def _may_interact(user, post):
+    if post.da_xoa_mem or post.trang_thai != "hien":
+        return False
+    if post.du_an_id:
+        return not post.du_an.da_luu_tru
+    if post.cong_dong_id:
+        from communities.views._chung import tu_cach
+
+        return tu_cach(user, post.cong_dong) is not None
+    return True
+
+
+def _check_interaction(user, post):
+    if not get_user_model().objects.filter(pk=user.pk, is_active=True).exists() or not _may_interact(user, post):
+        raise PermissionDenied("Bạn không có quyền bình luận hoặc bày tỏ cảm xúc trong phạm vi này.")
 
 
 def _lock_interaction_source(post):
@@ -252,9 +287,15 @@ def _feed_page_context(request, tab, post_form=None, modal_open=False):
         )
         posts = []
     else:
-        # UC-SOC-01: Dành cho bạn và Mới nhất đều dùng tập nội dung được phép;
-        # sắp xếp theo thời điểm công bố giảm dần, không có thuật toán cá nhân hóa.
-        posts = _post_cards(accessible_posts(request.user), request.user)
+        visible_posts = accessible_posts(request.user)
+        if tab == "for_you":
+            from communities.views._chung import active_community_memberships
+
+            communities = active_community_memberships(request.user).values("cong_dong_id")
+            visible_posts = visible_posts.filter(
+                Q(du_an__isnull=False) | Q(cong_dong__isnull=True) | Q(cong_dong_id__in=communities)
+            )
+        posts = _post_cards(visible_posts, request.user)
 
     context = {
         "active_tab": tab,
@@ -275,7 +316,12 @@ def feed(request):
     tab = request.GET.get("tab", "for_you")
     if tab not in {"for_you", "latest", "official"}:
         tab = "for_you"
-    return render(request, "social/feed.html", _feed_page_context(request, tab))
+    try:
+        return render(request, "social/feed.html", _feed_page_context(request, tab))
+    except DatabaseError:
+        return render(request, "social/feed.html", {
+            "active_tab": tab, "feed_load_failed": True, "retry_url": request.get_full_path(),
+        }, status=503)
 
 
 @login_required(login_url="accounts:login")
@@ -283,7 +329,7 @@ def post_detail(request, pk):
     post = accessible_posts(request.user).filter(pk=pk).first()
     if post is None:
         return render(request, "social/unavailable.html", status=404)
-    origin = listing_origin(request)
+    origin = listing_origin(request, community_id=post.cong_dong_id, project_id=post.du_an_id)
     if post.du_an_id and post.che_do_xu_ly:
         return redirect(with_listing_origin(reverse("projects:issue", args=[post.du_an_id, post.pk]), origin))
     if post.du_an_id:
@@ -320,14 +366,14 @@ def post_discussion_context(request, post):
         bai_viet=post,
         tep_tin__trang_thai="san_sang",
         tep_tin__da_xoa_mem=False,
-    ).select_related("tep_tin")
+    ).select_related("tep_tin", "nguoi_dinh_kem")
     liked = CamXuc.objects.filter(bai_viet=post, nguoi_dung=request.user).first()
     saved = BaiVietDaLuu.objects.filter(bai_viet=post, nguoi_dung=request.user).exists()
 
     context = {
         "post": post,
         "post_return_url": post_return_url(request),
-        "post_listing_origin": listing_origin(request),
+        "post_listing_origin": listing_origin(request, community_id=post.cong_dong_id, project_id=post.du_an_id),
         "comments": roots,
         "children": children,
         "attachments": attachments,
@@ -336,10 +382,8 @@ def post_discussion_context(request, post):
         "comment_form": CommentForm(initial={"request_token": _session_token(request)}),
         "reaction_choices": CamXuc._meta.get_field("loai_cam_xuc").choices,
     }
-    context["can_interact"] = bool(
-        post.trang_thai == "hien" and not post.da_xoa_mem
-        and (not post.du_an_id or not post.du_an.da_luu_tru)
-    )
+    context["can_interact"] = _may_interact(request.user, post)
+    post.interaction_permitted = context["can_interact"]
     context["can_comment"] = context["can_interact"] and not post.che_do_xu_ly
     return context
 
@@ -432,7 +476,8 @@ def create_post(request):
 @require_POST
 def create_comment(request, pk, community_id=None, project_id=None):
     post = _interaction_post(request, pk, community_id=community_id, project_id=project_id)
-    if post.che_do_xu_ly or (post.du_an_id and post.du_an.da_luu_tru):
+    _check_interaction(request.user, post)
+    if post.che_do_xu_ly:
         raise PermissionDenied("Trao đổi kỹ thuật và vòng đời dự án được kiểm tra trong không gian dự án.")
     token = request.POST.get("request_token", "")
     if not _has_session_token(request, token):
@@ -460,6 +505,7 @@ def create_comment(request, pk, community_id=None, project_id=None):
         with transaction.atomic():
             _lock_interaction_source(post)
             post = _interaction_post(request, pk, community_id=community_id, project_id=project_id)
+            _check_interaction(request.user, post)
             if not _has_session_token(request, token):
                 messages.info(request, "Yêu cầu này đã được xử lý hoặc biểu mẫu đã hết hiệu lực.")
                 return _interaction_redirect(request, post, community_id=community_id, project_id=project_id, comments=True)
@@ -493,8 +539,7 @@ def set_reaction(request, pk, community_id=None, project_id=None):
     with transaction.atomic():
         _lock_interaction_source(post)
         post = _interaction_post(request, pk, community_id=community_id, project_id=project_id)
-        if post.du_an_id and post.du_an.da_luu_tru:
-            raise PermissionDenied("Dự án đã lưu trữ và đang ở chế độ chỉ đọc.")
+        _check_interaction(request.user, post)
         if desired:
             CamXuc.objects.update_or_create(
                 bai_viet=post,
@@ -523,45 +568,46 @@ def set_saved(request, pk, community_id=None, project_id=None):
 
 @login_required(login_url="accounts:login")
 def saved_posts(request):
-    records = list(
-        BaiVietDaLuu.objects.filter(
-            nguoi_dung=request.user,
-            bai_viet__isnull=False,
-        ).order_by("-ngay_luu")
-    )
-    visible_ids = [record.bai_viet_id for record in records]
-    visible = {
-        post.pk: post
-        for post in _post_cards(accessible_posts(request.user).filter(pk__in=visible_ids), request.user)
-    }
-    posts = [visible[record.bai_viet_id] for record in records if record.bai_viet_id in visible]
-    return render(request, "social/saved_posts.html", {"posts": posts})
+    return redirect("knowledge:saved")
 
 
 @login_required(login_url="accounts:login")
 def my_posts(request):
-    posts = list(
-        BaiViet.objects.filter(
-            nguoi_dang=request.user,
-            da_xoa_mem=False,
-            loai_bai_viet__in=[BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE],
-        )
-        .select_related("nguoi_dang", "cong_dong", "du_an")
-        .order_by("-ngay_tao", "-ma_bai_viet")
-    )
-    visible_ids = set(
-        accessible_posts(request.user).filter(pk__in=[post.pk for post in posts]).values_list("pk", flat=True)
-    )
+    q = request.GET.get("q", "").strip()[:100]
+    scope = request.GET.get("scope", "")
+    scopes = {
+        "company": Q(du_an__isnull=True, cong_dong__isnull=True),
+        "community": Q(du_an__isnull=True, cong_dong__isnull=False),
+        "project": Q(du_an__isnull=False),
+    }
+    if scope not in scopes:
+        scope = ""
+    visible_posts = accessible_posts(request.user)
+    posts = BaiViet.objects.filter(
+        nguoi_dang=request.user,
+        da_xoa_mem=False,
+        loai_bai_viet__in=[BaiViet.Kind.STANDARD, BaiViet.Kind.FIELD_UPDATE],
+    ).select_related("cong_dong", "du_an").order_by("-ngay_tao", "-ma_bai_viet")
+    if q or scope:
+        posts = posts.filter(pk__in=visible_posts.values("pk"))
+    if q:
+        posts = posts.filter(Q(tieu_de__icontains=q) | Q(noi_dung__icontains=q))
+    if scope:
+        posts = posts.filter(scopes[scope])
+    posts = list(posts.annotate(visible_to_owner=Exists(visible_posts.filter(pk=OuterRef("pk")))))
     for post in posts:
-        allowed, reason = can_manage_own_post(request.user, post)
-        post.can_manage = allowed and post.pk in visible_ids
-        post.manage_reason = reason or (
-            "Bạn không còn quyền truy cập ngữ cảnh của bài viết này." if post.pk not in visible_ids else ""
-        )
-        if post.pk not in visible_ids:
-            post.tieu_de = "Nội dung không khả dụng"
-            post.noi_dung = ""
-    return render(request, "social/my_posts.html", {"posts": posts})
+        if post.visible_to_owner:
+            post.can_manage, post.manage_reason = can_manage_own_post(request.user, post)
+    return render(request, "social/my_posts.html", {"posts": posts, "q": q, "scope": scope})
+
+
+def _post_management_blocked(request, post, reason, visible):
+    source_url = reverse("social:post_detail", args=[post.pk]) if visible else ""
+    return render(request, "social/action_blocked.html", {
+        "reason": reason if visible else "Bạn không còn quyền đọc nội dung bài viết này.",
+        "source_url": source_url,
+        "return_url": listing_origin(request) or reverse("social:my_posts"),
+    }, status=403)
 
 
 @login_required(login_url="accounts:login")
@@ -574,11 +620,12 @@ def edit_post(request, pk):
         ),
         pk=pk,
     )
+    visible = accessible_posts(request.user).filter(pk=post.pk).exists()
+    if not visible:
+        return _post_management_blocked(request, post, "", visible)
     allowed, reason = can_manage_own_post(request.user, post)
-    if allowed and not accessible_posts(request.user).filter(pk=post.pk).exists():
-        allowed, reason = False, "Bạn không còn quyền truy cập ngữ cảnh của bài viết này."
     if not allowed:
-        return render(request, "social/action_blocked.html", {"reason": reason}, status=403)
+        return _post_management_blocked(request, post, reason, visible)
 
     current_attachments = DinhKem.objects.filter(bai_viet=post).select_related("tep_tin")
     initial = (
@@ -645,28 +692,48 @@ def delete_post(request, pk):
         ),
         pk=pk,
     )
+    visible = accessible_posts(request.user).filter(pk=post.pk).exists()
+    if not visible:
+        return _post_management_blocked(request, post, "", visible)
     allowed, reason = can_manage_own_post(request.user, post)
-    if allowed and not accessible_posts(request.user).filter(pk=post.pk).exists():
-        allowed, reason = False, "Bạn không còn quyền truy cập ngữ cảnh của bài viết này."
     if not allowed:
-        return render(request, "social/action_blocked.html", {"reason": reason}, status=403)
-    soft_delete_post(post=post, user=request.user, request=request)
+        return _post_management_blocked(request, post, reason, visible)
+    try:
+        soft_delete_post(post=post, user=request.user, request=request)
+    except PermissionDenied as exc:
+        visible = accessible_posts(request.user).filter(pk=post.pk).exists()
+        return _post_management_blocked(request, post, str(exc), visible)
+    except DatabaseError:
+        messages.error(request, "Chưa thể xóa bài viết. Vui lòng tải lại và thử lại.")
+        return redirect("social:my_posts")
     messages.success(request, "Bài viết đã được xóa mềm. Lịch sử và liên kết tệp được giữ lại.")
     return redirect("social:my_posts")
 
 
 @login_required(login_url="accounts:login")
 def attachment_download(request, attachment_id, community_id=None):
-    attachment = get_object_or_404(
-        DinhKem.objects.select_related("tep_tin", "bai_viet"),
-        pk=attachment_id,
-        bai_viet__isnull=False,
-        tep_tin__trang_thai="san_sang",
-        tep_tin__da_xoa_mem=False,
-    )
+    attachment = DinhKem.objects.select_related("tep_tin", "bai_viet").filter(
+        pk=attachment_id, bai_viet__isnull=False,
+    ).first()
+    if attachment is None:
+        post_id = request.GET.get("post", "")
+        post = None
+        if post_id.isascii() and post_id.isdecimal() and len(post_id) <= 18:
+            try:
+                post = _interaction_post(request, int(post_id), community_id=community_id)
+            except (Http404, PermissionDenied):
+                pass
+        return render(request, "social/file_unavailable.html", {
+            "post_id": post.pk if post else None,
+        }, status=404)
     # Recheck source rights every time; having a saved URL/file reference is not permission.
-    _interaction_post(request, attachment.bai_viet_id, community_id=community_id)
     try:
+        _interaction_post(request, attachment.bai_viet_id, community_id=community_id)
+    except (Http404, PermissionDenied):
+        return render(request, "social/unavailable.html", status=404)
+    try:
+        if attachment.tep_tin.da_xoa_mem or attachment.tep_tin.trang_thai != "san_sang":
+            raise FileNotFoundError
         file_handle = attachment.tep_tin.tep.open("rb")
     except (FileNotFoundError, OSError, ValueError):
         return render(request, "social/file_unavailable.html", {

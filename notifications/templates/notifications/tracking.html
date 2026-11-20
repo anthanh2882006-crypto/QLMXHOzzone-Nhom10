@@ -25,7 +25,7 @@
                     <div class="oz-tracking-notice-summary">
                         <strong>{{ notice.bai_viet.tieu_de }}</strong>
                         <span>Phát hành {{ notice.ngay_xuat_ban|date:"d/m/Y H:i" }} · {{ notice.nguoi_xuat_ban|ho_ten }}</span>
-                        <a href="{% url 'notifications:detail' notice.pk %}">Mở thông báo →</a>
+                        {% if can_read_report_notice %}<a href="{% url 'notifications:detail' notice.pk %}">Mở thông báo →</a>{% endif %}
                     </div>
                     <form class="oz-tracking-filters" method="get">
                         <label class="oz-tracking-search"><span class="sr-only">Tìm người nhận</span><input type="search" name="q" value="{{ search_term }}" placeholder="Tìm tên, tài khoản, mã nhân viên, phòng ban..."></label>

@@ -20,7 +20,10 @@ from .services_posts import create_post
 def project_post_create(request, pk):
     """GD-054. Tạo bài chia sẻ hoặc vấn đề từ lựa chọn chủ động của thành viên."""
     # POST gửi lại có thể đọc kết quả đã lưu. Dịch vụ vẫn chặn mọi lệnh ghi mới khi lưu trữ.
-    project, membership = project_access(request.user, pk, write=request.method == "GET")
+    project, membership = project_access(request.user, pk)
+    if request.method == "GET" and project.da_luu_tru:
+        messages.info(request, "Dự án đã lưu trữ. Bạn có thể xem dữ liệu lịch sử theo quyền.")
+        return redirect("projects:detail", pk=pk)
     form = ProjectPostForm(
         request.POST if request.method == "POST" else None,
         request.FILES or None,
@@ -47,15 +50,29 @@ def project_post_create(request, pk):
             if form.cleaned_data["che_do_xu_ly"]:
                 return redirect("projects:issue", pk=pk, post_id=post_id)
             return redirect(reverse("projects:feed", kwargs={"pk": pk}) + f"#post-{post_id}")
+    from knowledge.views import _knowledge_sources_for, _ordered_items
+
+    related_knowledge = []
+    try:
+        sources = _knowledge_sources_for(request.user)
+        related_knowledge = _ordered_items({
+            "lessons": sources["lessons"].filter(bai_viet_nguon__du_an=project),
+            "articles": sources["articles"].filter(phien_ban_dang_cong_bo__du_an=project),
+            "conclusions": sources["conclusions"].filter(bai_viet_nguon__du_an=project),
+        }, 3)[:3]
+    except DatabaseError:
+        pass
     return form_page(
         request,
         form,
         "Tạo bài đăng dự án",
-        reverse("projects:feed", kwargs={"pk": pk}),
+        reverse("projects:detail" if project.da_luu_tru else "projects:feed", kwargs={"pk": pk}),
         project,
         membership,
         section="feed",
         submit_label="Đăng bài",
         status=status_code,
+        show_related_knowledge=True,
+        related_knowledge=related_knowledge,
         notice="Chọn chế độ xử lý khi muốn mở vấn đề kỹ thuật. Bài thông thường dùng cho chia sẻ và trao đổi.",
     )

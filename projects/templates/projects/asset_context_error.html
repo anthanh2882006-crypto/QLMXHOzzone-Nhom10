@@ -1,0 +1,10 @@
+{% extends "projects/action_form.html" %}
+
+{% block asset_error %}
+<section class="pm-error" role="alert" aria-label="Ngữ cảnh thiết bị không hợp lệ">
+    <h2>Ngữ cảnh thiết bị không hợp lệ</h2>
+    <p>{{ project.ten_du_an }} · {{ device.ma_thiet_bi }} · {{ device.ten_thiet_bi }}</p>
+    <p>{{ asset_error }}</p>
+    <a href="{% url 'projects:equipment' project.pk %}">Về thiết bị dự án</a>
+</section>
+{% endblock %}

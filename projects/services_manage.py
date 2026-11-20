@@ -10,6 +10,7 @@ from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -220,6 +221,15 @@ def execute(user, pk, token, action, data, target=None):
                 du_an=project, nguoi_phu_trach_id=member.nguoi_dung_id, ket_thuc_luc__isnull=True
             ).exists():
                 raise ValidationError("Cần bàn giao hoặc kết thúc phân công tri thức trước.")
+            if BaiViet.objects.filter(
+                nguoi_dang_id=member.nguoi_dung_id,
+                che_do_xu_ly=True,
+                trang_thai_xu_ly=BaiViet.TechnicalStatus.OPEN,
+                da_xoa_mem=False,
+            ).filter(Q(du_an=project) | Q(du_an__isnull=True, cong_dong=project.cong_dong)).exists():
+                raise ValidationError(
+                    "Thành viên là tác giả của vấn đề kỹ thuật chưa giải quyết; cần hoàn tất xử lý trước."
+                )
             trials = LanThuPhuongAn.objects.filter(
                 phuong_an__bai_viet__du_an=project, trang_thai__in=("cho_ket_qua", "dang_thuc_hien")
             )
@@ -324,7 +334,7 @@ def execute(user, pk, token, action, data, target=None):
         # Chuyển trách nhiệm hiện hành, giữ người đánh giá và lịch sử các lượt đã lưu.
         ChoDanhGiaTriThuc.objects.filter(
             bai_viet_nguon__du_an=project,
-            trang_thai__in=(*PENDING, "khong_tao_bai_hoc"),
+            trang_thai__in=PENDING,
         ).update(phan_cong=new, ngay_cap_nhat=now)
 
     elif action == "archive":

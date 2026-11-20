@@ -6,6 +6,7 @@ employee_detail : xem hồ sơ người khác; B3e: nhân viên không còn hồ
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db import DatabaseError
 from django.db.models import Q
 from django.shortcuts import redirect, render
@@ -13,7 +14,7 @@ from django.shortcuts import redirect, render
 from projectp.models import HoSoNhanVien
 
 from ..forms import DirectorySearchForm
-from ._chung import can_doi_mat_khau, thong_tin_ho_so
+from ._chung import can_doi_mat_khau, can_use_employee_directory, thong_tin_ho_so
 
 User = get_user_model()
 
@@ -23,6 +24,8 @@ User = get_user_model()
 def directory(request):
     """GD-008 Danh bạ nhân viên."""
     try:
+        if not can_use_employee_directory(request.user):
+            raise PermissionDenied("Bạn không có quyền dùng danh bạ nhân viên.")
         return _render_directory(request)
     except DatabaseError:
         return render(request, "accounts/directory.html", {
@@ -35,7 +38,11 @@ def _render_directory(request):
     form = DirectorySearchForm(request.GET or None)
     people = HoSoNhanVien.objects.filter(nguoi_dung__is_active=True).order_by("nguoi_dung__first_name")
 
-    if form.is_valid():
+    if form.is_bound and not form.is_valid():
+        return render(request, "accounts/directory.html", {
+            "form": form, "active_side": "directory", "invalid_filters": True,
+        }, status=400)
+    if form.is_bound:
         data = form.cleaned_data
         for tu in data["q"].split():  # mỗi từ phải khớp (AND), một trong các cột (OR)
             people = people.filter(
@@ -62,6 +69,18 @@ def _render_directory(request):
 @can_doi_mat_khau
 def employee_detail(request, username):
     """GD-009 Hồ sơ nhân viên (chỉ đọc)."""
+    try:
+        if not can_use_employee_directory(request.user):
+            raise PermissionDenied("Bạn không có quyền xem hồ sơ trong danh bạ.")
+        return _render_employee_detail(request, username)
+    except DatabaseError:
+        return render(request, "accounts/employee_unavailable.html", {
+            "active_side": "directory",
+            "load_error": True,
+        }, status=503)
+
+
+def _render_employee_detail(request, username):
     person = User.objects.filter(username=username, is_active=True).first()
     if person is None:
         return render(request, "accounts/employee_unavailable.html", {"active_side": "directory"}, status=404)

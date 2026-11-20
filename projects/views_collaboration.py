@@ -97,7 +97,7 @@ def issue_detail(request, pk, post_id):
         post=post,
         attachments=attachments_for(bai_viet=post),
         open_issue=open_issue,
-        post_listing_origin=listing_origin(request),
+        post_listing_origin=listing_origin(request, project_id=pk),
         comments=[
             {"comment": comment, "attachments": attachments_for(binh_luan=comment)}
             for comment in post.binhluan_set.filter(da_xoa_mem=False)

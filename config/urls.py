@@ -12,7 +12,7 @@ urlpatterns = [
         path("doi-mat-khau-lan-dau/", account_views.first_password, name="first_password_change"),
     ], "accounts"))),
     path("accounts/login/", account_views.OzzoneLoginView.as_view(), name="legacy_account_login"),
-    path("accounts/logout/", account_views.logout_view, name="legacy_account_logout"),
+    path("accounts/logout/", account_views.legacy_logout, name="legacy_account_logout"),
     path("accounts/doi-mat-khau-lan-dau/", account_views.first_password, name="legacy_first_password"),
     path("cong-dong/", include("communities.urls")),
     path("social/", include("social.urls")),

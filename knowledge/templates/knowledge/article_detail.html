@@ -101,7 +101,7 @@
             <p><strong>Công bố:</strong> {{ publisher.name }}</p>
             <p><strong>Chủ đề:</strong> {{ topics|join:", "|default:"Chưa phân loại" }}</p>
             <p><strong>Phạm vi:</strong> {{ sharing_context }}</p>
-            <p><strong>Áp dụng:</strong> {{ version.pham_vi_chia_se }}</p>
+            <p><strong>Áp dụng:</strong> {{ version.get_pham_vi_chia_se_display }}</p>
             <div class="knw-detail-side-divider"></div>
             <p class="knw-muted">Người đọc chỉ xem phiên bản công bố hiện hành. Phiên bản cũ và bản nháp không được đưa vào tra cứu thông thường.</p>
         </aside>

@@ -128,4 +128,5 @@ def project_detail(request, pk):
         device_count=MaThietBi.objects.filter(du_an=project, dang_su_dung=True).count(),
         can_manage=membership.vai_tro == "quan_ly" and not project.da_luu_tru,
     )
-    return render(request, "projects/project_detail.html", context)
+    template = "projects/project_archived.html" if project.da_luu_tru else "projects/project_detail.html"
+    return render(request, template, context)

@@ -12,7 +12,7 @@
         <path d="M14.1667 8.33333C14.1667 11.555 11.555 14.1667 8.33333 14.1667C5.11167 14.1667 2.5 11.555 2.5 8.33333C2.5 5.11167 5.11167 2.5 8.33333 2.5C11.555 2.5 14.1667 5.11167 14.1667 8.33333Z"/>
         <path d="M12.5 12.5L17.5 17.5"/>
       </svg>
-      <input class="oz-input" type="search" name="q" value="{{ q }}" placeholder="Tìm cộng đồng..." aria-label="Tìm cộng đồng">
+      <input class="oz-input" type="search" name="q" value="{{ q }}" maxlength="150" placeholder="Tìm theo tên hoặc chủ đề..." aria-label="Tìm cộng đồng">
     </span>
     {% if mine %}<input type="hidden" name="mine" value="1">{% endif %}
     <button class="oz-btn oz-btn-primary" type="submit">Tìm kiếm</button>
@@ -29,14 +29,21 @@
     <article class="cm-card oz-space-card">
       {% include "includes/space_cover.html" with cover_label="Cộng đồng" cover_kind="community" %}
       <div class="cm-card-body">
-        <h2 class="cm-card-title"><a href="{% url 'communities:detail' c.pk %}">{{ c.ten_cong_dong }}</a></h2>
+        <h2 class="cm-card-title"><a href="{% if item.introduction_only %}{% url 'communities:about' c.pk %}{% else %}{% url 'communities:detail' c.pk %}{% endif %}">{{ c.ten_cong_dong }}</a></h2>
         <p class="cm-kicker">{% if c.loai_cong_dong == 'du_an' %}Cộng đồng dự án{% elif c.quy_tac_tham_gia == 'truc_tiep' %}Tham gia trực tiếp{% else %}Cần duyệt{% endif %}</p>
+        {% if c.chu_de %}<p class="cm-meta">Chủ đề {{ c.chu_de }}</p>{% endif %}
         <p class="cm-desc">{{ c.mo_ta|default:"Chưa có mô tả."|truncatechars:120 }}</p>
+        {% if item.introduction_only %}
+        <p class="cm-meta">Giới thiệu toàn công ty</p>
+        {% else %}
         <p class="cm-meta">{{ c.so_thanh_vien }} thành viên ·
           {% if item.state == 'member' %}Đã tham gia{% elif item.state == 'pending' %}Yêu cầu đang chờ{% elif item.state == 'suspended' %}Đang tạm dừng{% elif c.loai_cong_dong == 'du_an' %}Theo tư cách dự án{% elif c.quy_tac_tham_gia == 'truc_tiep' %}Mở{% else %}Cần duyệt{% endif %}
         </p>
+        {% endif %}
         <div class="cm-card-actions">
-          {% if item.state == 'none' and c.loai_cong_dong == 'chung' %}
+          {% if item.introduction_only %}
+            <a class="oz-btn oz-btn-primary" href="{% url 'communities:about' c.pk %}">Xem giới thiệu</a>
+          {% elif item.state == 'none' and c.loai_cong_dong == 'chung' %}
             {% if c.quy_tac_tham_gia == 'truc_tiep' %}
               <form method="post" action="{% url 'communities:join' c.pk %}" class="oz-inline-form">{% csrf_token %}<button class="oz-btn oz-btn-primary" type="submit">Tham gia</button></form>
             {% else %}

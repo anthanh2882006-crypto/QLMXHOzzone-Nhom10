@@ -25,18 +25,23 @@ def members(request, pk):
     project = du_an_lien_ket(cd)
     context = {"community": cd, "membership": tv, "tab": "members", "project": project}
     context.update(sidebar(request, "members", cd))
-    if not duoc_doc(cd, tv):
+    if not tv or not duoc_doc(cd, tv):
         context["locked"] = True
         return render(request, "communities/members.html", context)
 
     form = MemberFilterForm(request.GET or None)
     ds = cd.thanh_vien.filter(trang_thai=MemberStatus.ACTIVE, ket_thuc_luc__isnull=True, nguoi_dung__is_active=True).select_related(
         "nguoi_dung__ho_so_nhan_vien__phong_ban", "nguoi_dung__ho_so_nhan_vien__vi_tri")
-    if form.is_valid():
-        q = form.cleaned_data["q"]
-        if q:
-            ds = ds.filter(Q(nguoi_dung__first_name__icontains=q) | Q(nguoi_dung__last_name__icontains=q)
-                           | Q(nguoi_dung__ho_so_nhan_vien__vi_tri__ten_vi_tri__icontains=q))
+    if form.is_bound and not form.is_valid():
+        context.update(form=form, invalid_filters=True)
+        return render(request, "communities/members.html", context, status=400)
+    if form.is_bound:
+        for word in form.cleaned_data["q"].split():
+            ds = ds.filter(
+                Q(nguoi_dung__first_name__icontains=word)
+                | Q(nguoi_dung__last_name__icontains=word)
+                | Q(nguoi_dung__ho_so_nhan_vien__vi_tri__ten_vi_tri__icontains=word)
+            )
         if form.cleaned_data["vai_tro"]:
             ds = ds.filter(vai_tro=form.cleaned_data["vai_tro"])
 

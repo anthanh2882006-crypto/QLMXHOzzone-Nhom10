@@ -11,6 +11,7 @@ from django.db import DatabaseError
 from django.shortcuts import redirect, render
 
 from projectp.models import HoSoNhanVien, KyNangNhanVien
+from social.permissions import accessible_posts
 
 from ..forms import ProfileForm
 from ..services import save_profile
@@ -22,7 +23,10 @@ from ._chung import can_doi_mat_khau, thong_tin_ho_so
 def profile(request):
     """GD-006 Hồ sơ của tôi."""
     context = thong_tin_ho_so(request.user)
-    context.update({"is_me": True, "active_side": "profile"})
+    context.update({
+        "is_me": True, "active_side": "profile",
+        "contributions": accessible_posts(request.user).filter(nguoi_dang=request.user)[:8],
+    })
     return render(request, "accounts/profile.html", context)
 
 

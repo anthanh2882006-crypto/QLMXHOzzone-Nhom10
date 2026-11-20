@@ -11,8 +11,9 @@
     {% endif %}
   </div>
 </div>
-<nav class="oz-tabs" aria-label="Mục trong cộng đồng">
+{% if not introduction_only %}<nav class="oz-tabs" aria-label="Mục trong cộng đồng">
   <a class="oz-tab {% if tab == 'feed' %}is-active{% endif %}" href="{% url 'communities:detail' community.pk %}">Bảng tin</a>
   <a class="oz-tab {% if tab == 'members' %}is-active{% endif %}" href="{% url 'communities:members' community.pk %}">Thành viên</a>
   <a class="oz-tab {% if tab == 'about' %}is-active{% endif %}" href="{% url 'communities:about' community.pk %}">Giới thiệu</a>
 </nav>
+{% endif %}

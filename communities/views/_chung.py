@@ -125,19 +125,23 @@ def ghi_nhat_ky(request, hanh_dong, loai, ma, truoc=None, sau=None, ly_do=""):
     )
 
 
-def cong_dong_xem_duoc(user):
-    """Cộng đồng thường: ai cũng thấy. Cộng đồng dự án: chỉ thành viên thấy."""
+def cong_dong_xem_duoc(user, *, include_project_introductions=False):
+    """Chỉ Khám phá và Giới thiệu mở phạm vi công khai của cộng đồng dự án."""
     if not user.is_authenticated or not user.is_active:
         return CongDong.objects.none()
     cua_toi = active_community_memberships(user).values("cong_dong_id")
-    return CongDong.objects.filter(da_xoa_mem=False).filter(
-        Q(loai_cong_dong=CongDong.Type.GENERAL) | Q(pk__in=cua_toi)
-    )
+    visibility = Q(loai_cong_dong=CongDong.Type.GENERAL) | Q(pk__in=cua_toi)
+    if include_project_introductions:
+        visibility |= Q(loai_cong_dong=CongDong.Type.PROJECT, pham_vi_truy_cap="noi_bo",
+                        du_an_lien_ket__isnull=False)
+    return CongDong.objects.filter(da_xoa_mem=False).filter(visibility)
 
 
-def lay_cong_dong(user, pk):
+def lay_cong_dong(user, pk, *, include_project_introductions=False):
     """Lấy cộng đồng hoặc trả 404 nếu không tồn tại / không được thấy."""
-    return get_object_or_404(cong_dong_xem_duoc(user), pk=pk)
+    return get_object_or_404(cong_dong_xem_duoc(
+        user, include_project_introductions=include_project_introductions,
+    ), pk=pk)
 
 
 KHOA_CD_GAN_NHAT = "cong_dong_gan_nhat"   # session: cộng đồng (đã tham gia) mở gần nhất

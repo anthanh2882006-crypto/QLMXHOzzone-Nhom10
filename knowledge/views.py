@@ -1,9 +1,10 @@
-from accounts.views._chung import ho_ten
+from accounts.views._chung import can_use_employee_directory, ho_ten
 from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.db.models import Count, F, Q
+from django.db.models import Count, Exists, F, OuterRef, Q, Value
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
@@ -241,10 +242,8 @@ def _apply_search_filters(request, sources):
     invalid_project = False
     invalid_topic = False
 
-    if kind not in {value for value, _ in KIND_OPTIONS}:
-        kind = "all"
-    if period not in {value for value, _ in PERIOD_OPTIONS}:
-        period = "all"
+    invalid_kind = kind not in {value for value, _ in KIND_OPTIONS}
+    invalid_period = period not in {value for value, _ in PERIOD_OPTIONS}
 
     lessons = sources["lessons"]
     articles = sources["articles"]
@@ -319,7 +318,7 @@ def _apply_search_filters(request, sources):
             articles = articles.filter(phien_ban_dang_cong_bo__gan_chu_de__chu_de_id=topic_id).distinct()
         lessons, conclusions = lessons.none(), conclusions.none()
 
-    if period != "all":
+    if not invalid_period and period != "all":
         cutoff = timezone.now() - timedelta(days=int(period))
         lessons = lessons.filter(ngay_luu_tri_thuc__gte=cutoff)
         articles = articles.filter(phien_ban_dang_cong_bo__xuat_ban_luc__gte=cutoff)
@@ -331,6 +330,9 @@ def _apply_search_filters(request, sources):
         lessons, conclusions = lessons.none(), conclusions.none()
     elif kind == "conclusion":
         lessons, articles = lessons.none(), articles.none()
+
+    if invalid_kind or invalid_period:
+        lessons, articles, conclusions = lessons.none(), articles.none(), conclusions.none()
 
     filtered = {
         **sources,
@@ -347,6 +349,8 @@ def _apply_search_filters(request, sources):
         "period": period,
         "invalid_project": invalid_project,
         "invalid_topic": invalid_topic,
+        "invalid_kind": invalid_kind,
+        "invalid_period": invalid_period,
     }
 
 
@@ -361,9 +365,31 @@ def _render_search_results(request, sources):
     page_number = min(page_number, max(1, (total_count + PAGE_SIZE - 1) // PAGE_SIZE))
 
     start = (page_number - 1) * PAGE_SIZE
-    fetch_limit = page_number * PAGE_SIZE
-    merged = _ordered_items(filtered, fetch_limit)
-    page_items = merged[start : start + PAGE_SIZE]
+    sources_by_kind = {
+        "lesson": (filtered["lessons"], "ngay_luu_tri_thuc"),
+        "article": (filtered["articles"], "phien_ban_dang_cong_bo__xuat_ban_luc"),
+        "conclusion": (filtered["conclusions"], "ngay_xac_nhan"),
+    }
+    page_queries = [
+        queryset.order_by().annotate(
+            item_kind=Value(kind), item_id=F("pk"), item_date=F(date_field),
+        ).values_list("item_kind", "item_id", "item_date")
+        for kind, (queryset, date_field) in sources_by_kind.items()
+    ]
+    page_keys = list(
+        page_queries[0].union(*page_queries[1:]).order_by("-item_date", "item_kind", "-item_id")[
+            start : start + PAGE_SIZE
+        ]
+    )
+    objects = {}
+    for kind, (queryset, _) in sources_by_kind.items():
+        ids = [pk for item_kind, pk, _ in page_keys if item_kind == kind]
+        if ids:
+            objects[kind] = queryset.in_bulk(ids)
+    page_items = [
+        _as_item(objects[kind][pk], kind)
+        for kind, pk, _ in page_keys if pk in objects.get(kind, {})
+    ]
     has_previous = page_number > 1
     has_next = total_count > page_number * PAGE_SIZE
 
@@ -457,6 +483,7 @@ def knowledge_filter(request):
         {
             "requires_login": False,
             "current": current,
+            "return_query": request.GET.urlencode(),
             "projects": sources["projects"],
             "devices": sources["devices"],
             "topics": _topic_choices(sources),
@@ -884,12 +911,17 @@ def saved_content(request):
 # ---------------------------------------------------------------------------
 
 
-def _support_workspace(user, params=None):
-    """Return only employee profiles sharing an active project membership with the current user.
+def _shared_support_memberships(user):
+    from projects.permissions import readable_projects
 
-    No relevance score is calculated because the specification has not defined
-    a ranking formula or weights. Candidate ordering is stable by employee name.
-    """
+    return ThanhVienDuAn.objects.filter(
+        du_an_id__in=readable_projects(user).values("pk"),
+        trang_thai="hoat_dong", ket_thuc_luc__isnull=True, nguoi_dung__is_active=True,
+    ).exclude(nguoi_dung_id=user.pk)
+
+
+def _support_workspace(user, params=None):
+    """Tìm theo ngữ cảnh trong danh bạ được phép, sắp xếp ổn định theo tên."""
     params = params or {}
     from projects.permissions import readable_projects
 
@@ -905,32 +937,36 @@ def _support_workspace(user, params=None):
     )
     own_project_ids = list(own_memberships.values_list("du_an_id", flat=True))
 
-    # A colleague is eligible only through a current, shared project membership.
-    shared_memberships = (
-        ThanhVienDuAn.objects.filter(
-            du_an_id__in=own_project_ids,
-            trang_thai="hoat_dong",
-            ket_thuc_luc__isnull=True,
-            nguoi_dung__is_active=True,
-        )
-        .exclude(nguoi_dung=user)
-        .select_related("du_an", "nguoi_dung")
-    )
-    eligible_user_ids = list(
+    shared_memberships = _shared_support_memberships(user)
+    can_search_profiles = can_use_employee_directory(user)
+    base_profiles = (
         HoSoNhanVien.objects.filter(nguoi_dung__is_active=True)
         .exclude(nguoi_dung=user)
-        .values_list("nguoi_dung_id", flat=True)
-    )
-
-    base_profiles = (
-        HoSoNhanVien.objects.filter(
-            nguoi_dung_id__in=eligible_user_ids,
-            nguoi_dung__is_active=True,
-        )
         .select_related("nguoi_dung", "phong_ban", "vi_tri")
         .prefetch_related("kynangnhanvien_set__ky_nang")
     )
+    if not can_search_profiles:
+        base_profiles = base_profiles.none()
+    context_query = params.get("context", "").strip()[:150]
 
+    project_options = list(own_memberships.values("du_an_id", "du_an__ten_du_an").distinct())
+
+    selected_skill = str(params.get("skill", "")).strip()
+    selected_department = str(params.get("department", "")).strip()
+    selected_project = str(params.get("project", "")).strip()
+    invalid_filter = False
+
+    # Project values must be in the user's current project scope.
+    if selected_project:
+        if selected_project not in {str(pk) for pk in own_project_ids}:
+            invalid_filter = True
+            base_profiles = base_profiles.none()
+        else:
+            base_profiles = base_profiles.filter(nguoi_dung_id__in=shared_memberships.filter(
+                du_an_id=int(selected_project)
+            ).values("nguoi_dung_id"))
+
+    eligible_user_ids = base_profiles.order_by().values("nguoi_dung_id")
     # Filter choices are derived only from candidates already within the user's scope.
     skill_options = list(
         KyNangNhanVien.objects.filter(ho_so__nguoi_dung_id__in=eligible_user_ids)
@@ -943,32 +979,16 @@ def _support_workspace(user, params=None):
         .distinct()
         .order_by("phong_ban__ten_phong_ban")
     )
-    project_options = list(own_memberships.values("du_an_id", "du_an__ten_du_an").distinct())
 
-    selected_skill = str(params.get("skill", "")).strip()
-    selected_department = str(params.get("department", "")).strip()
-    selected_project = str(params.get("project", "")).strip()
-    invalid_filter = False
-
-    # Project values must be in the user's current project scope.
-    if selected_project:
-        if not selected_project.isdigit() or int(selected_project) not in own_project_ids:
-            invalid_filter = True
-            eligible_user_ids = []
-        else:
-            eligible_user_ids = list(
-                shared_memberships.filter(du_an_id=int(selected_project))
-                .values_list("nguoi_dung_id", flat=True)
-                .distinct()
-            )
-
-    filtered_profiles = base_profiles.filter(nguoi_dung_id__in=eligible_user_ids)
-    for word in params.get("context", "").strip().split():
+    filtered_profiles = base_profiles if context_query else base_profiles.none()
+    for word in context_query.split():
         filtered_profiles = filtered_profiles.filter(
             Q(nguoi_dung__first_name__icontains=word)
             | Q(nguoi_dung__last_name__icontains=word)
             | Q(kynangnhanvien__ky_nang__ten_ky_nang__icontains=word)
             | Q(vi_tri__ten_vi_tri__icontains=word)
+            | Q(nguoi_dung__username__icontains=word)
+            | Q(phong_ban__ten_phong_ban__icontains=word)
             | Q(gioi_thieu__icontains=word)
         ).distinct()
 
@@ -1007,15 +1027,14 @@ def _support_workspace(user, params=None):
         project_names_by_user.setdefault(row["nguoi_dung_id"], []).append(row["du_an__ten_du_an"])
         project_ids_by_user.setdefault(row["nguoi_dung_id"], []).append(row["du_an_id"])
 
-    # Count only visible posts inside a shared project; no private content is exposed.
-
+    from social.permissions import accessible_posts
     contribution_rows = (
-        BaiViet.objects.filter(
-            nguoi_dang_id__in=eligible_user_ids,
-            du_an_id__in=own_project_ids,
-            da_xoa_mem=False,
-            trang_thai="hien",
-        )
+        accessible_posts(user).filter(
+            nguoi_dang_id__in=filtered_profiles.order_by().values("nguoi_dung_id"),
+        ).annotate(contribution_project=Coalesce("du_an_id", "cong_dong__du_an_lien_ket__pk"))
+        .filter(Exists(shared_memberships.filter(
+            nguoi_dung_id=OuterRef("nguoi_dang_id"), du_an_id=OuterRef("contribution_project"),
+        )))
         .values("nguoi_dang_id")
         .annotate(total=Count("ma_bai_viet"))
     )
@@ -1055,7 +1074,7 @@ def _support_workspace(user, params=None):
         )
 
     context = {
-        "context_query": params.get("context", "").strip(),
+        "context_query": context_query,
         "candidate_items": candidate_items,
         "skill_options": skill_options,
         "department_options": department_options,
@@ -1064,17 +1083,16 @@ def _support_workspace(user, params=None):
         "selected_department": selected_department,
         "selected_project": selected_project,
         "invalid_filter": invalid_filter,
-        "limited_access": False,
+        "limited_access": not can_search_profiles,
         "create_project_options": list(own_memberships.exclude(du_an__trang_thai="luu_tru")),
         "result_count": len(candidate_items),
         "reason_candidate": None,
     }
 
     reason_user_id = params.get("reason")
-    if reason_user_id and str(reason_user_id).isdigit():
+    if reason_user_id and any(str(item["user_id"]) == reason_user_id for item in candidate_items):
         reason_user_id = int(reason_user_id)
-        # Re-check against the complete eligible colleague set, not a client-supplied ID alone.
-        reason_profile = base_profiles.filter(nguoi_dung_id=reason_user_id).first()
+        reason_profile = filtered_profiles.filter(nguoi_dung_id=reason_user_id).first()
         if reason_profile:
             reason_skills = [
                 {
@@ -1105,7 +1123,7 @@ def _support_workspace(user, params=None):
 
 
 def support_finder(request):
-    """GD-085: Find colleagues using only permitted shared-project profile data."""
+    """GD-085: Tìm người hỗ trợ khi có ngữ cảnh vấn đề."""
     if not request.user.is_authenticated:
         return _login_redirect(request)
 
@@ -1120,9 +1138,12 @@ def support_profile(request, user_id):
 
     from django.contrib.auth import get_user_model
 
-    employee = get_user_model().objects.filter(
-        pk=user_id, is_active=True, ho_so_nhan_vien__isnull=False,
-    ).first()
+    candidates = _support_workspace(request.user, request.GET)["candidate_items"]
+    employee = None
+    if any(item["user_id"] == user_id for item in candidates):
+        employee = get_user_model().objects.filter(
+            pk=user_id, is_active=True, ho_so_nhan_vien__isnull=False,
+        ).first()
     if employee is None:
         filters = request.GET.copy()
         filters.pop("reason", None)

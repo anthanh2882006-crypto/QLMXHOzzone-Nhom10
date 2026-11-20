@@ -32,7 +32,7 @@
                     · {{ post.ngay_tao|date:"d/m/Y H:i" }}
                 </p>
                 <div>{{ post.noi_dung|linebreaks }}</div>
-                {% include "projects/_attachments.html" %}
+                {% include "projects/_attachments.html" with show_file_tools=True %}
             </section>
             <section class="pm-panel pm-tab-panel" id="analysis" data-project-panel>
                 <h2>Phân tích và trao đổi</h2>

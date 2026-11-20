@@ -5,6 +5,9 @@ from projectp.models import KetQuaThu, LanThuPhuongAn
 from .forms_common import RequestForm
 
 
+from .services_technical import result_snapshot
+
+
 class ResultChoice(forms.ModelChoiceField):
     def label_from_instance(self, result):
         trial = result.lan_thu
@@ -12,6 +15,7 @@ class ResultChoice(forms.ModelChoiceField):
 
 
 class ResolutionForm(RequestForm):
+    result_snapshot = forms.CharField(required=False, widget=forms.HiddenInput)
     pending_trial_ids = forms.CharField(required=False, widget=forms.HiddenInput)
     xac_nhan_dung_thu = forms.BooleanField(
         required=False, label="Tôi xác nhận ghi kết luận thành công và dừng các lần thử còn chờ bên trên"
@@ -36,8 +40,10 @@ class ResolutionForm(RequestForm):
             ket_qua__isnull=True,
         ).select_related("phuong_an", "nguoi_thuc_hien").order_by("pk"))
         self.fields["xac_nhan_dung_thu"].required = bool(self.pending_trials)
+        self.initial["result_snapshot"] = result_snapshot(self.post)
         self.initial["pending_trial_ids"] = ",".join(str(trial.pk) for trial in self.pending_trials)
         if self.is_bound and self._errors:
             self.data = self.data.copy()
+            self.data["result_snapshot"] = self.initial["result_snapshot"]
             self.data["pending_trial_ids"] = self.initial["pending_trial_ids"]
             self.data.pop("xac_nhan_dung_thu", None)

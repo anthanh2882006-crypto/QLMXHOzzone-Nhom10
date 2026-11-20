@@ -19,7 +19,7 @@ from .permissions import (
     can_resolve,
     readable_project_posts,
 )
-from .services_common import attach_files, command, save_model
+from .services_common import attach_files, command, payload_hash, save_model
 
 
 def writable_issue(user, project, post_id):
@@ -157,6 +157,11 @@ def record_result(user, project, trial, data):
     return task["result_id"]
 
 
+def result_snapshot(post):
+    trials = LanThuPhuongAn.objects.filter(phuong_an__bai_viet=post).order_by("pk")
+    return payload_hash(list(trials.values_list("pk", "trang_thai", "ket_qua__pk")))
+
+
 def record_resolution(user, project, post, data):
     request_data = dict(data)
     if not data.get("pending_trial_ids") and not data.get("xac_nhan_dung_thu"):
@@ -177,6 +182,8 @@ def record_resolution(user, project, post, data):
                 raise ValidationError(
                     "Căn cứ không phải kết quả thành công hợp lệ của vấn đề này."
                 )
+            if "result_snapshot" in data and data["result_snapshot"] != result_snapshot(post):
+                raise ValidationError("Kết quả thực hiện đã thay đổi. Đối chiếu lại căn cứ và xác nhận trước khi gửi.")
             pending_trials = LanThuPhuongAn.objects.filter(
                 phuong_an__bai_viet=post,
                 trang_thai__in=("cho_ket_qua", "dang_thuc_hien"),

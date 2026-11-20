@@ -19,7 +19,7 @@
       <span>Yêu cầu tham gia</span>{% if side_pending %}<span class="oz-count" aria-label="{{ side_pending }} yêu cầu chờ duyệt">{{ side_pending }}</span>{% endif %}
     </a>
   </nav>
-  {% if community %}
+  {% if community and not introduction_only %}
   <section class="oz-module-context" aria-label="Cộng đồng đang xem">
     <h3 class="oz-module-context-title">{{ community.ten_cong_dong }}</h3>
     <nav class="oz-module-nav" aria-label="Mục trong {{ community.ten_cong_dong }}">

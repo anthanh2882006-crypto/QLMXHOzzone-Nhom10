@@ -15,7 +15,7 @@
     {% include "includes/post_header.html" with post_scope=community.ten_cong_dong %}
     {% if post.tieu_de %}<h1 class="cm-post-title" style="font-size:22px">{{ post.tieu_de }}</h1>{% endif %}
     <div class="cm-post-body">{{ post.noi_dung|linebreaks }}</div>
-    {% include "includes/post_attachments.html" with post_files=attachments %}
+    {% include "includes/post_attachments.html" with post_files=attachments show_file_tools=True %}
     {% if post.trang_thai == 'hien' %}{% include "includes/post_actions.html" %}{% endif %}
   </article>
 

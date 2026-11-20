@@ -1,20 +1,10 @@
 {% extends "projects/project_detail.html" %}
 
 {% block project_notice %}
-    <div class="notice">
+    <section class="pm-info" role="status">
         <strong>Dự án đã lưu trữ</strong>
-
-        <p>
-            Xem lịch sử, nguồn và kết quả đánh giá đã lưu theo quyền
-        </p>
-
-        <p>
-            Thời điểm lưu trữ
-            {{ project.luu_tru_luc|date:"d/m/Y H:i" }}
-        </p>
-    </div>
-{% endblock %}
-
-{% block activity_heading %}
-    Hoạt động đã ghi nhận
+        <p>Thời điểm lưu trữ {{ project.luu_tru_luc|date:"d/m/Y H:i" }}</p>
+        <p>Xem lịch sử, nguồn và kết quả đánh giá đã lưu theo quyền.</p>
+        <a href="{% url 'projects:history' project.pk %}">Xem lịch sử</a>
+    </section>
 {% endblock %}

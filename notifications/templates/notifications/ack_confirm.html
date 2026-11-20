@@ -15,6 +15,7 @@
                 <p>Thao tác ghi nhận bạn đã tiếp nhận thông báo “{{ notice.bai_viet.tieu_de }}”. Hãy đọc kỹ trước khi xác nhận.</p>
                 <form method="post" class="oz-form-footer">
                     {% csrf_token %}
+                    <input type="hidden" name="confirmation" value="{{ confirmation }}">
                     <button class="oz-btn oz-btn-primary" type="submit">Tôi xác nhận đã tiếp nhận</button>
                     <a class="oz-btn oz-btn-secondary" href="{% url 'notifications:detail' notice.pk %}">Quay lại đọc</a>
                 </form>

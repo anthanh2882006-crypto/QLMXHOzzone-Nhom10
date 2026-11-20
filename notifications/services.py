@@ -1,9 +1,11 @@
 import uuid
 
+from django.core import signing
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.storage import default_storage
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, models, transaction
 from django.urls import reverse
 from django.utils import timezone
 
@@ -16,9 +18,13 @@ from projectp.models import (
     ThongBaoHeThong,
     TieuChiThongBao,
 )
-from social.services import _save_attachments
+from social.services import _save_attachments, _sha256, _verified_mime
+from projects.services_common import payload_hash
 
-from .permissions import can_manage_draft, can_publish_notices, can_read_notice, resolve_scope_user_ids
+from .permissions import (
+    PUBLISH_GROUP_PREFIX, can_manage_draft, can_publish_notices, can_read_notice,
+    has_distribution_scope, resolve_scope_user_ids,
+)
 
 
 CRITERION_FIELDS = {
@@ -113,7 +119,7 @@ def _save_notice_attachments(notice, user, files, remove_ids, request=None):
     return _save_attachments(notice.bai_viet, user, files, request=request)
 
 
-def save_notice_draft(*, user, cleaned, files=(), notice=None, request=None):
+def save_notice_draft(*, user, cleaned, files=(), notice=None, request=None, attachment_journal=None):
     """Create/update an unpublished official-notice draft and its file/criteria links."""
     if not can_publish_notices(user):
         raise PermissionDenied("Tài khoản không có quyền phát hành thông báo chính thức.")
@@ -203,6 +209,8 @@ def save_notice_draft(*, user, cleaned, files=(), notice=None, request=None):
                            "yeu_cau_xac_nhan": notice.yeu_cau_xac_nhan},
                     request=request,
                 )
+        if attachment_journal is not None:
+            attachment_journal.extend(created_storage_names)
         return notice
     except Exception:
         for stored_name in created_storage_names:
@@ -225,7 +233,7 @@ def _resolve_audiences(read_scope, distribution_scope, read_criteria, distributi
     return readable, recipients
 
 
-def preview_recipient_count(cleaned):
+def publication_preview(user, cleaned, notice=None):
     """Dự kiến số người nhận từ lựa chọn hiện tại; chỉ truy vấn, chưa phát hành."""
     payload = _criteria_payload(cleaned)
     criteria = {
@@ -233,12 +241,97 @@ def preview_recipient_count(cleaned):
                   for kind, targets in groups.items() for target in targets]
         for purpose, groups in payload.items()
     }
+    if not can_publish_notices(user) or not has_distribution_scope(
+        user, PUBLISH_GROUP_PREFIX, cleaned["che_do_phan_phoi"], criteria["phan_phoi"],
+    ):
+        raise PermissionDenied("Bạn chưa được giao đủ phạm vi phân phối để phát hành.")
     _, recipients = _resolve_audiences(
         cleaned["che_do_doc"], cleaned["che_do_phan_phoi"], criteria["doc"], criteria["phan_phoi"],
     )
     if not recipients:
         raise ValidationError("Tập người nhận không có tài khoản nhân viên đang hoạt động.")
-    return len(recipients)
+    files = cleaned["tep_dinh_kem"]
+    removed = {row.pk for row in cleaned["remove_attachment_ids"]}
+    retained = []
+    if notice:
+        retained = list(
+            DinhKem.objects.filter(bai_viet_id=notice.bai_viet_id).exclude(pk__in=removed)
+            .select_related("tep_tin").order_by("pk")
+        )
+    if len(retained) + len(files) > 5:
+        raise ValidationError("Mỗi thông báo được đính kèm tối đa 5 tệp.")
+    attachment_data = []
+    for uploaded in files:
+        _verified_mime(uploaded)
+        attachment_data.append((uploaded.name, _sha256(uploaded)))
+    snapshot = {
+        "user": user.pk,
+        "notice": notice.pk if notice else None,
+        "revision": notice.phien_ban_cau_hinh if notice else None,
+        "key": str(cleaned["publish_key"]),
+        "reference": cleaned["thong_bao_tham_chieu"].pk if cleaned["thong_bao_tham_chieu"] else None,
+        "title": cleaned["tieu_de"],
+        "body": cleaned["noi_dung"],
+        "read": cleaned["che_do_doc"],
+        "distribution": cleaned["che_do_phan_phoi"],
+        "ack": cleaned["yeu_cau_xac_nhan"],
+        "criteria": {
+            purpose: {kind: sorted(obj.pk for obj in targets) for kind, targets in groups.items()}
+            for purpose, groups in payload.items()
+        },
+        "recipients": sorted(recipients),
+        "attachments": [(item.pk, item.tep_tin_id) for item in retained],
+        "uploads": attachment_data,
+    }
+    fingerprint = payload_hash(snapshot)
+    filenames = [item.tep_tin.ten_tep for item in retained] + [uploaded.name for uploaded in files]
+    return sorted(recipients), fingerprint, filenames
+
+
+PREVIEW_SALT = "ozzone.notice.publication"
+
+
+def save_and_publish_notice(*, user, cleaned, notice, preview_token, request):
+    key = cleaned["publish_key"]
+    journal = []
+    try:
+        with transaction.atomic():
+            # Serialize repeat submissions from the same publisher, including on SQLite.
+            User = get_user_model()
+            User.objects.filter(pk=user.pk).update(is_active=models.F("is_active"))
+            user = User.objects.get(pk=user.pk)
+            previous = ThongBaoChinhThuc.objects.filter(
+                khoa_yeu_cau_xuat_ban=key, trang_thai="da_cong_bo", nguoi_xuat_ban=user,
+            ).first()
+            if previous and (notice is None or previous.pk == notice.pk):
+                return previous
+            if notice:
+                notice = ThongBaoChinhThuc.objects.select_for_update().select_related("bai_viet").get(pk=notice.pk)
+                if not can_manage_draft(user, notice):
+                    raise PermissionDenied("Bản nháp đã đổi trạng thái hoặc không còn quyền biên tập.")
+            try:
+                reviewed = signing.loads(preview_token, salt=PREVIEW_SALT, max_age=900)
+            except signing.BadSignature:
+                raise ValidationError("Vui lòng xem trước và xác nhận phát hành.") from None
+            recipients, fingerprint, _ = publication_preview(user, cleaned, notice)
+            if reviewed != fingerprint:
+                raise ValidationError("Nội dung, bản nháp hoặc người nhận đã thay đổi. Hãy xem trước lại.")
+            draft = save_notice_draft(
+                user=user, cleaned=cleaned, files=cleaned["tep_dinh_kem"], notice=notice,
+                request=request, attachment_journal=journal,
+            )
+            published, _ = publish_notice(
+                notice_id=draft.pk, user=user, request_key=key, request=request,
+                reviewed_recipients=recipients,
+            )
+            return published
+    except Exception:
+        for name in journal:
+            try:
+                default_storage.delete(name)
+            except OSError:
+                pass
+        raise
 
 
 def _notice_audiences(notice):
@@ -265,7 +358,7 @@ def _notice_recipients(notice):
     return _validate_notice_audience(notice, require_recipients=True)
 
 
-def publish_notice(*, notice_id, user, request_key, request=None):
+def publish_notice(*, notice_id, user, request_key, reviewed_recipients, request=None):
     """Atomically publish config + audience + ACK rows + per-recipient notifications.
 
     request_key is the form's UUID idempotency key. A retry after a committed publish
@@ -274,7 +367,7 @@ def publish_notice(*, notice_id, user, request_key, request=None):
     if not can_publish_notices(user):
         raise PermissionDenied("Bạn không còn quyền phát hành thông báo.")
 
-    existing = ThongBaoChinhThuc.objects.filter(khoa_yeu_cau_xuat_ban=request_key).select_related("bai_viet").first()
+    existing = ThongBaoChinhThuc.objects.filter(khoa_yeu_cau_xuat_ban=request_key, nguoi_xuat_ban=user, pk=notice_id).select_related("bai_viet").first()
     if existing and existing.trang_thai == "da_cong_bo":
         return existing, False
 
@@ -292,7 +385,14 @@ def publish_notice(*, notice_id, user, request_key, request=None):
                 raise ValidationError({"tieu_de": "Cần nhập tiêu đề trước khi phát hành."})
             if not post.noi_dung.strip():
                 raise ValidationError({"noi_dung": "Cần nhập nội dung trước khi phát hành."})
+            if not has_distribution_scope(
+                user, PUBLISH_GROUP_PREFIX, notice.che_do_phan_phoi,
+                notice.tieu_chi.filter(muc_dich="phan_phoi"),
+            ):
+                raise PermissionDenied("Bạn chưa được giao đủ phạm vi phân phối để phát hành.")
             recipients = _notice_recipients(notice)
+            if recipients != reviewed_recipients:
+                raise ValidationError("Danh sách người nhận đã thay đổi. Hãy xem trước lại.")
             User = get_user_model()
             locked_users = list(
                 User.objects.select_for_update().filter(pk__in=recipients, is_active=True)
@@ -372,7 +472,7 @@ def publish_notice(*, notice_id, user, request_key, request=None):
         return notice, True
     except IntegrityError:
         # If another identical request committed first, return its result.
-        existing = ThongBaoChinhThuc.objects.filter(khoa_yeu_cau_xuat_ban=request_key).select_related("bai_viet").first()
+        existing = ThongBaoChinhThuc.objects.filter(khoa_yeu_cau_xuat_ban=request_key, nguoi_xuat_ban=user, pk=notice_id).select_related("bai_viet").first()
         if existing and existing.trang_thai == "da_cong_bo":
             return existing, False
         raise

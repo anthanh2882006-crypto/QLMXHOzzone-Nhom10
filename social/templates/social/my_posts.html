@@ -5,10 +5,27 @@
 {% block content %}
 <div class="social-page">
     <div class="social-page-heading"><div><p class="social-eyebrow">QUẢN LÝ NỘI DUNG</p><h1>Bài viết của tôi</h1><p class="social-muted">Chỉ hiển thị bài chia sẻ/thảo luận do bạn tạo.</p></div><a class="social-button social-button-primary" href="{% url 'social:create' %}">+ Tạo bài viết</a></div>
+    <form method="get" class="social-form social-card" aria-label="Tìm bài viết của tôi">
+        <label for="my-posts-query">Tìm bài viết</label>
+        <input type="search" name="q" id="my-posts-query" maxlength="100" value="{{ q }}">
+        <label for="my-posts-scope">Nơi đăng</label>
+        <select name="scope" id="my-posts-scope">
+            <option value="">Tất cả nơi đăng</option>
+            <option value="company"{% if scope == "company" %} selected{% endif %}>Bảng tin công ty</option>
+            <option value="community"{% if scope == "community" %} selected{% endif %}>Cộng đồng</option>
+            <option value="project"{% if scope == "project" %} selected{% endif %}>Dự án</option>
+        </select>
+        <div class="social-form-actions">
+            {% if q or scope %}<a class="social-button social-button-secondary" href="{% url 'social:my_posts' %}">Bỏ bộ lọc</a>{% endif %}
+            <button class="social-button social-button-primary" type="submit">Tìm</button>
+        </div>
+    </form>
     {% for post in posts %}
         <article class="social-card">
+            {% if post.visible_to_owner %}
             <div class="social-card-topline"><span class="social-pill">{{ post.get_trang_thai_display|default:post.trang_thai }}</span><time>{{ post.ngay_tao|date:'d/m/Y H:i' }}</time></div>
             <h2><a href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">{{ post.tieu_de|default:post.noi_dung|truncatechars:100 }}</a></h2>
+            <p class="social-muted">{% if post.du_an_id %}Dự án {{ post.du_an.ten_du_an }}{% elif post.cong_dong_id %}Cộng đồng {{ post.cong_dong.ten_cong_dong }}{% else %}Bảng tin công ty{% endif %}</p>
             <p class="social-post-excerpt">{{ post.noi_dung|truncatechars:240 }}</p>
             <div class="social-card-footer">
                 <a class="social-text-link" href="{% url 'social:post_detail' post.pk %}?next={{ request.get_full_path|urlencode }}">Xem bài</a>
@@ -18,12 +35,21 @@
                         {% csrf_token %}<button class="social-danger-link" type="submit">Xóa mềm</button>
                     </form>
                 {% else %}
-                    <span class="social-muted">{{ post.manage_reason|default:"Không thể sửa/xóa trong trạng thái hiện tại." }}</span>
+                    <span class="social-muted">{{ post.manage_reason }}</span>
+                    <a class="social-text-link" href="{% url 'social:edit' post.pk %}?next={{ request.get_full_path|urlencode }}">Xem lý do hạn chế</a>
                 {% endif %}
             </div>
+            {% else %}
+                <h2>Nội dung không khả dụng</h2>
+                <p class="social-muted">Bạn hiện không có quyền đọc bài viết này.</p>
+            {% endif %}
         </article>
     {% empty %}
+        {% if q or scope %}
+        <div class="social-empty"><h2>Không tìm thấy bài viết phù hợp</h2><p>Thử đổi từ khóa hoặc nơi đăng.</p></div>
+        {% else %}
         <div class="social-empty"><h2>Bạn chưa có bài viết</h2><p>Các bài chia sẻ/thảo luận do bạn tạo sẽ xuất hiện tại đây.</p><a class="social-button social-button-primary" href="{% url 'social:create' %}">Tạo bài viết</a></div>
+        {% endif %}
     {% endfor %}
 </div>
 {% endblock %}

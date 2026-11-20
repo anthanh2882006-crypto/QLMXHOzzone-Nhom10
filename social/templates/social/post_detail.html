@@ -22,7 +22,7 @@
         {% if post.tieu_de %}<h1 class="social-detail-title">{{ post.tieu_de }}</h1>{% endif %}
         <div class="social-detail-content">{{ post.noi_dung|linebreaks }}</div>
 
-        {% include "includes/post_attachments.html" with post_files=attachments %}
+        {% include "includes/post_attachments.html" with post_files=attachments show_file_tools=True %}
 
         <div class="social-detail-actions">
             {% if can_interact %}

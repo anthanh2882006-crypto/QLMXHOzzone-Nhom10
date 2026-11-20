@@ -29,6 +29,7 @@
   const publish = dialog.querySelector("[data-preview-publish]");
   let controller;
   let confirmed = false;
+  let previewToken = "";
   let trigger;
 
   function fill(field, value) {
@@ -50,8 +51,11 @@
     event.preventDefault();
     if (dialog.open) return;
     trigger = event.submitter;
+    controller?.abort();
     controller = new AbortController();
     const signal = controller.signal;
+    previewToken = "";
+    form.elements.preview_token.value = "";
     publish.disabled = true;
     status.textContent = "Đang kiểm tra người nhận…";
     content.hidden = true;
@@ -59,8 +63,7 @@
     dialog.showModal();
 
     const data = new FormData(form);
-    data.delete("tep_dinh_kem");
-    data.delete("remove_attachment_ids");
+    data.delete("preview_token");
     try {
       const result = await fetch(form.dataset.previewUrl, {method: "POST", body: data, signal});
       const report = await result.json();
@@ -69,6 +72,8 @@
         status.textContent = report.errors?.join(" ") || "Chưa kiểm tra được thông báo.";
         return;
       }
+      previewToken = report.preview_token;
+      fill("attachments", report.attachments.join(" · ") || "Không có tệp");
       fill("title", data.get("tieu_de"));
       fill("body", data.get("noi_dung"));
       fill("read", scopeLabel("che_do_doc", "read"));
@@ -86,11 +91,13 @@
 
   dialog.querySelector("[data-preview-back]").addEventListener("click", () => dialog.close());
   dialog.addEventListener("close", () => {
+    if (dialog.open) return;
     controller?.abort();
     trigger?.focus();
   });
   publish.addEventListener("click", () => {
-    if (publish.disabled || !trigger) return;
+    if (publish.disabled || !trigger || !previewToken) return;
+    form.elements.preview_token.value = previewToken;
     confirmed = true;
     dialog.close();
     try {

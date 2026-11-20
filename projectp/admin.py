@@ -3,15 +3,17 @@
 from urllib.parse import urlencode
 
 from django.contrib import admin, messages
+from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django.utils import timezone
 
 from . import models
+from .admin_scopes import SOC_MODERATION_PREFIX, assigned_scopes, scope_ids
 
 
 def _can_view_moderation(user):
@@ -104,11 +106,10 @@ class WorkflowReadOnlyAdmin(admin.ModelAdmin):
         if self.model in source:
             return queryset.filter(**{source[self.model] + "__in": posts})
         from knowledge.views import _knowledge_sources_for
+        from .admin_knowledge import readable_admin_versions
 
         knowledge = _knowledge_sources_for(request.user)
-        version_ids = models.PhienBanTriThuc.objects.filter(
-            Q(bai_viet_tri_thuc_id__in=knowledge["articles"].values("pk")) | Q(nguoi_bien_tap=request.user)
-        ).values("pk")
+        version_ids = readable_admin_versions(request.user, knowledge["articles"]).values("pk")
         if self.model is models.PhienBanTriThuc:
             return queryset.filter(pk__in=version_ids)
         if self.model in (models.NguonThamKhao, models.GanChuDePhienBan):
@@ -202,10 +203,14 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
         return _can_view_moderation(request.user)
 
     def has_view_permission(self, request, obj=None):
-        return _can_view_moderation(request.user)
+        return _can_view_moderation(request.user) and (
+            obj is None or self.get_queryset(request).filter(pk=obj.pk).exists()
+        )
 
     def has_change_permission(self, request, obj=None):
-        return _can_moderate(request.user)
+        return _can_moderate(request.user) and (
+            obj is None or self.has_view_permission(request, obj)
+        )
 
     def has_add_permission(self, request):
         return False
@@ -215,7 +220,23 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
         return False
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("nguoi_dang", "cong_dong", "du_an", "nguoi_xoa")
+        queryset = super().get_queryset(request).select_related("nguoi_dang", "cong_dong", "du_an", "nguoi_xoa")
+        if not _can_view_moderation(request.user):
+            return queryset.none()
+        if request.user.is_superuser:
+            return queryset
+        scopes = assigned_scopes(request.user, SOC_MODERATION_PREFIX)
+        projects = scope_ids(scopes, "du_an")
+        communities = scope_ids(scopes, "cong_dong")
+        scope = (
+            (Q(du_an_id__in=projects) & (Q(cong_dong__isnull=True) | Q(cong_dong_id=F("du_an__cong_dong_id"))))
+            | Q(du_an__isnull=True, cong_dong__loai_cong_dong=models.CongDong.Type.PROJECT,
+                cong_dong__du_an_lien_ket__pk__in=projects)
+            | Q(du_an__isnull=True, cong_dong_id__in=communities, cong_dong__loai_cong_dong=models.CongDong.Type.GENERAL)
+        )
+        if "toan_cong_ty" in scopes:
+            scope |= Q(du_an__isnull=True, cong_dong__isnull=True)
+        return queryset.filter(scope)
 
     def get_readonly_fields(self, request, obj=None):
         return tuple(field.name for field in self.model._meta.fields)
@@ -290,13 +311,18 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
             )
         return ids, posts
 
+    @staticmethod
+    def _moderation_revision(request, action, posts):
+        return [request.user.pk, action, [[post.pk, post.trang_thai, post.da_xoa_mem,
+                                          post.ngay_cap_nhat.isoformat()] for post in posts]]
+
     def _render_moderation_confirmation(
         self, request, *, action, ids, posts, error=None, reason="", status=200
     ):
-        from social.permissions import protected_source_reason
+        from social.permissions import moderation_block_reason
 
         for post in posts:
-            post.moderation_protected_reason = protected_source_reason(post)
+            post.moderation_protected_reason = moderation_block_reason(post, action)
             post.moderation_state = (
                 "Đã xóa mềm" if post.da_xoa_mem else ("Đã ẩn" if post.trang_thai == "an" else "Hiển thị")
             )
@@ -313,6 +339,9 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
             "changelist_url": reverse("admin:projectp_baiviet_changelist"),
             "can_confirm": all(not post.moderation_protected_reason for post in posts),
             "requires_reason": action == "hide",
+            "revision_token": signing.dumps(
+                self._moderation_revision(request, action, posts), salt="ozzone.moderation",
+            ),
         }
         return render(request, "admin/projectp/baiviet/moderation_confirm.html", context, status=status)
 
@@ -343,7 +372,10 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
                     status=400,
                 )
             try:
-                self._apply_moderation(request, action=action, ids=ids, reason=reason)
+                self._apply_moderation(
+                    request, action=action, ids=ids, reason=reason,
+                    revision_token=request.POST.get("revision_token", ""),
+                )
             except (ValidationError, DatabaseError) as exc:
                 if isinstance(exc, ValidationError):
                     error = " ".join(exc.messages)
@@ -368,19 +400,26 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
 
         return self._render_moderation_confirmation(request, action=action, ids=ids, posts=posts)
 
-    def _apply_moderation(self, request, *, action, ids, reason):
-        from social.permissions import protected_source_reason
-        from django.db.models import F
+    def _apply_moderation(self, request, *, action, ids, reason, revision_token):
+        from social.permissions import moderation_block_reason
         from .admin_permissions import current_admin
 
         with transaction.atomic():
             project_ids = models.BaiViet.objects.filter(pk__in=ids, du_an__isnull=False).values("du_an_id")
             models.DuAn.objects.filter(pk__in=project_ids).update(ngay_cap_nhat=F("ngay_cap_nhat"))
             request.user = current_admin(request, "projectp.change_baiviet")
-            posts = list(models.BaiViet.objects.select_for_update().filter(pk__in=ids).order_by("pk"))
+            scoped_posts = self.get_queryset(request).filter(pk__in=ids)
+            scoped_posts.update(ngay_cap_nhat=F("ngay_cap_nhat"))
+            posts = list(scoped_posts.select_related(None).select_for_update().order_by("pk"))
             if len(posts) != len(ids):
                 raise ValidationError("Danh sách đã thay đổi trong lúc bạn đang thao tác. Hãy tải lại.")
-            protected = [(post.pk, protected_source_reason(post)) for post in posts]
+            try:
+                reviewed = signing.loads(revision_token, salt="ozzone.moderation", max_age=60 * 60)
+            except signing.BadSignature:
+                reviewed = None
+            if reviewed != self._moderation_revision(request, action, posts):
+                raise ValidationError("Nội dung hoặc trạng thái đã thay đổi. Hãy kiểm tra lại trước khi xác nhận.")
+            protected = [(post.pk, moderation_block_reason(post, action)) for post in posts]
             protected = [(pk, message) for pk, message in protected if message]
             if protected:
                 details = "; ".join(f"#{pk}: {message}" for pk, message in protected)
@@ -453,29 +492,37 @@ class NhatKyNghiepVuAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         from django.db.models import Q
-        from projects.permissions import readable_projects
+        from projects.permissions import administrable_projects
         from social.permissions import accessible_posts
 
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
-        projects = [str(pk) for pk in readable_projects(request.user).values_list("pk", flat=True)]
         posts = [str(pk) for pk in accessible_posts(request.user).values_list("pk", flat=True)]
+        may_read_projects = any(request.user.has_perm(perm) for perm in ("projectp.view_duan", "projectp.change_duan"))
+        delegated_management = Q(pk__in=[])
+        project_records = Q(loai_tai_nguyen="DU_AN")
+        if may_read_projects:
+            delegated_projects = [str(pk) for pk in administrable_projects(request.user).values_list("pk", flat=True)]
+            delegated_management = project_records & Q(ma_tai_nguyen__in=delegated_projects)
         return queryset.filter(
-            Q(nguoi_dung=request.user)
-            | Q(loai_tai_nguyen="DU_AN", ma_tai_nguyen__in=projects)
+            (Q(nguoi_dung=request.user) & ~project_records)
             | Q(loai_tai_nguyen="BAI_VIET", ma_tai_nguyen__in=posts)
+            | delegated_management
         )
 
     def has_add_permission(self, request):
         return False
 
-    def has_change_permission(self, request, obj=None):
+    def has_view_permission(self, request, obj=None):
         return bool(
             request.user.is_active
             and request.user.is_staff
             and request.user.has_perm("projectp.view_nhatkynghiepvu")
         )
+
+    def has_change_permission(self, request, obj=None):
+        return False
 
     def has_delete_permission(self, request, obj=None):
         return False

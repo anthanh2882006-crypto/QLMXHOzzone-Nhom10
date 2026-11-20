@@ -58,14 +58,16 @@ def interaction_redirect(request, post, *, community_id=None, project_id=None, c
             )
             if links["namespace"] == "social" or target_scope == links["scope_id"]:
                 return HttpResponseRedirect(target)
-    return_to = _allowed_listing(request, request.POST.get("return_to", ""))
+    return_to = _allowed_listing(
+        request, request.POST.get("return_to", ""), community_id=community_id, project_id=project_id,
+    )
     detail = with_listing_origin(links["detail"], return_to)
     if comments:
         detail += "#" + links["comments"].partition("#")[2]
     return HttpResponseRedirect(detail)
 
 
-def _allowed_listing(request, candidate):
+def _allowed_listing(request, candidate, *, community_id=None, project_id=None):
     if not candidate or not url_has_allowed_host_and_scheme(
         candidate, allowed_hosts={request.get_host()}, require_https=request.is_secure()
     ):
@@ -79,13 +81,17 @@ def _allowed_listing(request, candidate):
         "knowledge:search", "knowledge:filter", "knowledge:saved",
     }:
         return candidate
+    if match.view_name == "projects:feed" and project_id is not None and match.kwargs["pk"] == project_id:
+        return candidate
+    if match.view_name == "communities:detail" and community_id is not None and match.kwargs["pk"] == community_id:
+        return candidate
     return ""
 
 
-def listing_origin(request):
+def listing_origin(request, *, community_id=None, project_id=None):
     """Find the permitted listing that opened this post."""
     for candidate in (request.GET.get("next", ""), request.META.get("HTTP_REFERER", "")):
-        return_to = _allowed_listing(request, candidate)
+        return_to = _allowed_listing(request, candidate, community_id=community_id, project_id=project_id)
         if return_to:
             return return_to
     return ""

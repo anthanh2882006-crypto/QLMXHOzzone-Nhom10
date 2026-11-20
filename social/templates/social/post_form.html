@@ -22,8 +22,7 @@
             {{ form.tieu_de }}{{ form.tieu_de.errors }}
             <label for="id_noi_dung">Nội dung <span class="social-required">*</span></label>
             {{ form.noi_dung }}{{ form.noi_dung.errors }}
-            <label for="id_tep_dinh_kem">Tệp đính kèm</label>
-            {{ form.tep_dinh_kem }}{{ form.tep_dinh_kem.errors }}
+            {% include "includes/attachment_picker.html" with field=form.tep_dinh_kem %}
             {% if editing and current_attachments %}
                 <div class="social-existing-files">
                     <strong>Tệp hiện tại</strong>

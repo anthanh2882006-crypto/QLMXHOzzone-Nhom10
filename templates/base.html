@@ -399,7 +399,7 @@
         }
     </style>
 
-    <link rel="stylesheet" href="{% static 'ozzone/post_attachments.css' %}?v=20261116-cleanup">
+    <link rel="stylesheet" href="{% static 'ozzone/post_attachments.css' %}?v=attachment-controls">
     <link rel="stylesheet" href="{% static 'ozzone/confirmation.css' %}">
     {% block extra_css %}{% endblock %}
     {% block extra_head %}{% endblock %}
@@ -735,6 +735,7 @@
 
     {% include 'includes/confirmation_dialog.html' %}
     <script src="{% static 'ozzone/confirmation.js' %}" defer></script>
+    <script src="{% static 'ozzone/attachment_controls.js' %}" defer></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

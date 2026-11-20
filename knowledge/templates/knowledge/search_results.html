@@ -57,6 +57,9 @@
                 <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Thiết bị</a>
                 <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Chủ đề</a>
                 <a href="{% url 'knowledge:filter' %}?q={{ filters.q|urlencode }}&kind={{ filters.kind }}&project={{ filters.project }}&device={{ filters.device|urlencode }}&topic={{ filters.topic }}&period={{ filters.period }}">Thời gian</a>
+                {% if filters.invalid_kind or filters.invalid_period %}
+                    <p class="knw-filter-error" role="alert">Loại nội dung hoặc thời gian không hợp lệ. Chọn lại bộ lọc.</p>
+                {% endif %}
                 {% if filters.invalid_project or filters.invalid_topic %}
                     <p class="knw-filter-error">Phạm vi lọc không hợp lệ hoặc nằm ngoài quyền truy cập.</p>
                 {% endif %}

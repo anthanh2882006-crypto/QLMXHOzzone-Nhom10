@@ -10,6 +10,8 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import DatabaseError, transaction
 from django.db.models import F, Q
 from django.shortcuts import redirect
+from knowledge.services import article_communities
+from projects.permissions import readable_projects
 from projectp.models import (
     BaiHocKinhNghiem,
     BaiVietTriThuc,
@@ -20,8 +22,33 @@ from projectp.models import (
     PhienBanTriThuc,
 )
 from projectp.admin import WorkflowReadOnlyAdmin
-from projects.permissions import readable_projects
-from communities.views._chung import cong_dong_xem_duoc
+from .admin_scopes import KNOWLEDGE_ADMIN_PREFIX, assigned_scopes, scope_ids
+
+
+def readable_admin_versions(user, visible_articles):
+    versions = PhienBanTriThuc.objects.all()
+    if user.is_superuser:
+        return versions
+
+    allowed = Q(pk__in=visible_articles.values("phien_ban_dang_cong_bo_id"))
+    scopes = assigned_scopes(user, KNOWLEDGE_ADMIN_PREFIX)
+    allowed |= Q(du_an_id__in=scope_ids(scopes, "du_an"))
+    allowed |= Q(cong_dong_id__in=scope_ids(scopes, "cong_dong"))
+    if "toan_cong_ty" in scopes:
+        allowed |= Q(pham_vi_chia_se="noi_bo")
+
+    editor_articles = BaiVietTriThuc.objects.filter(da_xoa_mem=False, trang_thai_quan_tri="hien_thi")
+    if not user.has_perm("projectp.change_baiviettrithuc"):
+        if user.has_perm("projectp.add_baiviettrithuc"):
+            editor_articles = editor_articles.filter(nguoi_tao=user)
+        else:
+            editor_articles = editor_articles.none()
+    allowed |= (
+        Q(trang_thai="ban_nhap", bai_viet_tri_thuc_id__in=editor_articles.values("pk"))
+        & (Q(du_an__isnull=True) | Q(du_an__in=readable_projects(user).values("pk")))
+        & (Q(cong_dong__isnull=True) | Q(cong_dong__in=article_communities(user).values("pk")))
+    )
+    return versions.filter(allowed)
 
 
 def status_revision(instance):
@@ -59,7 +86,11 @@ class KnowledgeStatusForm(forms.ModelForm):
                 raise ValidationError("Biểu mẫu hết hiệu lực; tải lại để đối chiếu.")
             if expected != signing.loads(status_revision(self.current), salt="knowledge.admin.status"):
                 raise ValidationError("Nội dung vừa thay đổi; tải lại trước khi chuyển trạng thái.")
-            if data.get("trang_thai_quan_tri") == "hien_thi":
+            target = data.get("trang_thai_quan_tri")
+            if target and (target != self.current.trang_thai_quan_tri or self.current.da_xoa_mem):
+                if not data.get("ly_do"):
+                    self.add_error("ly_do", "Nhập lý do trước khi chuyển trạng thái.")
+            if target == "hien_thi":
                 if isinstance(self.current, BaiHocKinhNghiem):
                     source = self.current.bai_viet_nguon
                     if (
@@ -69,8 +100,10 @@ class KnowledgeStatusForm(forms.ModelForm):
                     ):
                         raise ValidationError("Nguồn/kết quả không còn hợp lệ để khôi phục.")
                     self.current.full_clean()
-                elif self.current.phien_ban_dang_cong_bo_id:
+                else:
                     version = self.current.phien_ban_dang_cong_bo
+                    if version is None:
+                        raise ValidationError("Chưa có phiên bản công bố hợp lệ để khôi phục.")
                     if version.bai_viet_tri_thuc_id != self.current.pk or version.trang_thai != "da_cong_bo":
                         raise ValidationError("Phiên bản công bố hiện hành không hợp lệ.")
                     version.full_clean()
@@ -81,6 +114,11 @@ class KnowledgeStatusAdmin(admin.ModelAdmin):
     form = KnowledgeStatusForm
     list_display = ("__str__", "trang_thai_quan_tri", "da_xoa_mem", "ngay_cap_nhat")
     list_filter = ("trang_thai_quan_tri", "da_xoa_mem")
+
+    def get_search_fields(self, request):
+        if self.model is BaiHocKinhNghiem:
+            return ("=ma_bai_hoc", "tieu_de")
+        return ("=ma_bai_viet_tri_thuc", "phien_ban_dang_cong_bo__tieu_de")
 
     def has_add_permission(self, request):
         return False
@@ -101,21 +139,37 @@ class KnowledgeStatusAdmin(admin.ModelAdmin):
         queryset = super().get_queryset(request)
         if request.user.is_superuser:
             return queryset
-        projects = readable_projects(request.user)
+        scopes = assigned_scopes(request.user, KNOWLEDGE_ADMIN_PREFIX)
+        projects = scope_ids(scopes, "du_an")
         if self.model is BaiHocKinhNghiem:
-            return queryset.filter(Q(pham_vi_chia_se="noi_bo") | Q(bai_viet_nguon__du_an__in=projects))
-        communities = cong_dong_xem_duoc(request.user)
-        return queryset.filter(
-            Q(nguoi_tao=request.user)
-            | Q(phien_ban_dang_cong_bo__pham_vi_chia_se="noi_bo")
-            | Q(phien_ban_dang_cong_bo__du_an__in=projects)
-            | Q(phien_ban_dang_cong_bo__cong_dong__in=communities)
+            scope = Q(pk__in=scope_ids(scopes, "bai_hoc")) | Q(bai_viet_nguon__du_an_id__in=projects)
+            if "toan_cong_ty" in scopes:
+                scope |= Q(pham_vi_chia_se="noi_bo")
+        else:
+            scope = (
+                Q(pk__in=scope_ids(scopes, "bai_viet"))
+                | Q(phien_ban_dang_cong_bo__du_an_id__in=projects)
+                | Q(phien_ban_dang_cong_bo__cong_dong_id__in=scope_ids(scopes, "cong_dong"))
+            )
+            if "toan_cong_ty" in scopes:
+                scope |= Q(phien_ban_dang_cong_bo__pham_vi_chia_se="noi_bo")
+        return queryset.filter(scope)
+
+    def has_view_permission(self, request, obj=None):
+        return super().has_view_permission(request, obj) and (
+            obj is None or self.get_queryset(request).filter(pk=obj.pk).exists()
+        )
+
+    def has_change_permission(self, request, obj=None):
+        return super().has_change_permission(request, obj) and (
+            obj is None or self.get_queryset(request).filter(pk=obj.pk).exists()
         )
 
     def save_model(self, request, obj, form, change):
         from projectp.admin_permissions import current_admin
         request.user = current_admin(request, f"{self.model._meta.app_label}.change_{self.model._meta.model_name}")
-        if not change or not self.has_change_permission(request, form.current):
+        if (not change or not self.has_change_permission(request, form.current)
+                or not self.get_queryset(request).filter(pk=form.current.pk).exists()):
             raise PermissionDenied("Không có quyền chuyển trạng thái tri thức.")
         current = form.current
         before = {"trang_thai_quan_tri": current.trang_thai_quan_tri, "da_xoa_mem": current.da_xoa_mem}

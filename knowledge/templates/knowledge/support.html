@@ -31,7 +31,7 @@
 
     <div class="knw-support-context">
         <strong>Ngữ cảnh:</strong>
-        <span>{{ context_query|default:"Chưa có từ khóa cụ thể. Bạn có thể lọc theo kỹ năng, phòng ban hoặc dự án đã tham gia." }}</span>
+        <span>{{ context_query|default:"Nhập ngữ cảnh vấn đề để tìm người hỗ trợ." }}</span>
     </div>
 
     {% if limited_access %}
@@ -44,7 +44,8 @@
             <aside class="knw-support-filter-panel">
                 <h2>Lọc theo</h2>
                 <form method="get" action="{% url 'knowledge:support' %}" class="knw-support-filter-form">
-                    <input type="hidden" name="context" value="{{ context_query }}">
+                    <label for="support-context">Ngữ cảnh vấn đề</label>
+                    <input type="search" id="support-context" name="context" value="{{ context_query }}" maxlength="150" required>
                     <label for="support-skill">Kỹ năng</label>
                     <select id="support-skill" name="skill">
                         <option value="">Tất cả kỹ năng</option>
@@ -112,7 +113,7 @@
                     </article>
                 {% empty %}
                     <div class="knw-empty">
-                        <h3>Không có người phù hợp trong phạm vi hiện tại</h3>
+                        <h3>{% if context_query %}Không có người phù hợp trong phạm vi hiện tại{% else %}Cần ngữ cảnh vấn đề để tìm người hỗ trợ{% endif %}</h3>
                         <p>Thử đổi kỹ năng, phòng ban hoặc dự án. Hệ thống không tự tạo trường hợp xử lý mới.</p>
                     </div>
                 {% endfor %}

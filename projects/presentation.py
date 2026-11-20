@@ -85,4 +85,5 @@ def form_page(
     context.update(
         form=form, cancel_url=cancel_url, submit_label=extra.pop("submit_label", "Lưu"), **extra
     )
-    return render(request, "projects/action_form.html", context, status=status)
+    template = "projects/asset_context_error.html" if context.get("asset_error") else "projects/action_form.html"
+    return render(request, template, context, status=status)

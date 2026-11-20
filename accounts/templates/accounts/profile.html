@@ -73,5 +73,15 @@
       <p class="oz-muted" style="margin:0">Chưa tham gia cộng đồng nào.</p>
     {% endif %}
   </section>
+  {% if is_me %}
+  <section class="oz-card">
+    <h2 class="oz-card-title">Đóng góp</h2>
+    <ul>
+      {% for post in contributions %}
+      <li><a href="{% url 'social:post_detail' post.pk %}">{{ post.tieu_de|default:post.noi_dung|truncatechars:100 }}</a></li>
+      {% empty %}<li>Chưa có bài đăng được phép hiển thị.</li>{% endfor %}
+    </ul>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}

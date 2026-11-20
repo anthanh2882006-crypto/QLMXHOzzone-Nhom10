@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from projectp.models import BaiViet, CommunityRole, DuAn, MemberStatus, ThanhVienDuAn
-from social.permissions import protected_source_reason
+from social.permissions import moderation_block_reason
 from ..services import handover_roles
 from ._chung import (
     active_community_memberships,
@@ -94,7 +94,7 @@ def moderate(request, pk, post_id):
         membership = tu_cach(request.user, community)
         post = get_object_or_404(community_posts(community), pk=post_id)
         action = request.POST.get("action")
-        reason = protected_source_reason(post) if action == "hide" else ""
+        reason = moderation_block_reason(post, action) if action == "hide" else ""
         if not la_quan_tri_noi_dung(membership):
             messages.error(request, "Bạn không còn quyền kiểm duyệt hoặc dự án đã lưu trữ.")
         elif post.loai_bai_viet == BaiViet.Kind.ANNOUNCEMENT:

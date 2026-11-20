@@ -4,7 +4,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from projectp.models import CongDong, DuAn, DinhKem, PhongBan, ThongBaoChinhThuc
-from social.forms import MultipleFileField
+from social.forms import MultipleFileField, MultipleFileInput, attachment_input_attributes
 
 
 MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024
@@ -71,6 +71,7 @@ class OfficialNoticeForm(forms.Form):
     )
     tep_dinh_kem = MultipleFileField(
         label="Tệp đính kèm (tối đa 5 tệp, 10 MB/tệp)", required=False,
+        widget=MultipleFileInput(attrs=attachment_input_attributes(ALLOWED_EXTENSIONS, MAX_ATTACHMENT_SIZE, MAX_ATTACHMENTS)),
     )
     remove_attachment_ids = forms.ModelMultipleChoiceField(
         queryset=DinhKem.objects.none(), required=False,

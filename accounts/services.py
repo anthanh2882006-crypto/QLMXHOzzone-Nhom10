@@ -2,10 +2,48 @@
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import UploadedFile
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
-from django.db.models import F
-from projectp.models import KyNangNhanVien
+from django.db.models import Exists, F, OuterRef, Q
+from projectp.models import (
+    CommunityRole, CongDong, DuAn, KyNangNhanVien, MemberStatus, ProjectRole,
+    ThanhVienCongDong, ThanhVienDuAn,
+)
+
+
+def check_deactivation(user_id):
+    active = Q(trang_thai=MemberStatus.ACTIVE, ket_thuc_luc__isnull=True, nguoi_dung__is_active=True)
+    project_members = ThanhVienDuAn.objects.filter(active)
+    active_managers = project_members.filter(vai_tro=ProjectRole.MANAGER, du_an__cong_dong__da_xoa_mem=False)
+    active_managers = active_managers.exclude(du_an__trang_thai=DuAn.Status.ARCHIVED)
+    project_membership = project_members.filter(
+        du_an__cong_dong_id=OuterRef("cong_dong_id"), nguoi_dung_id=OuterRef("nguoi_dung_id"),
+    )
+    active_owners = (
+        ThanhVienCongDong.objects.filter(active, vai_tro=CommunityRole.OWNER, cong_dong__da_xoa_mem=False)
+        .filter(Q(cong_dong__loai_cong_dong=CongDong.Type.GENERAL) | Exists(project_membership))
+        .exclude(cong_dong__du_an_lien_ket__trang_thai=DuAn.Status.ARCHIVED)
+    )
+
+    managed_projects = active_managers.filter(nguoi_dung_id=user_id)
+    owned_communities = active_owners.filter(nguoi_dung_id=user_id)
+    # Khóa cùng đối tượng mà các luồng bàn giao dùng trước khi kiểm lại vai trò.
+    managed_communities = DuAn.objects.filter(cong_dong_id__in=owned_communities.values("cong_dong_id"))
+    list(DuAn.objects.filter(
+        Q(pk__in=managed_projects.values("du_an_id")) | Q(pk__in=managed_communities.values("pk"))
+    ).order_by("pk").select_for_update().values_list("pk", flat=True))
+    list(CongDong.objects.filter(pk__in=owned_communities.values("cong_dong_id"))
+         .order_by("pk").select_for_update().values_list("pk", flat=True))
+
+    another_manager = active_managers.filter(du_an_id=OuterRef("du_an_id")).exclude(nguoi_dung_id=user_id)
+    another_owner = active_owners.filter(cong_dong_id=OuterRef("cong_dong_id")).exclude(nguoi_dung_id=user_id)
+    reasons = []
+    if managed_projects.filter(~Exists(another_manager)).exists():
+        reasons.append("Tài khoản là Quản lý cuối cùng của ít nhất một dự án chưa lưu trữ. Cần bàn giao quản lý trước khi vô hiệu hóa.")
+    if owned_communities.filter(~Exists(another_owner)).exists():
+        reasons.append("Tài khoản là Chủ sở hữu (OWNER) cuối cùng của ít nhất một cộng đồng còn hoạt động. Cần bàn giao OWNER trước khi vô hiệu hóa.")
+    if reasons:
+        raise ValidationError(reasons)
 
 
 def save_profile(user, form):

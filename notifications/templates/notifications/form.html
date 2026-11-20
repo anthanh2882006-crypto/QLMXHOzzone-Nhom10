@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}{% if is_edit %}Biên tập bản nháp{% else %}Soạn thông báo chính thức{% endif %} | OZZONE{% endblock %}
 {% block extra_css %}<link rel="stylesheet" href="{% static 'notifications/css/notifications.css' %}?v=20261120-preview">{% endblock %}
-{% block extra_js %}<script src="{% static 'notifications/js/notice-form.js' %}?v=20261120-preview" defer></script>{% endblock %}
+{% block extra_js %}<script src="{% static 'notifications/js/notice-form.js' %}?v=attachment-controls" defer></script>{% endblock %}
 {% block content %}
 <div class="oz-notice-workspace">
     {% include "notifications/_context_nav.html" with notice_nav_active="notices" %}
@@ -25,6 +25,9 @@
     <form method="post" enctype="multipart/form-data" class="oz-notice-form" data-preview-url="{% url 'notifications:preview' %}" novalidate>
         {% csrf_token %}
         {{ form.publish_key }}
+        <input type="hidden" name="preview_token">
+        {% if is_edit %}<input type="hidden" name="draft_id" value="{{ notice.pk }}">{% endif %}
+        <noscript><p>Cần bật JavaScript để xem trước và xác nhận phát hành. Bạn vẫn có thể lưu bản nháp.</p></noscript>
         {{ form.thong_bao_tham_chieu }}
         {% if form.non_field_errors %}<div class="oz-alert oz-alert-error">{{ form.non_field_errors }}</div>{% endif %}
 
@@ -49,7 +52,7 @@
                 {% endfor %}
             </div>
             {% endif %}
-            <div class="oz-field"><label for="id_tep_dinh_kem">{{ form.tep_dinh_kem.label }}</label>{{ form.tep_dinh_kem }}{{ form.tep_dinh_kem.errors }}</div>
+            {% include "includes/attachment_picker.html" with field=form.tep_dinh_kem %}
         </section>
 
         <section class="oz-form-panel">
@@ -105,6 +108,7 @@
                 <dt>Phân phối</dt><dd data-preview-distribution></dd>
                 <dt>Người nhận dự kiến</dt><dd data-preview-count></dd>
                 <dt>Yêu cầu xác nhận</dt><dd data-preview-ack></dd>
+                <dt>Tệp đính kèm</dt><dd data-preview-attachments></dd>
             </dl>
             <div class="oz-notice-preview-body" data-preview-body></div>
         </div>

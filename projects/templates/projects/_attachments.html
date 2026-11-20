@@ -1,14 +1,32 @@
 {% if attachments %}
+    {% if show_file_tools %}
+    <section class="oz-post-attachments" data-attachment-list aria-label="Tệp đính kèm">
+    <details>
+        <summary>Tệp đính kèm</summary>
+        {% include "includes/attachment_filters.html" %}
+    {% endif %}
     <ul class="pm-files">
         {% for item in attachments %}
-            <li>
-                <a href="{% url 'projects:file' project.pk item.tep_tin_id %}">
+            {% url 'projects:file' project.pk item.tep_tin_id as attachment_url %}
+            <li{% if show_file_tools %} data-attachment-row="{{ item.tep_tin.loai_tep }}"{% endif %}>
+                <a href="{{ attachment_url }}{% if post %}?post={{ post.pk }}{% endif %}">
                     {{ item.tep_tin.ten_tep }}
                 </a>
-                <small>
-                    {{ item.tep_tin.kich_thuoc|filesizeformat }}
-                </small>
+                <small>{% if item.tep_tin.loai_tep == "application/pdf" %}PDF{% elif item.tep_tin.loai_tep|slice:":6" == "image/" %}Ảnh{% else %}Tài liệu{% endif %} · {{ item.tep_tin.kich_thuoc|filesizeformat }}</small>
+                {% if show_file_tools %}
+                    <small>Dự án {{ project.ten_du_an }}</small>
+                    {% include "includes/attachment_attribution.html" with link=item %}
+                {% endif %}
+                {% if item.tep_tin.loai_tep == 'application/pdf' or item.tep_tin.loai_tep == 'image/jpeg' or item.tep_tin.loai_tep == 'image/png' or item.tep_tin.loai_tep == 'image/gif' or item.tep_tin.loai_tep == 'image/webp' %}
+                    <a href="{{ attachment_url }}?preview=1{% if post %}&amp;post={{ post.pk }}{% endif %}"
+                       target="_blank" rel="noopener">Xem</a>
+                {% else %}
+                    <small>Định dạng này cần tải xuống để mở.</small>
+                {% endif %}
             </li>
         {% endfor %}
     </ul>
+    {% if show_file_tools %}</details></section>{% endif %}
+{% elif show_file_tools %}
+    <section class="oz-post-attachments" aria-label="Tệp đính kèm"><h2>Tệp đính kèm</h2><p>Không có tệp đính kèm.</p></section>
 {% endif %}

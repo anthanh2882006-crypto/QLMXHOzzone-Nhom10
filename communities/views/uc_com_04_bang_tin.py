@@ -7,9 +7,9 @@ post_detail      : đọc 1 bài trong đúng cộng đồng; bài ẩn chỉ ng
 from django.contrib.auth.decorators import login_required
 from ._chung import community_posts, handled
 from social.views import _post_cards, post_discussion_context
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 
-from projectp.models import BaiViet, DinhKem, MemberStatus, YeuCauThamGia
+from projectp.models import BaiViet, CongDong, DinhKem, MemberStatus, YeuCauThamGia
 
 from ..forms import JoinRequestForm
 from ._chung import (
@@ -22,8 +22,10 @@ from ._chung import (
 @handled
 def community_detail(request, pk):
     """GD-034 Không gian cộng đồng — tab Bảng tin, bài ghim lên đầu."""
-    cd = lay_cong_dong(request.user, pk)
+    cd = lay_cong_dong(request.user, pk, include_project_introductions=True)
     tv = tu_cach(request.user, cd)
+    if cd.loai_cong_dong == CongDong.Type.PROJECT and tv is None:
+        return redirect("communities:about", pk=pk)
 
     posts = []
     if duoc_doc(cd, tv):
@@ -70,7 +72,7 @@ def post_detail(request, pk, post_id):
     context = {"community": cd, "membership": tv}
     context.update(sidebar(request, "community", cd))
     if post is None or not duoc_doc(cd, tv) or (post.trang_thai != "hien" and not la_quan_tri_noi_dung(tv)):
-        return render(request, "communities/unavailable.html", context)
+        return render(request, "communities/unavailable.html", context, status=404)
 
     project = du_an_lien_ket(cd)
     if project and not post.du_an_id:
@@ -79,6 +81,6 @@ def post_detail(request, pk, post_id):
     context.update({
         "project": project,
         "post": post,
-        "attachments": DinhKem.objects.filter(bai_viet=post, tep_tin__trang_thai="san_sang", tep_tin__da_xoa_mem=False).select_related("tep_tin"),
+        "attachments": DinhKem.objects.filter(bai_viet=post, tep_tin__trang_thai="san_sang", tep_tin__da_xoa_mem=False).select_related("tep_tin", "nguoi_dinh_kem"),
     })
     return render(request, "communities/post_detail.html", context)

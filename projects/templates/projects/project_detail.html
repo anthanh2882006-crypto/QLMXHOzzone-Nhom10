@@ -12,6 +12,7 @@
             <a class="pm-button" href="{% url 'projects:manage' project.pk %}">Quản lý dự án</a>
         {% endif %}
     </header>
+    {% block project_notice %}{% endblock %}
     <div class="pm-workspace">
         <div class="pm-stack">
             {% if not project.da_luu_tru %}

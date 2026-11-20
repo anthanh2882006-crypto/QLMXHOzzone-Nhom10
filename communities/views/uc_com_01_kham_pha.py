@@ -1,6 +1,6 @@
 """UC-COM-01 Khám phá / Xem cộng đồng — GD-033 Khám phá cộng đồng, GD-035 Giới thiệu cộng đồng.
 
-community_list  : danh sách cộng đồng được thấy, tìm theo tên/mô tả, lọc 'của tôi', trạng thái của tôi ở từng cộng đồng.
+community_list  : danh sách cộng đồng được thấy, tìm theo tên, chủ đề và mô tả, lọc 'của tôi', trạng thái của tôi ở từng cộng đồng.
 community_about : trang giới thiệu (chủ sở hữu, số thành viên, dự án liên kết).
 """
 
@@ -9,7 +9,7 @@ from ._chung import active_community_memberships, handled
 from django.db.models import Count, Q
 from django.shortcuts import render
 
-from projectp.models import CommunityRole, MemberStatus, ThanhVienCongDong, YeuCauThamGia
+from projectp.models import CommunityRole, CongDong, MemberStatus, ThanhVienCongDong, YeuCauThamGia
 
 from ._chung import can_doi_mat_khau, cong_dong_xem_duoc, du_an_lien_ket, duoc_doc, lay_cong_dong, sidebar, tu_cach
 
@@ -19,14 +19,16 @@ from ._chung import can_doi_mat_khau, cong_dong_xem_duoc, du_an_lien_ket, duoc_d
 @handled
 def community_list(request):
     """GD-033 Khám phá cộng đồng."""
-    q = request.GET.get("q", "").strip()
+    q = request.GET.get("q", "").strip()[:150]
     chi_cua_toi = request.GET.get("mine") == "1"
 
-    ds = cong_dong_xem_duoc(request.user).annotate(
+    ds = cong_dong_xem_duoc(request.user, include_project_introductions=True).annotate(
         so_thanh_vien=Count("thanh_vien", filter=Q(thanh_vien__trang_thai=MemberStatus.ACTIVE, thanh_vien__ket_thuc_luc__isnull=True, thanh_vien__nguoi_dung__is_active=True))
     )
-    if q:
-        ds = ds.filter(Q(ten_cong_dong__icontains=q) | Q(mo_ta__icontains=q))
+    for word in q.split():
+        ds = ds.filter(
+            Q(ten_cong_dong__icontains=word) | Q(chu_de__icontains=word) | Q(mo_ta__icontains=word)
+        )
 
     # Trạng thái của tôi ở từng cộng đồng: {mã cộng đồng: trạng thái}
     trang_thai_cua_toi = dict(
@@ -51,7 +53,8 @@ def community_list(request):
             state = "none"
         if chi_cua_toi and state != "member":
             continue
-        cards.append({"c": c, "state": state})
+        cards.append({"c": c, "state": state,
+                      "introduction_only": c.loai_cong_dong == CongDong.Type.PROJECT and state != "member"})
 
     context = {"cards": cards, "q": q, "mine": chi_cua_toi}
     context.update(sidebar(request, "explore"))
@@ -63,8 +66,13 @@ def community_list(request):
 @handled
 def community_about(request, pk):
     """GD-035 Giới thiệu cộng đồng."""
-    cd = lay_cong_dong(request.user, pk)
+    cd = lay_cong_dong(request.user, pk, include_project_introductions=True)
     tv = tu_cach(request.user, cd)
+    introduction_only = cd.loai_cong_dong == CongDong.Type.PROJECT and tv is None
+    if introduction_only:
+        context = sidebar(request, "explore")
+        context.update(community=cd, introduction_only=True, tab="about")
+        return render(request, "communities/about.html", context)
     context = {
         "community": cd,
         "membership": tv,

@@ -15,7 +15,7 @@
         <div>
             {{ post.noi_dung|linebreaks }}
         </div>
-        {% include "projects/_attachments.html" %}
+        {% include "projects/_attachments.html" with show_file_tools=True %}
         {% include "includes/post_actions.html" %}
     </article>
     {% include "includes/post_comments.html" %}
