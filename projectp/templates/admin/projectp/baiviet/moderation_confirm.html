@@ -34,7 +34,7 @@
                     <td>
                         <strong>{{ post.tieu_de|default:"Bài viết không có tiêu đề" }}</strong>
                         <p>{{ post.noi_dung|truncatechars:180 }}</p>
-                        <small>#{{ post.pk }} · {{ post.get_loai_bai_viet_display }}</small>
+                        <small>{{ post.get_loai_bai_viet_display }}</small>
                         <input type="hidden" name="post_ids" value="{{ post.pk }}" form="moderation-form">
                     </td>
                     <td>{{ post.nguoi_dang|ho_ten }}</td>

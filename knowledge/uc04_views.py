@@ -361,7 +361,7 @@ def normalize_lesson(request: HttpRequest, pk: int) -> HttpResponse:
     if item.trang_thai == "khong_tao_bai_hoc":
         messages.info(
             request,
-            "Nguồn đã được đánh giá không chuyển thành bài học. Hãy mở lại đánh giá tại GD-087 trước khi tiếp tục.",
+            "Nguồn đã được đánh giá không chuyển thành bài học. Hãy mở lại từ danh sách đánh giá tri thức để tiếp tục.",
         )
         return redirect("knowledge:review_queue")
     if item.trang_thai == "da_tao_bai_hoc":

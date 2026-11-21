@@ -11,7 +11,7 @@ from .services_technical import result_snapshot
 class ResultChoice(forms.ModelChoiceField):
     def label_from_instance(self, result):
         trial = result.lan_thu
-        return f"PA-{trial.phuong_an_id} · Lần {trial.so_lan} · {result.mo_ta_ket_qua[:80]}"
+        return f"Lần thử {trial.so_lan} · {result.mo_ta_ket_qua[:80]}"
 
 
 class ResolutionForm(RequestForm):

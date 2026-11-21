@@ -45,7 +45,8 @@
             <div class="knw04-source-result">
                 <strong>Kết luận đã xác nhận</strong>
                 <p>{{ conclusion.noi_dung_ket_luan }}</p>
-                <small>Phương án #{{ plan.pk }} · Lần thử #{{ trial.so_lan }} · Kết quả thành công</small>
+                <small>Lần thử {{ trial.so_lan }} · Kết quả thành công</small>
+                <p>Phương án: {{ plan.noi_dung_phuong_an|truncatechars:90 }}</p>
                 <p>{{ result.mo_ta_ket_qua }}</p>
             </div>
             <div class="knw04-source-note">

@@ -4,6 +4,11 @@ Snapshot nhật ký có dữ liệu nhiều nhóm. Màn chi tiết lọc nhóm v
 hiển thị nội dung nguồn kỹ thuật chỉ từ quyền xem nhật ký quản lý.
 """
 
+from django.contrib.auth import get_user_model
+
+from accounts.views._chung import ho_ten
+from projectp.models import MaThietBi
+
 SCHEMAS = {
     "du_an": (
         "Thông tin dự án",
@@ -46,7 +51,7 @@ SCHEMAS = {
         "ma_tai_san",
         "ma_the_thiet_bi_id",
         {
-            "ma_the_thiet_bi_id": "Định danh thiết bị",
+            "ma_the_thiet_bi_id": "Thiết bị",
             "ma_tai_san_noi_bo": "Mã tài sản",
             "so_serial": "Số serial",
             "trang_thai": "Trạng thái tài sản",
@@ -93,6 +98,12 @@ STATUS_LABELS = {
     "ngung_su_dung": "Ngừng sử dụng",
 }
 
+PERSON_FIELDS = {
+    "nguoi_luu_tru_id", "nguoi_dung_id", "nguoi_phu_trach_id",
+    "nguoi_phan_cong_id", "nguoi_ket_thuc_id",
+}
+DEVICE_FIELD = "ma_the_thiet_bi_id"
+
 
 def snapshot_changes(log, project):
     """Lấy chênh lệch an toàn theo phạm vi của chính dự án và hành động trong nhật ký."""
@@ -108,6 +119,8 @@ def snapshot_changes(log, project):
             if isinstance(record, dict) and record.get("du_an_id") == project.pk:
                 allowed_devices.add(record.get("ma_the_thiet_bi"))
     changes = []
+    person_ids = set()
+    device_ids = set()
     for group in ACTION_GROUPS.get(action, ()):
         title, pk_field, scope_field, fields = SCHEMAS[group]
 
@@ -136,21 +149,38 @@ def snapshot_changes(log, project):
             for field, label in fields.items():
                 if old.get(field) == new.get(field):
                     continue
-                changes.append(
-                    {
-                        "group": title,
-                        "record_id": record_id,
-                        "field": label,
-                        "before": display(old.get(field)),
-                        "after": display(new.get(field)),
-                    }
-                )
-    return changes
+                old_value, new_value = old.get(field), new.get(field)
+                if field in PERSON_FIELDS:
+                    person_ids.update(value for value in (old_value, new_value) if isinstance(value, int))
+                if field == DEVICE_FIELD:
+                    device_ids.update(value for value in (old_value, new_value) if isinstance(value, int))
+                changes.append((title, field, label, old_value, new_value))
+
+    people = {pk: ho_ten(user) for pk, user in get_user_model().objects.in_bulk(person_ids).items()}
+    devices = {
+        pk: name or code
+        for pk, name, code in MaThietBi.objects.filter(du_an=project, pk__in=device_ids).values_list(
+            "pk", "ten_thiet_bi", "ma_thiet_bi"
+        )
+    }
+    references = dict.fromkeys(PERSON_FIELDS, people)
+    references[DEVICE_FIELD] = devices
+    return [
+        {
+            "group": title,
+            "field": label,
+            "before": display(old, references.get(field)),
+            "after": display(new, references.get(field)),
+        }
+        for title, field, label, old, new in changes
+    ]
 
 
-def display(value):
+def display(value, labels=None):
     if value is None or value == "":
         return "—"
+    if labels is not None:
+        return labels.get(value, "Không còn thông tin") if isinstance(value, int) else "Không còn thông tin"
     if isinstance(value, bool):
         return "Có" if value else "Không"
     return STATUS_LABELS.get(str(value), str(value))

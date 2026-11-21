@@ -78,8 +78,8 @@
             {% if source_can_open %}
                 <p><strong>Nguồn:</strong> {{ source_project.ten_du_an|default:"Nguồn nội bộ" }}</p>
                 {% if source_device %}<p><strong>Thiết bị:</strong> {{ source_device.ten_thiet_bi }}</p>{% endif %}
-                {% if plan %}<p><strong>Phương án:</strong> #{{ plan.pk }} · {{ plan.noi_dung_phuong_an|truncatechars:90 }}</p>{% endif %}
-                {% if trial %}<p><strong>Lần thử:</strong> #{{ trial.so_lan }}</p>{% endif %}
+                {% if plan %}<p><strong>Phương án:</strong> {{ plan.noi_dung_phuong_an|truncatechars:90 }}</p>{% endif %}
+                {% if trial %}<p><strong>Lần thử:</strong> {{ trial.so_lan }}</p>{% endif %}
                 {% if result %}<p><strong>Kết quả:</strong> {% if result.thanh_cong %}Thành công{% else %}Chưa thành công{% endif %}</p>{% endif %}
                 <a class="knw-save-button" href="{{ source_url }}">Xem nguồn</a>
             {% else %}

@@ -1796,4 +1796,4 @@ class NhatKyNghiepVu(models.Model):
         indexes = [models.Index(fields=["loai_tai_nguyen", "ma_tai_nguyen", "thoi_diem"])]
 
     def __str__(self):
-        return f"{self.hanh_dong} — {self.loai_tai_nguyen} {self.ma_tai_nguyen}"
+        return "Nhật ký nghiệp vụ"

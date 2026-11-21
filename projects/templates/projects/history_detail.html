@@ -14,16 +14,16 @@
         <h2>Thông tin trước và sau thao tác</h2>
         <div class="pm-table-scroll">
             <table>
-                <thead><tr><th>Nhóm dữ liệu</th><th>Định danh</th><th>Thông tin</th><th>Trước</th><th>Sau</th></tr></thead>
+                <thead><tr><th>Nhóm dữ liệu</th><th>Thông tin</th><th>Trước</th><th>Sau</th></tr></thead>
                 <tbody>
                     {% for change in changes %}
                         <tr>
-                            <td>{{ change.group }}</td><td>{{ change.record_id }}</td>
+                            <td>{{ change.group }}</td>
                             <td>{{ change.field }}</td><td>{{ change.before|linebreaksbr }}</td>
                             <td>{{ change.after|linebreaksbr }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5">Bản ghi này chưa có chi tiết thay đổi được phép hiển thị.</td></tr>
+                        <tr><td colspan="4">Bản ghi này chưa có chi tiết thay đổi được phép hiển thị.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

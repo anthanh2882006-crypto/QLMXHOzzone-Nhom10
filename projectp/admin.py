@@ -1,5 +1,6 @@
 """Django Admin cho quản trị dữ liệu và kiểm duyệt theo UC-SOC-10."""
 
+import json
 from urllib.parse import urlencode
 
 from django.contrib import admin, messages
@@ -11,6 +12,7 @@ from django.http import HttpResponseNotAllowed, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.urls import path, reverse
 from django.utils import timezone
+from django.utils.html import format_html
 
 from . import models
 from .admin_scopes import SOC_MODERATION_PREFIX, assigned_scopes, scope_ids
@@ -419,10 +421,10 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
                 reviewed = None
             if reviewed != self._moderation_revision(request, action, posts):
                 raise ValidationError("Nội dung hoặc trạng thái đã thay đổi. Hãy kiểm tra lại trước khi xác nhận.")
-            protected = [(post.pk, moderation_block_reason(post, action)) for post in posts]
-            protected = [(pk, message) for pk, message in protected if message]
+            protected = [(self.tieu_de_ngan(post) or "Bài viết", moderation_block_reason(post, action)) for post in posts]
+            protected = [(title, message) for title, message in protected if message]
             if protected:
-                details = "; ".join(f"#{pk}: {message}" for pk, message in protected)
+                details = "; ".join(f"{title}: {message}" for title, message in protected)
                 raise ValidationError(
                     f"Không thể kiểm duyệt nội dung là nguồn nghiệp vụ được bảo vệ. {details}"
                 )
@@ -438,7 +440,7 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
                 if action == "hide":
                     if post.da_xoa_mem:
                         raise ValidationError(
-                            f"Bài viết #{post.pk} đã xóa mềm; hãy dùng Khôi phục hoặc giữ nguyên trạng thái."
+                            f"“{self.tieu_de_ngan(post) or 'Bài viết'}” đã xóa mềm. Hãy dùng Khôi phục hoặc giữ nguyên trạng thái."
                         )
                     if post.trang_thai == "an":
                         continue
@@ -476,10 +478,113 @@ class BaiVietModerationAdmin(admin.ModelAdmin):
                 )
 
 
+AUDIT_ACTION_LABELS = {
+    "UC-ACC-05:create": "Tạo tài khoản",
+    "UC-ACC-05:update": "Cập nhật tài khoản",
+    "UC-ACC-05:grant_denied": "Từ chối cấp quyền",
+    "UC-ACC-05:temporary_password": "Đặt mật khẩu tạm thời",
+    "UC-ACC-05:disable_password": "Vô hiệu hóa mật khẩu",
+    "UC-ACC-05:group_permissions": "Cập nhật nhóm quyền",
+    "UC-ACC-05:employee_profile": "Cập nhật hồ sơ nhân viên",
+    "UC-COM-08:create": "Tạo cộng đồng",
+    "UC-COM-08:update": "Cập nhật cộng đồng",
+    "UC-PRJ-01": "Tạo dự án",
+    "UC-PRJ-03:info": "Cập nhật thông tin dự án",
+    "UC-PRJ-03:member_add": "Thêm thành viên dự án",
+    "UC-PRJ-03:member_role": "Đổi vai trò thành viên",
+    "UC-PRJ-03:member_end": "Kết thúc tư cách thành viên",
+    "UC-PRJ-03:equipment": "Cập nhật thiết bị và tài sản",
+    "UC-PRJ-03:knowledge": "Phân công tri thức",
+    "UC-PRJ-03:knowledge_end": "Kết thúc phân công tri thức",
+    "UC-PRJ-03:archive": "Lưu trữ dự án",
+    "UC-PRJ-11:info": "Cập nhật dữ liệu dự án",
+    "UC-PRJ-11:archive": "Lưu trữ dự án từ khu vực quản trị",
+    "UC-PRJ-05": "Tạo bài đăng dự án",
+    "UC-PRJ-06": "Tạo cập nhật hiện trường",
+    "UC-PRJ-07:analysis": "Phân tích vấn đề",
+    "UC-PRJ-07:solution": "Đề xuất phương án",
+    "UC-PRJ-07:trial": "Tạo lần thử",
+    "UC-PRJ-07:performer": "Giao người thực hiện lần thử",
+    "UC-PRJ-08": "Ghi kết quả thực hiện",
+    "UC-PRJ-09": "Ghi kết luận xử lý",
+    "UC-KNW-05:save": "Lưu bản nháp tri thức",
+    "UC-KNW-05:clone": "Tạo bản nháp từ bản công bố",
+    "UC-KNW-05:publish": "Công bố bài viết tri thức",
+    "UC-KNW-06:status": "Cập nhật trạng thái tri thức",
+    "tao_bai_viet_ca_nhan": "Tạo bài viết cá nhân",
+    "cap_nhat_bai_viet_ca_nhan": "Cập nhật bài viết cá nhân",
+    "xoa_mem_bai_viet_ca_nhan": "Xóa bài viết cá nhân",
+    "tao_binh_luan_bai_viet": "Viết bình luận",
+    "tham_gia_cong_dong": "Tham gia cộng đồng",
+    "roi_cong_dong": "Rời cộng đồng",
+    "tao_bai_cong_dong": "Tạo bài đăng cộng đồng",
+    "ban_giao_chu_so_huu": "Bàn giao quyền chủ sở hữu",
+    "kiem_duyet_pin": "Ghim bài trong cộng đồng",
+    "kiem_duyet_unpin": "Bỏ ghim bài trong cộng đồng",
+    "kiem_duyet_hide": "Ẩn bài trong cộng đồng",
+    "kiem_duyet_restore": "Khôi phục bài trong cộng đồng",
+    "kiem_duyet_an_bai_viet": "Ẩn bài viết",
+    "kiem_duyet_khoi_phuc_bai_viet": "Khôi phục bài viết",
+    "tao_ban_nhap_thong_bao_chinh_thuc": "Tạo bản nháp thông báo",
+    "cap_nhat_ban_nhap_thong_bao_chinh_thuc": "Cập nhật bản nháp thông báo",
+    "cong_bo_thong_bao_chinh_thuc": "Phát hành thông báo",
+    "huy_ban_nhap_thong_bao_chinh_thuc": "Hủy bản nháp thông báo",
+    "xac_nhan_tiep_nhan_thong_bao": "Xác nhận tiếp nhận thông báo",
+    "chuan_hoa_bai_hoc_kinh_nghiem": "Chuẩn hóa bài học kinh nghiệm",
+    "khong_chuyen_thanh_bai_hoc": "Không chuyển thành bài học",
+    "mo_lai_danh_gia_tri_thuc": "Mở lại đánh giá tri thức",
+    "configure_knowledge_editor_role": "Cấu hình nhóm biên tập tri thức",
+}
+AUDIT_RESOURCE_LABELS = {
+    "NGUOI_DUNG": "Tài khoản",
+    "NHOM_QUYEN": "Nhóm quyền",
+    "DJANGO_GROUP": "Nhóm quyền Django",
+    "HO_SO_NHAN_VIEN": "Hồ sơ nhân viên",
+    "BAI_VIET": "Bài viết",
+    "BINH_LUAN": "Bình luận",
+    "CONG_DONG": "Cộng đồng",
+    "THANH_VIEN_CONG_DONG": "Thành viên cộng đồng",
+    "DU_AN": "Dự án",
+    "THONG_BAO_CHINH_THUC": "Thông báo chính thức",
+    "CHO_DANH_GIA_TRI_THUC": "Nguồn chờ đánh giá tri thức",
+    "BAI_HOC_KINH_NGHIEM": "Bài học kinh nghiệm",
+    "BAI_VIET_TRI_THUC": "Bài viết tri thức",
+}
+AUDIT_INTERNAL_FIELDS = {
+    "id", "pk", "ma_yeu_cau", "ma_tai_nguyen", "request_hash", "request_token", "fingerprint",
+    "ma_binh_luan_cha",
+    *(model._meta.pk.name for model in models.NhatKyNghiepVu._meta.app_config.get_models()),
+}
+
+
+class AuditLabelFilter(admin.AllValuesFieldListFilter):
+    def choices(self, changelist):
+        is_action = self.field_path == "hanh_dong"
+        labels = AUDIT_ACTION_LABELS if is_action else AUDIT_RESOURCE_LABELS
+        fallback = "Thao tác nghiệp vụ" if is_action else "Dữ liệu nghiệp vụ"
+        choices = super().choices(changelist)
+        yield next(choices)
+        for choice in choices:
+            code, separator, count = choice["display"].partition(" (")
+            yield {**choice, "display": labels.get(code, fallback) + separator + count}
+
+
+def audit_display_snapshot(snapshot):
+    if isinstance(snapshot, dict):
+        return {
+            key: audit_display_snapshot(value)
+            for key, value in snapshot.items()
+            if key not in AUDIT_INTERNAL_FIELDS and not key.endswith(("_id", "_ids"))
+        }
+    if isinstance(snapshot, list):
+        return [audit_display_snapshot(value) for value in snapshot]
+    return snapshot
+
+
 @admin.register(models.NhatKyNghiepVu)
 class NhatKyNghiepVuAdmin(admin.ModelAdmin):
-    list_display = ("ma_nhat_ky", "thoi_diem", "nguoi_dung", "hanh_dong", "loai_tai_nguyen", "ma_tai_nguyen")
-    list_filter = ("hanh_dong", "loai_tai_nguyen", "thoi_diem")
+    list_display = ("thoi_diem", "nguoi_dung", "action_label", "resource_label")
+    list_filter = (("hanh_dong", AuditLabelFilter), ("loai_tai_nguyen", AuditLabelFilter), "thoi_diem")
     search_fields = (
         "ma_tai_nguyen",
         "hanh_dong",
@@ -488,7 +593,31 @@ class NhatKyNghiepVuAdmin(admin.ModelAdmin):
         "nguoi_dung__last_name",
     )
     date_hierarchy = "thoi_diem"
-    readonly_fields = tuple(f.name for f in models.NhatKyNghiepVu._meta.fields)
+    fields = readonly_fields = (
+        "thoi_diem", "nguoi_dung", "action_label", "resource_label", "ly_do",
+        "before_display", "after_display", "dia_chi_ip",
+    )
+
+    @admin.display(description="Hành động", ordering="hanh_dong")
+    def action_label(self, obj):
+        return AUDIT_ACTION_LABELS.get(obj.hanh_dong, "Thao tác nghiệp vụ")
+
+    @admin.display(description="Đối tượng", ordering="loai_tai_nguyen")
+    def resource_label(self, obj):
+        return AUDIT_RESOURCE_LABELS.get(obj.loai_tai_nguyen, "Dữ liệu nghiệp vụ")
+
+    @admin.display(description="Dữ liệu trước thay đổi")
+    def before_display(self, obj):
+        return self._display_snapshot(obj.du_lieu_truoc)
+
+    @admin.display(description="Dữ liệu sau thay đổi")
+    def after_display(self, obj):
+        return self._display_snapshot(obj.du_lieu_sau)
+
+    @staticmethod
+    def _display_snapshot(snapshot):
+        display = audit_display_snapshot(snapshot)
+        return format_html("<pre>{}</pre>", json.dumps(display, ensure_ascii=False, indent=2)) if display else "—"
 
     def get_queryset(self, request):
         from django.db.models import Q

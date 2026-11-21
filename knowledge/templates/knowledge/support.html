@@ -133,7 +133,6 @@
 <div class="knw-modal-backdrop" role="presentation">
     <section class="knw-reason-modal" role="dialog" aria-modal="true" aria-labelledby="reason-title">
         <a class="knw-modal-close" href="{% url 'knowledge:support' %}?context={{ context_query|urlencode }}{% if selected_skill %}&amp;skill={{ selected_skill }}{% endif %}{% if selected_department %}&amp;department={{ selected_department }}{% endif %}{% if selected_project %}&amp;project={{ selected_project }}{% endif %}" aria-label="Đóng">×</a>
-        <span class="knw-eyebrow">GD-086 · CĂN CỨ GỢI Ý</span>
         <h2 id="reason-title">Lý do phù hợp của người hỗ trợ</h2>
         <h3>{{ reason_candidate.name }}</h3>
         <p>{{ reason_candidate.position }} · {{ reason_candidate.department }}</p>

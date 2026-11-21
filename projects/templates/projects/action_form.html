@@ -7,10 +7,7 @@
             <section class="pm-panel pm-form-panel">
                 {% if post %}
                     <div class="pm-stack">
-                        <h2>
-                            PRB-{{ post.pk }}
-                            · {{ post.tieu_de|default:"Vấn đề kỹ thuật" }}
-                        </h2>
+                        <h2>{{ post.tieu_de|default:"Vấn đề kỹ thuật" }}</h2>
                         <p class="pm-muted">{{ post.noi_dung|truncatechars:240 }}</p>
                     </div>
                 {% elif project %}
@@ -43,10 +40,7 @@
                 {% endif %}
                 {% if solution %}
                     <div class="pm-evidence">
-                        <h3>
-                            PA-{{ solution.pk }}
-                            · Phương án đang chọn
-                        </h3>
+                        <h3>Phương án đang chọn</h3>
                         <div class="pm-rich">{{ solution.noi_dung_phuong_an|linebreaks }}</div>
                         <p>
                             <strong>Cơ sở đề xuất:</strong>
@@ -59,10 +53,8 @@
                 {% endif %}
                 {% if trial %}
                     <div class="pm-info">
-                        <strong>
-                            PA-{{ trial.phuong_an_id }}
-                            · Lần thử {{ trial.so_lan }}
-                        </strong>
+                        <strong>Lần thử {{ trial.so_lan }}</strong>
+                        {% if not solution %}<p>Phương án: {{ trial.phuong_an.noi_dung_phuong_an|truncatechars:90 }}</p>{% endif %}
                         <p>
                             Người thực hiện:
                             {% if trial.nguoi_thuc_hien %}
@@ -95,7 +87,7 @@
                                 <h3>Các lần thử sẽ dừng khi xác nhận kết luận</h3>
                                 <ul>
                                     {% for pending in pending_trials %}
-                                        <li>Phương án {{ pending.phuong_an_id }} · Lần {{ pending.so_lan }} · {{ pending.get_trang_thai_display }} · {{ pending.nguoi_thuc_hien|ho_ten }}</li>
+                                        <li>Lần thử {{ pending.so_lan }} · {{ pending.phuong_an.noi_dung_phuong_an|truncatechars:72 }} · {{ pending.get_trang_thai_display }} · {{ pending.nguoi_thuc_hien|ho_ten }}</li>
                                     {% endfor %}
                                 </ul>
                                 <p>Các kết quả đã ghi được bảo toàn trong lịch sử.</p>
@@ -118,10 +110,7 @@
                                                value="{{ row.result.pk }}"
                                                required{% if form.ket_qua.value|stringformat:'s' == row.result.pk|stringformat:'s' %}
                                                checked{% endif %}>
-                                        PA-{{ row.solution.pk }}
-                                        · Lần thử {{ row.result.lan_thu.so_lan }}
-                                        · Kết quả #{{ row.result.pk }}
-                                        thành công
+                                        Lần thử {{ row.result.lan_thu.so_lan }} · Kết quả thành công
                                     </label>
                                     <h3>Phương án</h3>
                                     <div class="pm-rich">{{ row.solution.noi_dung_phuong_an|linebreaks }}</div>

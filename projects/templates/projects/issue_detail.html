@@ -10,7 +10,6 @@
                 {% if post.ma_the_thiet_bi %}
                     / {{ post.ma_the_thiet_bi.ten_thiet_bi }}
                 {% endif %}
-                / PRB-{{ post.pk }}
             </p>
         </div>
         {% include "projects/_issue_state.html" %}
@@ -57,10 +56,7 @@
                 <h2>Phương án xử lý</h2>
                 {% for row in solutions %}
                     <article class="pm-comment">
-                        <h3>PA-{{ row.solution.pk }}</h3>
-                        <p class="pm-caption">
-                            {{ row.solution.nguoi_de_xuat|ho_ten }}
-                        </p>
+                        <h3>Đề xuất của {{ row.solution.nguoi_de_xuat|ho_ten }}</h3>
                         <div>{{ row.solution.noi_dung_phuong_an|linebreaks }}</div>
                         <p>
                             <strong>Cơ sở đề xuất</strong>
@@ -84,10 +80,8 @@
                 <h2>Lần thử và kết quả</h2>
                 {% for row in trials %}
                     <article class="pm-comment" id="trial-{{ row.trial.pk }}">
-                        <h3>
-                            PA-{{ row.trial.phuong_an_id }}
-                            · Lần thử {{ row.trial.so_lan }}
-                        </h3>
+                        <h3>Lần thử {{ row.trial.so_lan }}</h3>
+                        <p class="pm-caption">Phương án: {{ row.trial.phuong_an.noi_dung_phuong_an|truncatechars:90 }}</p>
                         <p>
                             {{ row.trial.get_trang_thai_display }}
                             ·
@@ -144,8 +138,8 @@
                     <p class="pm-info">Tổng số lần thử đã dừng: <strong>{{ stopped_trial_count }}</strong></p>
                     <div>{{ conclusion.noi_dung_ket_luan|linebreaks }}</div>
                     <p>
-                        Căn cứ PA-{{ conclusion.ket_qua.lan_thu.phuong_an_id }}
-                        · Lần {{ conclusion.ket_qua.lan_thu.so_lan }}
+                        Căn cứ: Lần thử {{ conclusion.ket_qua.lan_thu.so_lan }}
+                        · {{ conclusion.ket_qua.lan_thu.phuong_an.noi_dung_phuong_an|truncatechars:90 }}
                     </p>
                     <p class="pm-caption">
                         {{ conclusion.nguoi_de_nghi|ho_ten }}

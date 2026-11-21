@@ -156,7 +156,7 @@ def _task_items(user, profile, scope):
         items.append({
             "type": "result",
             "title": "Ghi nhận kết quả thực tế",
-            "subtitle": f"Phương án #{trial.phuong_an_id} · {issue.du_an.ten_du_an if issue.du_an_id else 'Dự án'}",
+            "subtitle": f"Lần thử {trial.so_lan} · {issue.du_an.ten_du_an if issue.du_an_id else 'Dự án'}",
             "detail": issue.tieu_de or issue.noi_dung[:110],
             "created_at": trial.ngay_thu,
             "object_id": issue.pk,
